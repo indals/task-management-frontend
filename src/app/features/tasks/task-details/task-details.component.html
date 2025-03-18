@@ -1,1 +1,67 @@
-<p>task-details works!</p>
+<div class="task-details-container">
+    <div class="header">
+      <h2 class="title">{{ task?.title }}</h2>
+      <div class="status-badge" [ngClass]="task?.status?.toLowerCase()">
+        {{ task?.status }}
+      </div>
+    </div>
+  
+    <div class="metadata">
+      <div class="metadata-item">
+        <span class="label">Created:</span>
+        <span class="value">{{ task?.createdAt | date:'medium' }}</span>
+      </div>
+      <div class="metadata-item">
+        <span class="label">Due:</span>
+        <span class="value">{{ task?.dueDate | date:'medium' }}</span>
+      </div>
+      <div class="metadata-item">
+        <span class="label">Priority:</span>
+        <span class="value priority" [ngClass]="task?.priority?.toLowerCase()">{{ task?.priority }}</span>
+      </div>
+      <div class="metadata-item">
+        <span class="label">Assigned to:</span>
+        <span class="value">{{ task?.assignee?.name || 'Unassigned' }}</span>
+      </div>
+    </div>
+  
+    <div class="description">
+      <h3>Description</h3>
+      <p>{{ task?.description }}</p>
+    </div>
+  
+    <div class="subtasks" *ngIf="task?.subtasks?.length">
+      <h3>Subtasks</h3>
+      <ul class="subtasks-list">
+        <li *ngFor="let subtask of task?.subtasks" class="subtask-item">
+          <input type="checkbox" [checked]="subtask.completed" (change)="toggleSubtask(subtask.id)">
+          <span [ngClass]="{'completed': subtask.completed}">{{ subtask.title }}</span>
+        </li>
+      </ul>
+    </div>
+  
+    <div class="comments" *ngIf="task?.comments?.length">
+      <h3>Comments</h3>
+      <div class="comment-list">
+        <div *ngFor="let comment of task?.comments" class="comment">
+          <div class="comment-header">
+            <span class="comment-author">{{ comment.author.name }}</span>
+            <span class="comment-date">{{ comment.createdAt | date:'medium' }}</span>
+          </div>
+          <p class="comment-text">{{ comment.text }}</p>
+        </div>
+      </div>
+    </div>
+  
+    <div class="add-comment">
+      <h3>Add Comment</h3>
+      <textarea [(ngModel)]="newComment" placeholder="Write a comment..."></textarea>
+      <button class="btn btn-primary" (click)="addComment()">Post Comment</button>
+    </div>
+  
+    <div class="actions">
+      <button class="btn btn-edit" (click)="editTask()">Edit Task</button>
+      <button class="btn btn-delete" (click)="deleteTask()">Delete Task</button>
+      <button class="btn btn-primary" *ngIf="task?.status !== 'Completed'" (click)="markAsComplete()">Mark as Complete</button>
+    </div>
+  </div>

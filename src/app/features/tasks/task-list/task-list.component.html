@@ -1,1 +1,54 @@
-<p>task-list works!</p>
+<!-- task-list.component.html -->
+<div class="task-list-container">
+    <div class="task-list-header">
+      <h2>Tasks</h2>
+      <button class="create-btn" (click)="createNewTask()">Create New Task</button>
+    </div>
+  
+    <div class="filters">
+      <div class="search-bar">
+        <input 
+          type="text" 
+          placeholder="Search tasks..." 
+          [(ngModel)]="searchTerm"
+          (input)="onSearchChange(searchTerm)"
+        >
+      </div>
+      
+      <div class="status-filter">
+        <label>Status: </label>
+        <select [(ngModel)]="filterStatus" (change)="onStatusFilterChange(filterStatus)">
+          <option value="all">All</option>
+          <option value="pending">Pending</option>
+          <option value="in-progress">In Progress</option>
+          <option value="completed">Completed</option>
+        </select>
+      </div>
+    </div>
+  
+    <div class="task-list" *ngIf="filteredTasks.length > 0">
+      <div 
+        class="task-item" 
+        *ngFor="let task of filteredTasks" 
+        [ngClass]="task.status"
+        (click)="viewTaskDetails(task.id)"
+      >
+        <div class="task-info">
+          <h3>{{ task.title }}</h3>
+          <p class="description">{{ task.description | slice:0:100 }}{{ task.description.length > 100 ? '...' : '' }}</p>
+          <div class="meta-info">
+            <span class="status">{{ task.status }}</span>
+            <span class="due-date" *ngIf="task.dueDate">Due: {{ task.dueDate | date:'shortDate' }}</span>
+            <span class="priority" [ngClass]="task.priority">{{ task.priority }}</span>
+          </div>
+        </div>
+        <div class="task-actions">
+          <button class="delete-btn" (click)="deleteTask(task.id, $event)">Delete</button>
+        </div>
+      </div>
+    </div>
+  
+    <div class="no-tasks" *ngIf="filteredTasks.length === 0">
+      <p>No tasks found matching your criteria.</p>
+    </div>
+  </div>
