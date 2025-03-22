@@ -1,0 +1,36 @@
+// src/app/shared/components/header/header.component.html
+<header class="app-header">
+  <div class="logo-container">
+    <a routerLink="/dashboard">
+      <h1 class="app-title">Task Manager</h1>
+    </a>
+  </div>
+
+  <div class="header-controls" *ngIf="currentUser">
+    <button class="notification-btn" (click)="navigateToNotifications()">
+      <i class="fa fa-bell"></i>
+      <span class="notification-badge" *ngIf="notificationCount > 0">{{ notificationCount }}</span>
+    </button>
+
+    <div class="user-profile">
+      <div class="user-avatar" (click)="toggleDropdown()">
+        <span class="avatar-text">{{ currentUser.name.charAt(0) || 'U' }}</span>
+      </div>
+
+      <div class="dropdown-menu" *ngIf="isDropdownOpen">
+        <div class="user-info">
+          <div class="user-name">{{ currentUser.name }}</div>
+          <div class="user-email">{{ currentUser.email }}</div>
+        </div>
+        <ul class="dropdown-list">
+          <li (click)="navigateToProfile()">
+            <i class="fa fa-user"></i> Profile
+          </li>
+          <li (click)="logout()">
+            <i class="fa fa-sign-out"></i> Logout
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</header>

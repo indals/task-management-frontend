@@ -25,3 +25,54 @@ Run `ng e2e` to execute the end-to-end tests via a platform of your choice. To u
 ## Further help
 
 To get more help on the Angular CLI use `ng help` or go check out the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+
+
+
+
+
+
+
+
+
+
+// Project structure guide
+// app/
+// ├── core/
+// │   ├── models/
+// │   │   ├── task.model.ts
+// │   │   ├── user.model.ts
+// │   │   ├── notification.model.ts
+// │   │   └── enums.ts
+// │   ├── services/
+// │   │   ├── auth.service.ts
+// │   │   ├── task.service.ts
+// │   │   ├── notification.service.ts
+// │   │   └── analytics.service.ts
+// │   ├── interceptors/
+// │   │   ├── auth.interceptor.ts
+// │   │   └── error.interceptor.ts
+// │   └── guards/
+// │       └── auth.guard.ts
+// ├── shared/
+// │   ├── components/
+// │   │   ├── header/
+// │   │   ├── sidebar/
+// │   │   └── loading/
+// │   ├── pipes/
+// │   │   └── status-color.pipe.ts
+// │   └── directives/
+// ├── features/
+// │   ├── auth/
+// │   │   ├── login/
+// │   │   ├── register/
+// │   │   └── profile/
+// │   ├── dashboard/
+// │   ├── tasks/
+// │   │   ├── task-list/
+// │   │   ├── task-form/
+// │   │   └── task-detail/
+// │   └── notifications/
+// └── app.module.ts
+
+
+this is my fron-end structure

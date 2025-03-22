@@ -1,0 +1,18 @@
+.app-container {
+    display: flex;
+    height: 100vh;
+  }
+  
+  .content-area {
+    flex: 1;
+    // margin-left: 250px; /* Adjust based on sidebar width */
+    margin-top: 64px; /* Adjust based on header height */
+    padding: 20px;
+    overflow-y: auto;
+    transition: margin-left 0.3s ease;
+  }
+  
+  /* Add this class when sidebar is collapsed */
+  .sidebar-collapsed .content-area {
+    margin-left: 64px;
+  }

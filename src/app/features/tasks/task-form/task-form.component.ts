@@ -52,7 +52,7 @@ export class TaskFormComponent implements OnInit {
       dueDate: [null],
       priority: ['Medium'],
       status: ['New'],
-      assignee: [null], // Store only the assignee's ID
+      assigneeId: [null], // Store only the assignee's ID
       subtasks: this.fb.array([])
     });
   }
@@ -61,7 +61,7 @@ export class TaskFormComponent implements OnInit {
     const currentUser = this.authService.getCurrentUser(); // Assuming synchronous method
     if (currentUser) {
       this.users = [currentUser];
-      this.taskForm.patchValue({ assignee: currentUser.id }); // ✅ Store only ID
+      this.taskForm.patchValue({ assigneeId: currentUser.id }); // Use assigneeId field
     } else {
       console.warn('No current user found.');
     }
@@ -70,17 +70,20 @@ export class TaskFormComponent implements OnInit {
   populateForm(): void {
     if (!this.task) return;
 
+    // Fix the due_date and dueDate handling
+    const dueDateValue = this.task.due_date || this.task.dueDate || null;
+
     this.taskForm.patchValue({
       id: this.task.id,
       title: this.task.title,
       description: this.task.description,
-      dueDate: this.formatDateForInput(this.task.due_date),
+      dueDate: this.formatDateForInput(dueDateValue),
       priority: this.task.priority,
       status: this.task.status,
-      assignee: this.task.assigned_to?.id || null // ✅ Store only ID
+      assigneeId: this.task.assigned_to?.id || this.task.assignee?.id || null
     });
 
-    // ✅ Set entire subtasks array properly
+    // Set entire subtasks array properly
     this.taskForm.setControl('subtasks', this.fb.array(
       this.task.subtasks?.map((subtask: { id: any; title: any; completed: any; }) => this.fb.group({
         id: [subtask.id || null],
@@ -92,7 +95,7 @@ export class TaskFormComponent implements OnInit {
 
   formatDateForInput(date: Date | string | null): string {
     if (!date) return '';
-    return new Date(date).toISOString().slice(0, 16); // ✅ Correct timezone handling
+    return new Date(date).toISOString().slice(0, 16); // Correct timezone handling
   }
 
   addSubtask(): void {
@@ -114,13 +117,13 @@ export class TaskFormComponent implements OnInit {
 
     let taskData = this.taskForm.value;
 
-    // ✅ Convert `dueDate` to a proper Date object
+    // Convert `dueDate` to a proper Date object
     if (taskData.dueDate) {
       taskData.dueDate = new Date(taskData.dueDate);
     }
 
-    // ✅ Ensure `assignee` stores only the ID
-    taskData.assignee = taskData.assignee ? Number(taskData.assignee) : null;
+    // Ensure `assignee` stores only the ID
+    taskData.assigneeId = taskData.assigneeId ? Number(taskData.assigneeId) : null;
 
     if (this.isEditMode) {
       this.taskService.updateTask(taskData.id, taskData).subscribe({

@@ -2,6 +2,8 @@ import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Task } from '../../../core/models/task.model';
 import { TaskService } from '../../../core/services/task.service';
+// Import Comment from our newly created model
+import { Comment } from '../../../core/models/comment.model';
 
 @Component({
   selector: 'app-task-details',
@@ -12,6 +14,7 @@ export class TaskDetailsComponent implements OnInit {
   task: Task | null = null;
   loading: boolean = true;
   error: string | null = null;
+  newComment: string = '';
 
   constructor(
     private route: ActivatedRoute,
@@ -66,16 +69,71 @@ export class TaskDetailsComponent implements OnInit {
     }
   }
 
-  updateTaskStatus(status: string): void {
+  markAsComplete(): void {
     if (!this.task) return;
 
-    const updatedTask = { ...this.task, status };
+    const updatedTask = { ...this.task, status: 'Completed' };
     this.taskService.updateTask(this.task.id, updatedTask).subscribe({
       next: (task) => {
         this.task = task;
       },
       error: (error) => {
         this.error = 'Failed to update task status: ' + (error?.message || 'Unknown error');
+      }
+    });
+  }
+
+  toggleSubtask(subtaskId: number): void {
+    if (!this.task || !this.task.subtasks) return;
+
+    // Find the subtask and toggle its completed status
+    const updatedSubtasks = this.task.subtasks.map(subtask => {
+      if (subtask.id === subtaskId) {
+        return { ...subtask, completed: !subtask.completed };
+      }
+      return subtask;
+    });
+
+    // Update the task with the new subtasks
+    const updatedTask = { ...this.task, subtasks: updatedSubtasks };
+    this.taskService.updateTask(this.task.id, updatedTask).subscribe({
+      next: (task) => {
+        this.task = task;
+      },
+      error: (error) => {
+        this.error = 'Failed to update subtask: ' + (error?.message || 'Unknown error');
+      }
+    });
+  }
+
+  addComment(): void {
+    if (!this.task || !this.newComment.trim()) return;
+
+    // Create a new comment object
+    const comment: Comment = {
+      id: Math.floor(Math.random() * 10000), // Temporary ID, should be generated on server
+      text: this.newComment.trim(),
+      author: {
+        id: 1, name: 'Current User',
+        email: '',
+        role: '',
+        created_at: '',
+        updated_at: ''
+      }, // Should use real current user
+      createdAt: new Date()
+    };
+
+    // Add the comment to the task
+    const comments = this.task.comments ? [...this.task.comments, comment] : [comment];
+    const updatedTask = { ...this.task, comments };
+
+    this.taskService.updateTask(this.task.id, updatedTask).subscribe({
+      next: (task) => {
+        this.task = task;
+        this.newComment = ''; // Clear the input
+      },
+      error: (error) => {
+        this.error = 'Failed to add comment: ' + (error?.message || 'Unknown error');
       }
     });
   }
