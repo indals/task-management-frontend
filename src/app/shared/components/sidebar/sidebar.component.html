@@ -1,6 +1,11 @@
-// src/app/shared/components/sidebar/sidebar.component.html
-<aside class="app-sidebar" [class.collapsed]="isCollapsed">
+<div class="sidebar-overlay" [class.open]="isMobile && !isCollapsed" (click)="closeSidebar()"></div>
+
+<aside class="app-sidebar" [class.collapsed]="isCollapsed" [class.mobile]="isMobile" [class.open]="isMobile && !isCollapsed">
   <div class="sidebar-header">
+    <div class="logo-container">
+      <i class="fa fa-tasks app-logo"></i>
+      <h2 class="app-title" *ngIf="!isCollapsed">Task Manager</h2>
+    </div>
     <button class="collapse-btn" (click)="toggleSidebar()">
       <i class="fa" [class.fa-angle-left]="!isCollapsed" [class.fa-angle-right]="isCollapsed"></i>
     </button>
@@ -8,6 +13,8 @@
 
   <div class="nav-container">
     <ul class="nav-list">
+      <div class="nav-category" *ngIf="!isCollapsed">Main Navigation</div>
+      
       <li *ngFor="let item of navItems" 
           [routerLink]="item.route" 
           routerLinkActive="active"
@@ -15,14 +22,32 @@
           class="nav-item">
         <i class="nav-icon" [class]="item.icon"></i>
         <span class="nav-title" *ngIf="!isCollapsed">{{ item.title }}</span>
+        <span class="nav-badge" *ngIf="!isCollapsed && item.badge">{{ item.badge }}</span>
+        <span class="tooltip" *ngIf="isCollapsed">{{ item.title }}</span>
+      </li>
+      
+      <div class="nav-category" *ngIf="!isCollapsed && hasProjectAccess">Projects</div>
+      
+      <li *ngFor="let project of recentProjects" 
+          [routerLink]="['/projects', project.id]" 
+          routerLinkActive="active"
+          class="nav-item"
+          *ngIf="hasProjectAccess && !isCollapsed">
+        <i class="nav-icon fa fa-folder"></i>
+        <span class="nav-title">{{ project.name }}</span>
       </li>
     </ul>
   </div>
 
   <div class="sidebar-footer" *ngIf="!isCollapsed && currentUser">
     <div class="user-info">
-      <div class="user-name">{{ currentUser.name }}</div>
-      <div class="user-role">{{ currentUser.role }}</div>
+      <div class="avatar">
+        {{ currentUser.name.charAt(0) || 'U' }}
+      </div>
+      <div class="user-details">
+        <div class="user-name">{{ currentUser.name }}</div>
+        <div class="user-role">{{ currentUser.role || 'User' }}</div>
+      </div>
     </div>
   </div>
 </aside>

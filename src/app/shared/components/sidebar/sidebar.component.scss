@@ -7,9 +7,10 @@
     top: 0;
     left: 0;
     z-index: 999;
-    transition: width 0.3s ease;
+    transition: all 0.3s ease;
     display: flex;
     flex-direction: column;
+    box-shadow: 3px 0 10px rgba(0, 0, 0, 0.1);
     
     &.collapsed {
       width: 64px;
@@ -17,6 +18,37 @@
       .nav-item {
         justify-content: center;
         padding: 0.75rem 0;
+        
+        .nav-icon {
+          margin-right: 0;
+          font-size: 1.2rem;
+        }
+        
+        .tooltip {
+          display: block;
+        }
+      }
+      
+      .logo-container {
+        justify-content: center;
+        
+        .app-logo {
+          margin-right: 0;
+        }
+        
+        .app-title {
+          display: none;
+        }
+      }
+    }
+    
+    &.mobile {
+      transform: translateX(-100%);
+      box-shadow: none;
+      
+      &.open {
+        transform: translateX(0);
+        box-shadow: 3px 0 10px rgba(0, 0, 0, 0.1);
       }
     }
   }
@@ -25,9 +57,27 @@
     height: 64px;
     display: flex;
     align-items: center;
-    justify-content: flex-end;
+    justify-content: space-between;
     padding: 0 1rem;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    
+    .logo-container {
+      display: flex;
+      align-items: center;
+      
+      .app-logo {
+        font-size: 1.5rem;
+        margin-right: 0.75rem;
+        color: #3498db;
+      }
+      
+      .app-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        white-space: nowrap;
+        overflow: hidden;
+      }
+    }
     
     .collapse-btn {
       background: transparent;
@@ -44,6 +94,10 @@
       &:hover {
         background-color: rgba(255, 255, 255, 0.1);
       }
+      
+      &:focus {
+        outline: none;
+      }
     }
   }
   
@@ -52,37 +106,118 @@
     overflow-y: auto;
     padding-top: 1rem;
     
+    &::-webkit-scrollbar {
+      width: 4px;
+    }
+    
+    &::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, 0.05);
+    }
+    
+    &::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 4px;
+    }
+    
     .nav-list {
       list-style: none;
       padding: 0;
       margin: 0;
+      
+      .nav-category {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        padding: 1rem 1.5rem 0.5rem;
+        opacity: 0.6;
+        letter-spacing: 0.5px;
+        
+        &:not(:first-child) {
+          margin-top: 1rem;
+        }
+      }
       
       .nav-item {
         display: flex;
         align-items: center;
         padding: 0.75rem 1.5rem;
         cursor: pointer;
-        transition: background-color 0.2s;
+        transition: all 0.2s;
         margin-bottom: 0.25rem;
+        position: relative;
+        border-radius: 0 4px 4px 0;
+        
+        .tooltip {
+          position: absolute;
+          left: 100%;
+          top: 50%;
+          transform: translateY(-50%);
+          background: #34495e;
+          white-space: nowrap;
+          padding: 0.5rem 0.75rem;
+          border-radius: 4px;
+          font-size: 0.85rem;
+          opacity: 0;
+          visibility: hidden;
+          transition: all 0.2s;
+          pointer-events: none;
+          margin-left: 15px;
+          box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+          
+          &::before {
+            content: '';
+            position: absolute;
+            right: 100%;
+            top: 50%;
+            transform: translateY(-50%);
+            border-width: 6px;
+            border-style: solid;
+            border-color: transparent #34495e transparent transparent;
+          }
+        }
         
         &:hover {
           background-color: rgba(255, 255, 255, 0.1);
+          
+          .tooltip {
+            opacity: 1;
+            visibility: visible;
+          }
         }
         
         &.active {
           background-color: #3498db;
+          font-weight: 500;
           border-left: 4px solid #ecf0f1;
+          
+          .nav-icon, .nav-title {
+            color: white;
+          }
+          
+          &:hover {
+            background-color: #2980b9;
+          }
         }
         
         .nav-icon {
           font-size: 1.1rem;
           width: 24px;
           margin-right: 0.75rem;
+          color: rgba(255, 255, 255, 0.85);
         }
         
         .nav-title {
           font-size: 0.95rem;
-          font-weight: 500;
+          font-weight: 400;
+          color: rgba(255, 255, 255, 0.85);
+        }
+        
+        .nav-badge {
+          margin-left: auto;
+          background-color: #e74c3c;
+          border-radius: 10px;
+          padding: 0.1rem 0.4rem;
+          font-size: 0.7rem;
+          font-weight: 600;
         }
       }
     }
@@ -93,14 +228,59 @@
     border-top: 1px solid rgba(255, 255, 255, 0.1);
     
     .user-info {
-      .user-name {
+      display: flex;
+      align-items: center;
+      
+      .avatar {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background-color: #3498db;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
         font-weight: 500;
-        margin-bottom: 0.25rem;
+        margin-right: 0.75rem;
       }
       
-      .user-role {
-        font-size: 0.8rem;
-        opacity: 0.7;
+      .user-details {
+        overflow: hidden;
+        
+        .user-name {
+          font-weight: 500;
+          margin-bottom: 0.25rem;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        
+        .user-role {
+          font-size: 0.8rem;
+          opacity: 0.7;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
       }
+    }
+  }
+  
+  // Mobile overlay
+  .sidebar-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 998;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+    
+    &.open {
+      opacity: 1;
+      visibility: visible;
     }
   }
