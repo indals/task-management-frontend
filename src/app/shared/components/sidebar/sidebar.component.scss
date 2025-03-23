@@ -1,16 +1,16 @@
 .app-sidebar {
     height: 100vh;
     width: 250px;
-    background-color: #2c3e50;
-    color: #ecf0f1;
+    background-color: #1e2a38;
+    color: #f8f9fa;
     position: fixed;
     top: 0;
     left: 0;
-    z-index: 999;
+    z-index: 1001;
     transition: all 0.3s ease;
     display: flex;
     flex-direction: column;
-    box-shadow: 3px 0 10px rgba(0, 0, 0, 0.1);
+    box-shadow: 2px 0 12px rgba(0, 0, 0, 0.1);
     
     &.collapsed {
       width: 64px;
@@ -48,7 +48,7 @@
       
       &.open {
         transform: translateX(0);
-        box-shadow: 3px 0 10px rgba(0, 0, 0, 0.1);
+        box-shadow: 2px 0 12px rgba(0, 0, 0, 0.1);
       }
     }
   }
@@ -59,7 +59,7 @@
     align-items: center;
     justify-content: space-between;
     padding: 0 1rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
     
     .logo-container {
       display: flex;
@@ -68,7 +68,7 @@
       .app-logo {
         font-size: 1.5rem;
         margin-right: 0.75rem;
-        color: #3498db;
+        color: #4a6bff;
       }
       
       .app-title {
@@ -76,13 +76,14 @@
         font-weight: 600;
         white-space: nowrap;
         overflow: hidden;
+        color: #f8f9fa;
       }
     }
     
     .collapse-btn {
       background: transparent;
       border: none;
-      color: #ecf0f1;
+      color: #f8f9fa;
       cursor: pointer;
       width: 30px;
       height: 30px;
@@ -151,7 +152,7 @@
           left: 100%;
           top: 50%;
           transform: translateY(-50%);
-          background: #34495e;
+          background: #2d3a4a;
           white-space: nowrap;
           padding: 0.5rem 0.75rem;
           border-radius: 4px;
@@ -162,6 +163,7 @@
           pointer-events: none;
           margin-left: 15px;
           box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+          z-index: 1010;
           
           &::before {
             content: '';
@@ -171,12 +173,12 @@
             transform: translateY(-50%);
             border-width: 6px;
             border-style: solid;
-            border-color: transparent #34495e transparent transparent;
+            border-color: transparent #2d3a4a transparent transparent;
           }
         }
         
         &:hover {
-          background-color: rgba(255, 255, 255, 0.1);
+          background-color: rgba(255, 255, 255, 0.08);
           
           .tooltip {
             opacity: 1;
@@ -185,16 +187,16 @@
         }
         
         &.active {
-          background-color: #3498db;
+          background-color: #4a6bff;
           font-weight: 500;
-          border-left: 4px solid #ecf0f1;
+          border-left: 3px solid #f8f9fa;
           
           .nav-icon, .nav-title {
             color: white;
           }
           
           &:hover {
-            background-color: #2980b9;
+            background-color: #3251e0;
           }
         }
         
@@ -213,7 +215,7 @@
         
         .nav-badge {
           margin-left: auto;
-          background-color: #e74c3c;
+          background-color: #ff5252;
           border-radius: 10px;
           padding: 0.1rem 0.4rem;
           font-size: 0.7rem;
@@ -225,7 +227,7 @@
   
   .sidebar-footer {
     padding: 1rem;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    border-top: 1px solid rgba(255, 255, 255, 0.07);
     
     .user-info {
       display: flex;
@@ -235,7 +237,7 @@
         width: 36px;
         height: 36px;
         border-radius: 50%;
-        background-color: #3498db;
+        background-color: #4a6bff;
         color: white;
         display: flex;
         align-items: center;

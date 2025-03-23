@@ -20,6 +20,11 @@ export const routes: Routes = [
     loadChildren: () => import('./features/notifications/notifications.module').then(m => m.NotificationsModule),
     canActivate: [AuthGuard]  // Add AuthGuard
   },
+  // { 
+  //   path: 'dashboard', 
+  //   loadChildren: () => import('./features/dashboard/dashboard.module').then(m => m.DashboardModule),
+  //   canActivate: [AuthGuard]
+  // },
   { 
     path: 'analytics', 
     loadChildren: () => import('./features/analytics/analytics.module').then(m => m.AnalyticsModule),

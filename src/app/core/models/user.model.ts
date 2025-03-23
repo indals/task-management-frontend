@@ -8,3 +8,5 @@ export interface User {
   createdAt?: Date;
   updatedAt?: Date;
 }
+
+// src/app/core/models/comment.model.ts

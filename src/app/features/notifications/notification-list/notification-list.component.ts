@@ -8,9 +8,10 @@ import { NotificationService, AppNotification } from '../../../core/services/not
 })
 export class NotificationListComponent implements OnInit {
   notifications: AppNotification[] = [];
-  isLoading = false;
+  isLoading = false; // or loading:boolean = false; whichever you prefer.
   errorMessage = '';
-  showUnreadOnly = false;
+  showAll = true; // Initialize to 'all'
+  filter: 'all' | 'unread' = 'all';
 
   constructor(private notificationService: NotificationService) { }
 
@@ -18,11 +19,9 @@ export class NotificationListComponent implements OnInit {
     this.loadNotifications();
   }
 
-  loadNotifications(unreadOnly = false): void {
+  loadNotifications(): void {
     this.isLoading = true;
-    this.showUnreadOnly = unreadOnly;
-    
-    this.notificationService.getNotifications(unreadOnly).subscribe({
+    this.notificationService.getNotifications(this.filter === 'unread').subscribe({
       next: (data) => {
         this.notifications = data;
         this.isLoading = false;
@@ -37,7 +36,7 @@ export class NotificationListComponent implements OnInit {
 
   markAsRead(notification: AppNotification): void {
     if (notification.read) return;
-    
+
     this.notificationService.markAsRead(notification.id).subscribe({
       next: (updatedNotification) => {
         const index = this.notifications.findIndex(n => n.id === notification.id);
@@ -74,5 +73,15 @@ export class NotificationListComponent implements OnInit {
         console.error(error);
       }
     });
+  }
+
+  setFilter(filter: 'all' | 'unread'): void {
+    this.filter = filter;
+    this.showAll = filter === 'all';
+    this.loadNotifications(); // Reload notifications with the new filter
+  }
+
+  get hasUnreadNotifications(): boolean {
+    return this.notifications.some(notification => !notification.read);
   }
 }

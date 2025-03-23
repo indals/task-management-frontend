@@ -20,7 +20,8 @@
           routerLinkActive="active"
           [class.active]="item.active"
           class="nav-item">
-        <i class="nav-icon" [class]="item.icon"></i>
+        <!-- FIXED: Changed from [class] to class with string interpolation -->
+        <i class="nav-icon {{item.icon}}"></i>
         <span class="nav-title" *ngIf="!isCollapsed">{{ item.title }}</span>
         <span class="nav-badge" *ngIf="!isCollapsed && item.badge">{{ item.badge }}</span>
         <span class="tooltip" *ngIf="isCollapsed">{{ item.title }}</span>
@@ -28,14 +29,15 @@
       
       <div class="nav-category" *ngIf="!isCollapsed && hasProjectAccess">Projects</div>
       
-      <li *ngFor="let project of recentProjects" 
-          [routerLink]="['/projects', project.id]" 
-          routerLinkActive="active"
-          class="nav-item"
-          *ngIf="hasProjectAccess && !isCollapsed">
-        <i class="nav-icon fa fa-folder"></i>
-        <span class="nav-title">{{ project.name }}</span>
-      </li>
+      <ng-container *ngIf="hasProjectAccess && !isCollapsed">
+        <li *ngFor="let project of recentProjects" 
+            [routerLink]="['/projects', project.id]" 
+            routerLinkActive="active"
+            class="nav-item">
+          <i class="nav-icon fa fa-folder"></i>
+          <span class="nav-title">{{ project.name }}</span>
+        </li>
+      </ng-container>
     </ul>
   </div>
 

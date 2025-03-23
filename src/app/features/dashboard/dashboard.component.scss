@@ -1,0 +1,55 @@
+.dashboard-container {
+    padding: 1.5rem;
+    
+    .dashboard-title {
+      font-size: 1.75rem;
+      font-weight: 600;
+      margin-bottom: 1.5rem;
+      color: #333;
+    }
+    
+    .welcome-section {
+      margin-bottom: 2rem;
+      
+      h2 {
+        font-size: 1.5rem;
+        font-weight: 500;
+        margin-bottom: 0.5rem;
+      }
+      
+      .subtitle {
+        color: #666;
+        font-size: 1rem;
+      }
+    }
+    
+    .stats-section {
+      margin-bottom: 2rem;
+    }
+    
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+      gap: 1.5rem;
+      
+      .dashboard-card {
+        background-color: #fff;
+        border-radius: 8px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+        
+        .card-title {
+          font-size: 1.25rem;
+          font-weight: 500;
+          margin-bottom: 1rem;
+          color: #333;
+        }
+      }
+    }
+  }
+  
+  @media (max-width: 768px) {
+    .dashboard-grid {
+      grid-template-columns: 1fr;
+    }
+  }

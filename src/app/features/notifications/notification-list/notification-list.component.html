@@ -2,7 +2,7 @@
     <div class="header">
       <h2>Notifications</h2>
       <div class="actions">
-        <button class="mark-all-btn" (click)="markAllAsRead()" [disabled]="!hasUnreadNotifications()">
+        <button class="mark-all-btn" (click)="markAllAsRead()" [disabled]="!hasUnreadNotifications">
           Mark all as read
         </button>
       </div>
@@ -13,11 +13,11 @@
       <button [class.active]="!showAll" (click)="setFilter('unread')">Unread</button>
     </div>
   
-    <div *ngIf="loading" class="loading">
+    <div *ngIf="isLoading" class="loading">
       Loading notifications...
     </div>
   
-    <div *ngIf="!loading && notifications.length === 0" class="empty-state">
+    <div *ngIf="!isLoading && notifications.length === 0" class="empty-state">
       <p>No notifications to display</p>
     </div>
   
@@ -29,7 +29,7 @@
         (click)="markAsRead(notification)">
         <div class="notification-content">
           <p class="message">{{ notification.message }}</p>
-          <span class="date">{{ notification.created_at | date:'medium' }}</span>
+          <span class="date">{{ notification.createdAt | date:'medium' }}</span>
         </div>
         <div class="notification-actions">
           <button class="delete-btn" (click)="deleteNotification(notification.id); $event.stopPropagation()">

@@ -2,9 +2,8 @@
 import { User } from "./user.model";
 
 export interface Comment {
-  id: number;
-  text: string;
-  author: User;
-  createdAt: Date;
-  updatedAt?: Date; // Optional
-}
+    id: number; // Or string, depending on your backend
+    text: string;
+    author: User;
+    createdAt: Date;
+  }

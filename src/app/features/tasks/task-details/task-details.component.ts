@@ -114,11 +114,11 @@ export class TaskDetailsComponent implements OnInit {
       id: Math.floor(Math.random() * 10000), // Temporary ID, should be generated on server
       text: this.newComment.trim(),
       author: {
-        id: 1, name: 'Current User',
+        id: '1', name: 'Current User',
         email: '',
         role: '',
-        created_at: '',
-        updated_at: ''
+        createdAt: new Date(),
+        updatedAt: new Date(),
       }, // Should use real current user
       createdAt: new Date()
     };
