@@ -2,7 +2,6 @@ import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Task } from '../../../core/models/task.model';
 import { TaskService } from '../../../core/services/task.service';
-// Import Comment from our newly created model
 import { Comment } from '../../../core/models/comment.model';
 
 @Component({
@@ -29,16 +28,33 @@ export class TaskDetailsComponent implements OnInit {
   loadTask(): void {
     const taskIdStr = this.route.snapshot.paramMap.get('id');
     const taskId = taskIdStr ? Number(taskIdStr) : null;
-
+  
     if (!taskId || isNaN(taskId)) {
       this.error = 'Invalid task ID';
       this.loading = false;
       return;
     }
-
+  
     this.taskService.getTaskById(taskId).subscribe({
       next: (task) => {
-        this.task = task;
+        // Transform API response to match our TypeScript model
+        this.task = {
+          ...task,
+          comments: task.comments?.map(apiComment => {
+            const commentText = apiComment.comment || apiComment.text || '';
+            const createdAtDate = apiComment.created_at ? 
+                new Date(apiComment.created_at) : new Date();
+                
+            return {
+              id: apiComment.id,
+              text: commentText,
+              comment: commentText, // Include comment field for template compatibility
+              created_at: apiComment.created_at, // Include created_at for template
+              author: apiComment.author,
+              createdAt: createdAtDate
+            } as Comment;
+          }) || []
+        };
         this.loading = false;
       },
       error: (error) => {
@@ -108,36 +124,44 @@ export class TaskDetailsComponent implements OnInit {
 
   addComment(): void {
     if (!this.task || !this.newComment.trim()) return;
-
-    // Create a new comment object
-    const comment: Comment = {
-      id: Math.floor(Math.random() * 10000), // Temporary ID, should be generated on server
-      text: this.newComment.trim(),
-      author: {
-        id: '1', name: 'Current User',
-        email: '',
-        role: '',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }, // Should use real current user
-      createdAt: new Date()
-    };
-
-    // Add the comment to the task
-    const comments = this.task.comments ? [...this.task.comments, comment] : [comment];
-    const updatedTask = { ...this.task, comments };
-
-    this.taskService.updateTask(this.task.id, updatedTask).subscribe({
-      next: (task) => {
-        this.task = task;
-        this.newComment = ''; // Clear the input
+  
+    // Send text in the format API expects
+    const commentPayload = { text: this.newComment.trim() };
+  
+    // Explicitly type the response as any
+    this.taskService.addComment(this.task.id, commentPayload).subscribe({
+      next: (response: any) => {
+        // Create a new comment that matches our Comment interface
+        const commentText = response.comment || response.text || this.newComment.trim();
+        const createdAtStr = response.created_at || response.createdAt;
+        const createdAtDate = createdAtStr ? new Date(createdAtStr) : new Date();
+        debugger;
+        const newComment: Comment = {
+          id: response.id,
+          text: commentText,
+          comment: commentText, // Add for template compatibility
+          created_at: createdAtStr, // Add for template compatibility
+          author: response.author,
+          createdAt: createdAtDate,
+          updatedAt: response.updated_at || response.updatedAt ? 
+                     new Date(response.updated_at || response.updatedAt) : undefined
+        };
+  
+        // Append the comment safely
+        this.task = {
+          ...this.task!,
+          comments: [...(this.task?.comments || []), newComment]
+        };
+  
+        // Clear the input field
+        this.newComment = '';
       },
       error: (error) => {
         this.error = 'Failed to add comment: ' + (error?.message || 'Unknown error');
       }
     });
   }
-
+  
   goBack(): void {
     this.router.navigate(['/tasks']);
   }

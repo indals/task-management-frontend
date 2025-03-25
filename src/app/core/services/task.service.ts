@@ -9,13 +9,18 @@ import { environment } from '../../../environments/environment';
   providedIn: 'root'
 })
 export class TaskService {
+  getRecentActivities(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/recent-activities`);
+  }
+  
   private apiUrl = `${environment.apiUrl}/api/tasks`;
 
   constructor(private http: HttpClient) { }
 
   getAllTasks(params?: any): Observable<Task[]> {
-    return this.http.get<Task[]>(this.apiUrl, { params });
+    return this.http.get<Task[]>(this.apiUrl, { params }); // Ensure params are sent
   }
+  
 
   getTaskById(id: number): Observable<Task> {
     return this.http.get<Task>(`${this.apiUrl}/${id}`);
@@ -43,5 +48,9 @@ export class TaskService {
 
   getTasksByUser(userId: number): Observable<Task[]> {
     return this.http.get<Task[]>(this.apiUrl, { params: { assignee: userId } });
+  }
+
+  addComment(taskId: number, commentPayload: { text: string }): Observable<Comment> {
+    return this.http.post<Comment>(`${this.apiUrl}/${taskId}/comments`, commentPayload);
   }
 }

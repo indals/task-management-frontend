@@ -2,7 +2,8 @@
     <h1 class="dashboard-title">Dashboard</h1>
     
     <div *ngIf="isLoading">
-      <app-loading [showOverlay]="false"></app-loading>
+      <!-- Replace the loading component with a simple spinner until we resolve the missing component -->
+      <div class="loading-spinner">Loading...</div>
     </div>
     
     <div *ngIf="!isLoading" class="dashboard-content">
@@ -12,19 +13,77 @@
       </div>
       
       <div class="stats-section">
-        <app-task-summary [taskStats]="taskStats"></app-task-summary>
+        <!-- Display task stats directly until we implement the task-summary component -->
+        <div class="stats-grid">
+          <div *ngFor="let stat of taskStats" class="stat-card">
+            <i [class]="stat.iconClass"></i>
+            <div class="stat-value">{{ stat.value }}</div>
+            <div class="stat-label">{{ stat.label }}</div>
+          </div>
+        </div>
       </div>
       
       <div class="dashboard-grid">
         <div class="dashboard-card">
           <h3 class="card-title">Recent Activities</h3>
-          <app-recent-activities [activities]="recentActivities"></app-recent-activities>
+          <!-- Display activities directly until we implement the recent-activities component -->
+          <div class="activities-list">
+            <div *ngFor="let activity of recentActivities" class="activity-item">
+              <div class="activity-icon">
+                <i [class]="activity.icon || 'fas fa-check'"></i>
+              </div>
+              <div class="activity-content">
+                <p class="activity-text">{{ activity.description }}</p>
+                <p class="activity-time">{{ activity.timestamp }}</p>
+              </div>
+            </div>
+            <div *ngIf="!recentActivities || recentActivities.length === 0" class="no-data">
+              No recent activities
+            </div>
+          </div>
         </div>
         
         <div class="dashboard-card">
           <h3 class="card-title">Performance Overview</h3>
-          <app-performance-chart></app-performance-chart>
+          <!-- Simple placeholder until we implement the performance chart component -->
+          <div class="chart-placeholder">
+            <p>Performance data will be displayed here</p>
+          </div>
         </div>
+        
+        <div class="dashboard-card">
+          <h3 class="card-title">Task Status Distribution</h3>
+          <div style="height: 250px;">
+            <canvas id="statusChart"></canvas>
+          </div>
+        </div>
+        
+        <div class="dashboard-card">
+          <h3 class="card-title">Tasks by Priority</h3>
+          <div style="height: 250px;">
+            <canvas id="priorityChart"></canvas>
+          </div>
+        </div>
+        
+        <div class="dashboard-card" *ngIf="tasksDueSoon && tasksDueSoon.length > 0">
+          <h3 class="card-title">Tasks Due Soon</h3>
+          <div class="task-list">
+            <div *ngFor="let task of tasksDueSoon" class="task-item" (click)="navigateToTask(task.id)">
+              <div class="task-info">
+                <h4>{{ task.title }}</h4>
+                <p>Due: {{ task.dueDate }}</p>
+              </div>
+              <span class="task-priority" [class]="'priority-' + (task.priority | lowercase)">
+                {{ task.priority }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="action-buttons">
+        <button class="btn-create" (click)="createNewTask()">Create New Task</button>
+        <button class="btn-view-all" (click)="viewAllTasks()">View All Tasks</button>
       </div>
     </div>
   </div>

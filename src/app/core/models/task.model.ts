@@ -1,6 +1,7 @@
-import { User } from "./user.model";
-
 // src/app/core/models/task.model.ts
+import { User } from "./user.model";
+import { Comment } from "./comment.model"; // Import from separate file
+
 export interface Task {
   id: number;
   title: string;
@@ -18,33 +19,16 @@ export interface Task {
   updatedAt?: string;        // Adding camelCase alias
   
   // Define subtasks properly to avoid any errors
-  subtasks: Array<{
-    id: number;
-    title: string;
-    completed: boolean;
-  }>;
+  subtasks: Array<Subtask>;
   
-  // Define comments array
-  comments?: Array<{
-    id: number;
-    text: string;
-    author: User;
-    createdAt: Date;
-  }>;
+  // Use imported Comment interface
+  comments?: Array<Comment>;
 }
 
-// Temporary inline interfaces to avoid file creation
+// Subtask interface
 export interface Subtask {
   id: number;
   title: string;
   completed: boolean;
   taskId?: number;
-}
-
-export interface Comment {
-  id: number;
-  text: string;
-  author: User;
-  createdAt: Date;
-  updatedAt?: Date;
 }

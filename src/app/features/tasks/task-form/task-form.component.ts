@@ -30,11 +30,24 @@ export class TaskFormComponent implements OnInit {
     this.isEditMode = !!this.task;
     this.initForm();
     this.loadCurrentUser();
+    this.loadUsers(); // Fetch all users
 
     if (this.isEditMode && this.task) {
       this.populateForm();
     }
   }
+
+  loadUsers(): void {
+    this.authService.getUsers().subscribe(
+        (users) => {
+            this.users = users;
+        },
+        (error) => {
+            console.error('Error fetching users:', error);
+        }
+    );
+}
+  
 
   get f() { 
     return this.taskForm.controls; 
@@ -60,7 +73,7 @@ export class TaskFormComponent implements OnInit {
   loadCurrentUser(): void {
     const currentUser = this.authService.getCurrentUser(); // Assuming synchronous method
     if (currentUser) {
-      this.users = [currentUser];
+      // this.users = [currentUser];
       this.taskForm.patchValue({ assigneeId: currentUser.id }); // Use assigneeId field
     } else {
       console.warn('No current user found.');
@@ -124,7 +137,8 @@ export class TaskFormComponent implements OnInit {
 
     // Ensure `assignee` stores only the ID
     taskData.assigneeId = taskData.assigneeId ? Number(taskData.assigneeId) : null;
-
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    taskData.user_id = user.id;
     if (this.isEditMode) {
       this.taskService.updateTask(taskData.id, taskData).subscribe({
         next: (updatedTask) => this.formSubmit.emit(updatedTask),

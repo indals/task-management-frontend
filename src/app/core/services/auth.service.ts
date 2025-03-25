@@ -46,8 +46,10 @@ export class AuthService {
   logout(): void {
     // Remove user from local storage and set current user to null
     localStorage.removeItem('access_token');
+    localStorage.removeItem('authToken');
     localStorage.removeItem('refresh_token');
     localStorage.removeItem('user');
+    localStorage.removeItem('userEmail');
     this.currentUserSubject.next(null);
   }
 
@@ -89,4 +91,18 @@ export class AuthService {
   getCurrentUser(): User | null {
     return this.currentUserSubject.value;
   }
+
+  getUsers(): Observable<User[]> { // ✅ Fix: Return Observable<User[]>
+    return this.http.get<any[]>(`${this.apiUrl}/users`).pipe( // ✅ Ensure `get<any[]>` for array
+      map(response => response.map(user => ({ // ✅ `response` should be an array
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        avatar: user.profile_picture, // Map `profile_picture` to `avatar`
+        createdAt: user.created_at ? new Date(user.created_at) : undefined, // Convert string to Date
+        updatedAt: user.updated_at ? new Date(user.updated_at) : undefined // Convert string to Date
+      }) as User))
+    );
+  }  
 }

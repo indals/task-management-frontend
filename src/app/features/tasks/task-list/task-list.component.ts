@@ -24,32 +24,49 @@ export class TaskListComponent implements OnInit {
   }
 
   loadTasks(): void {
-    this.taskService.getAllTasks().subscribe(
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const userId = user?.id;
+  
+    if (!userId) {
+      console.error('User ID not found!');
+      return;
+    }
+  
+    // const params = { assignee: userId }; // Pass userId as a query parameter
+    const params = { created_by: userId, };
+    this.taskService.getAllTasks(params).subscribe(
       (tasks) => {
-        this.tasks = tasks;
+        this.tasks = Array.isArray(tasks) ? tasks : [tasks]; // Ensure an array
         this.applyFilters();
       },
       (error) => {
         console.error('Error loading tasks:', error);
+        this.tasks = [];
+        this.applyFilters();
       }
     );
   }
+  
+  
+  
+  
 
   applyFilters(): void {
+    if (!Array.isArray(this.tasks)) {
+      console.error('Tasks is not an array:', this.tasks);
+      this.filteredTasks = [];
+      return;
+    }
+  
     this.filteredTasks = this.tasks.filter(task => {
-      // Filter by status
-      if (this.filterStatus !== 'all' && task.status !== this.filterStatus) {
-        return false;
-      }
-      
-      // Filter by search term (with null check)
-      if (this.searchTerm && task.title?.toLowerCase().includes(this.searchTerm.toLowerCase())) {
-        return true;
-      }
-      
-      return !this.searchTerm; // Show all if no search term
+      const matchesStatus = this.filterStatus === 'all' || task.status === this.filterStatus;
+      const matchesSearch = !this.searchTerm || (task.title && task.title.toLowerCase().includes(this.searchTerm.toLowerCase()));
+  
+      return matchesStatus && matchesSearch;
     });
   }
+  
+  
 
   onStatusFilterChange(status: string): void {
     this.filterStatus = status;
