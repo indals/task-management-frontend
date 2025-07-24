@@ -1,0 +1,135 @@
+
+    <div class="calendar-container">
+      <!-- Calendar Header -->
+      <div class="calendar-header">
+        <div class="header-controls">
+          <button class="nav-btn" (click)="previousMonth()">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <polyline points="15,18 9,12 15,6"></polyline>
+            </svg>
+          </button>
+          
+          <h2 class="month-year">{{ currentDate | date:'MMMM yyyy' }}</h2>
+          
+          <button class="nav-btn" (click)="nextMonth()">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <polyline points="9,18 15,12 9,6"></polyline>
+            </svg>
+          </button>
+        </div>
+        
+        <div class="header-actions">
+          <button class="today-btn" (click)="goToToday()">Today</button>
+          <select class="view-selector" [(ngModel)]="viewMode" (change)="onViewModeChange()">
+            <option value="month">Month</option>
+            <option value="week">Week</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Calendar Grid -->
+      <div class="calendar-grid" *ngIf="viewMode === 'month'">
+        <!-- Day Headers -->
+        <div class="day-header" *ngFor="let day of dayHeaders">
+          {{ day }}
+        </div>
+        
+        <!-- Calendar Days -->
+        <div 
+          class="calendar-day" 
+          *ngFor="let day of calendarDays"
+          [class.other-month]="!day.isCurrentMonth"
+          [class.today]="day.isToday"
+          [class.selected]="day.isSelected"
+          [class.has-tasks]="day.tasks.length > 0"
+          (click)="selectDay(day)"
+        >
+          <div class="day-number">{{ day.date.getDate() }}</div>
+          
+          <!-- Task indicators -->
+          <div class="task-indicators" *ngIf="day.tasks.length > 0">
+            <div 
+              class="task-dot" 
+              *ngFor="let task of day.tasks.slice(0, 3)"
+              [class.priority-high]="task.priority === 'HIGH'"
+              [class.priority-medium]="task.priority === 'MEDIUM'"
+              [class.priority-low]="task.priority === 'LOW'"
+              [title]="task.title"
+            ></div>
+            <span class="more-tasks" *ngIf="day.tasks.length > 3">+{{ day.tasks.length - 3 }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Week View -->
+      <div class="week-view" *ngIf="viewMode === 'week'">
+        <div class="week-header">
+          <div class="time-column"></div>
+          <div class="day-column" *ngFor="let day of weekDays">
+            <div class="day-name">{{ day.date | date:'EEE' }}</div>
+            <div class="day-date" [class.today]="day.isToday">{{ day.date | date:'d' }}</div>
+          </div>
+        </div>
+        
+        <div class="week-content">
+          <div class="time-slots">
+            <div class="time-slot" *ngFor="let hour of timeSlots">
+              <span class="time-label">{{ hour }}:00</span>
+            </div>
+          </div>
+          
+          <div class="day-columns">
+            <div class="day-column" *ngFor="let day of weekDays">
+              <div class="day-tasks">
+                <div 
+                  class="week-task" 
+                  *ngFor="let task of day.tasks"
+                  [class.priority-high]="task.priority === 'HIGH'"
+                  [class.priority-medium]="task.priority === 'MEDIUM'"
+                  [class.priority-low]="task.priority === 'LOW'"
+                  (click)="viewTaskDetails(task)"
+                >
+                  <div class="task-title">{{ task.title }}</div>
+                  <div class="task-time" *ngIf="task.due_date">
+                    {{ task.due_date | date:'shortTime' }}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Selected Day Details -->
+      <div class="day-details" *ngIf="selectedDay">
+        <h3>{{ selectedDay.date | date:'fullDate' }}</h3>
+        
+        <div class="day-tasks-list" *ngIf="selectedDay.tasks.length > 0; else noTasks">
+          <div 
+            class="task-item" 
+            *ngFor="let task of selectedDay.tasks"
+            [class.completed]="task.status === 'COMPLETED'"
+          >
+            <div class="task-info">
+              <h4>{{ task.title }}</h4>
+              <p>{{ task.description }}</p>
+              <div class="task-meta">
+                <span class="status" [class]="'status-' + task.status.toLowerCase()">
+                  {{ task.status | titlecase }}
+                </span>
+                <span class="priority" [class]="'priority-' + task.priority.toLowerCase()">
+                  {{ task.priority | titlecase }}
+                </span>
+                <span class="assignee" *ngIf="task.assigned_to">
+                  Assigned to: {{ task.assigned_to.name }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <ng-template #noTasks>
+          <p class="no-tasks">No tasks scheduled for this day</p>
+        </ng-template>
+      </div>
+    </div>

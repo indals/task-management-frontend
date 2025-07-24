@@ -63,17 +63,17 @@ export class NotificationListComponent implements OnInit {
     });
   }
 
-  deleteNotification(id: string): void {
-    this.notificationService.deleteNotification(id).subscribe({
-      next: () => {
-        this.notifications = this.notifications.filter(n => String(n.id) !== String(id));
-      },
-      error: (error: any) => {
-        this.errorMessage = 'Failed to delete notification';
-        console.error(error);
-      }
-    });
-  }
+deleteNotification(id: number): void {  // string ki jagah number
+  this.notificationService.deleteNotification(id).subscribe({
+    next: () => {
+      this.notifications = this.notifications.filter(n => n.id !== id);  // String() remove karo
+    },
+    error: (error: any) => {
+      this.errorMessage = 'Failed to delete notification';
+      console.error(error);
+    }
+  });
+}
 
   setFilter(filter: 'all' | 'unread'): void {
     this.filter = filter;
