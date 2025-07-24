@@ -286,6 +286,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       total = this.taskCompletionData.total_tasks;
       completed = this.taskCompletionData.completed_tasks;
       inProgress = this.taskCompletionData.in_progress_tasks;
+      console.log('Task completion data:',  this.tasks);
       // Calculate overdue from tasks array
       overdue = this.tasks.filter(task => {
         if (!task.due_date && !task.dueDate) return false;
@@ -296,7 +297,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       // Fallback to calculating from tasks array
       total = this.tasks.length;
       completed = this.tasks.filter(task => task.status === TaskStatus.COMPLETED).length;
-      inProgress = this.tasks.filter(task => task.status === TaskStatus.IN_PROGRESS).length;
+      inProgress = this.tasks.filter(task => task.status === TaskStatus.PENDING).length;
       overdue = this.tasks.filter(task => {
         if (!task.due_date && !task.dueDate) return false;
         const dueDate = new Date(task.due_date || task.dueDate || '');
