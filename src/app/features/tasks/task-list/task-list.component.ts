@@ -13,10 +13,18 @@ export class TaskListComponent implements OnInit {
   filteredTasks: Task[] = [];
   filterStatus: string = 'all';
   searchTerm: string = '';
-
+  isLoading: boolean = false;
+  errorMessage: string | null = null;
+  statusOptions = [
+    { value: 'all', label: 'All' },
+    { value: 'PENDING', label: 'Pending' },
+    { value: 'IN_PROGRESS', label: 'In Progress' },
+    { value: 'COMPLETED', label: 'Completed' },
+    { value: 'CANCELLED', label: 'Cancelled' }
+  ];
   constructor(
     private taskService: TaskService,
-    private router: Router
+    public router: Router
   ) { }
 
   ngOnInit(): void {
@@ -24,47 +32,64 @@ export class TaskListComponent implements OnInit {
   }
 
   loadTasks(): void {
+    this.isLoading = true;
+    this.errorMessage = null;
+    
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     const userId = user?.id;
   
     if (!userId) {
-      console.error('User ID not found!');
+      this.errorMessage = 'User ID not found!';
+      this.isLoading = false;
       return;
     }
   
-    // const params = { assignee: userId }; // Pass userId as a query parameter
-    const params = { created_by: userId, };
-    this.taskService.getAllTasks(params).subscribe(
-      (tasks) => {
-        this.tasks = Array.isArray(tasks) ? tasks : [tasks]; // Ensure an array
+    const params = { created_by: userId };
+    this.taskService.getAllTasks(params).subscribe({
+      next: (tasks) => {
+        this.tasks = Array.isArray(tasks) ? tasks : [tasks];
         this.applyFilters();
+        this.isLoading = false;
       },
-      (error) => {
-        console.error('Error loading tasks:', error);
+      error: (error) => {
+        this.errorMessage = 'Error loading tasks: ' + (error?.message || 'Unknown error');
         this.tasks = [];
         this.applyFilters();
+        this.isLoading = false;
       }
-    );
-  }
-  
-  
-  
-  
-
-  applyFilters(): void {
-    if (!Array.isArray(this.tasks)) {
-      console.error('Tasks is not an array:', this.tasks);
-      this.filteredTasks = [];
-      return;
-    }
-  
-    this.filteredTasks = this.tasks.filter(task => {
-      const matchesStatus = this.filterStatus === 'all' || task.status === this.filterStatus;
-      const matchesSearch = !this.searchTerm || (task.title && task.title.toLowerCase().includes(this.searchTerm.toLowerCase()));
-  
-      return matchesStatus && matchesSearch;
     });
   }
+  
+  
+  refreshTasks(): void {
+    this.loadTasks();
+  }
+  
+
+applyFilters(): void {
+  if (!Array.isArray(this.tasks)) {
+    console.error('Tasks is not an array:', this.tasks);
+    this.filteredTasks = [];
+    return;
+  }
+
+  console.log('Filter status:', this.filterStatus);
+  console.log('Search term:', this.searchTerm);
+  console.log('Applying filters with tasks:', this.tasks);
+
+  this.filteredTasks = this.tasks.filter(task => {
+    const matchesStatus =
+      this.filterStatus === 'all' ||
+      (task.status && task.status.toLowerCase() === this.filterStatus.toLowerCase());
+
+    const matchesSearch =
+      !this.searchTerm ||
+      (task.title && task.title.toLowerCase().includes(this.searchTerm.toLowerCase()));
+
+    return matchesStatus && matchesSearch;
+  });
+}
+
   
   
 

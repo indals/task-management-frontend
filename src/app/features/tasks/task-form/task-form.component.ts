@@ -1,7 +1,7 @@
 import { Component, OnInit, Input, Output, EventEmitter } from '@angular/core';
 import { FormBuilder, FormGroup, FormArray, Validators } from '@angular/forms';
 import { TaskService } from '../../../core/services/task.service';
-import { AuthService } from '../../../core/services/auth.service';
+import { AuthService, UserListItem } from '../../../core/services/auth.service';
 import { Task } from '../../../core/models/task.model';
 import { User } from '../../../core/models/user.model';
 
@@ -16,9 +16,25 @@ export class TaskFormComponent implements OnInit {
   @Output() cancel = new EventEmitter<void>();
 
   taskForm!: FormGroup;
-  users: User[] = [];
+  users: UserListItem[] = [];
   submitted = false;
   isEditMode = false;
+  isLoading = false;
+  errorMessage = '';
+
+  // API-compliant options
+  priorityOptions = [
+    { value: 'LOW', label: 'Low' },
+    { value: 'MEDIUM', label: 'Medium' },
+    { value: 'HIGH', label: 'High' }
+  ];
+
+  statusOptions = [
+    { value: 'PENDING', label: 'Pending' },
+    { value: 'IN_PROGRESS', label: 'In Progress' },
+    { value: 'COMPLETED', label: 'Completed' },
+    { value: 'CANCELLED', label: 'Cancelled' }
+  ];
 
   constructor(
     private fb: FormBuilder,
@@ -29,8 +45,7 @@ export class TaskFormComponent implements OnInit {
   ngOnInit(): void {
     this.isEditMode = !!this.task;
     this.initForm();
-    this.loadCurrentUser();
-    this.loadUsers(); // Fetch all users
+    this.loadUsers();
 
     if (this.isEditMode && this.task) {
       this.populateForm();
@@ -38,16 +53,15 @@ export class TaskFormComponent implements OnInit {
   }
 
   loadUsers(): void {
-    this.authService.getUsers().subscribe(
-        (users) => {
+    this.authService.getUsers().subscribe({
+        next: (users) => {
             this.users = users;
         },
-        (error) => {
+        error: (error) => {
             console.error('Error fetching users:', error);
         }
-    );
-}
-  
+    });
+  }
 
   get f() { 
     return this.taskForm.controls; 
@@ -60,55 +74,45 @@ export class TaskFormComponent implements OnInit {
   initForm(): void {
     this.taskForm = this.fb.group({
       id: [null],
-      title: ['', Validators.required],
+      title: ['', [Validators.required, Validators.minLength(3)]],
       description: [''],
-      dueDate: [null],
-      priority: ['Medium'],
-      status: ['New'],
-      assigneeId: [null], // Store only the assignee's ID
+      due_date: [null], // Changed to match API
+      priority: ['MEDIUM'], // Default to API value
+      status: ['PENDING'], // Default to API value
+      assigneeId: [null],
       subtasks: this.fb.array([])
     });
-  }
-
-  loadCurrentUser(): void {
-    const currentUser = this.authService.getCurrentUser(); // Assuming synchronous method
-    if (currentUser) {
-      // this.users = [currentUser];
-      this.taskForm.patchValue({ assigneeId: currentUser.id }); // Use assigneeId field
-    } else {
-      console.warn('No current user found.');
-    }
   }
 
   populateForm(): void {
     if (!this.task) return;
 
-    // Fix the due_date and dueDate handling
-    const dueDateValue = this.task.due_date || this.task.dueDate || null;
-
     this.taskForm.patchValue({
       id: this.task.id,
       title: this.task.title,
       description: this.task.description,
-      dueDate: this.formatDateForInput(dueDateValue),
+      due_date: this.formatDateForInput(this.task.due_date),
       priority: this.task.priority,
       status: this.task.status,
-      assigneeId: this.task.assigned_to?.id || this.task.assignee?.id || null
+      assigneeId: this.task.assigned_to?.id || null
     });
 
-    // Set entire subtasks array properly
-    this.taskForm.setControl('subtasks', this.fb.array(
-      this.task.subtasks?.map((subtask: { id: any; title: any; completed: any; }) => this.fb.group({
-        id: [subtask.id || null],
-        title: [subtask.title, Validators.required],
-        completed: [subtask.completed]
-      })) || []
-    ));
+    // Handle subtasks if they exist
+    if (this.task.subtasks && Array.isArray(this.task.subtasks)) {
+      this.taskForm.setControl('subtasks', this.fb.array(
+        this.task.subtasks.map((subtask: any) => this.fb.group({
+          id: [subtask.id || null],
+          title: [subtask.title, Validators.required],
+          completed: [subtask.completed || false]
+        }))
+      ));
+    }
   }
 
   formatDateForInput(date: Date | string | null): string {
     if (!date) return '';
-    return new Date(date).toISOString().slice(0, 16); // Correct timezone handling
+    const d = new Date(date);
+    return d.toISOString().slice(0, 16);
   }
 
   addSubtask(): void {
@@ -125,31 +129,55 @@ export class TaskFormComponent implements OnInit {
 
   onSubmit(): void {
     this.submitted = true;
+    this.errorMessage = '';
 
-    if (this.taskForm.invalid) return;
-
-    let taskData = this.taskForm.value;
-
-    // Convert `dueDate` to a proper Date object
-    if (taskData.dueDate) {
-      taskData.dueDate = new Date(taskData.dueDate);
+    if (this.taskForm.invalid) {
+      this.markFormGroupTouched(this.taskForm);
+      return;
     }
 
-    // Ensure `assignee` stores only the ID
-    taskData.assigneeId = taskData.assigneeId ? Number(taskData.assigneeId) : null;
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
-    taskData.user_id = user.id;
+    this.isLoading = true;
+    const formValue = this.taskForm.value;
+
+    // Prepare API-compliant data
+    const taskData: any = {
+      title: formValue.title,
+      description: formValue.description || '',
+      priority: formValue.priority,
+      due_date: formValue.due_date ? new Date(formValue.due_date).toISOString() : null,
+      assigneeId: formValue.assigneeId ? Number(formValue.assigneeId) : null
+    };
+
+    // Only include status for updates (API might auto-set for new tasks)
     if (this.isEditMode) {
-      this.taskService.updateTask(taskData.id, taskData).subscribe({
-        next: (updatedTask) => this.formSubmit.emit(updatedTask),
-        error: (error) => console.error('Error updating task:', error)
-      });
-    } else {
-      this.taskService.createTask(taskData).subscribe({
-        next: (newTask) => this.formSubmit.emit(newTask),
-        error: (error) => console.error('Error creating task:', error)
-      });
+      taskData.status = formValue.status;
     }
+
+    const apiCall = this.isEditMode 
+      ? this.taskService.updateTask(formValue.id, taskData)
+      : this.taskService.createTask(taskData);
+
+    apiCall.subscribe({
+      next: (response) => {
+        this.isLoading = false;
+        this.formSubmit.emit(response);
+      },      error: (error) => {
+        this.isLoading = false;
+        console.error('Error saving task:', error);
+        this.errorMessage = error.error?.error || 'Failed to save task. Please try again.';
+      }
+    });
+  }
+
+  private markFormGroupTouched(formGroup: FormGroup): void {
+    Object.keys(formGroup.controls).forEach(key => {
+      const control = formGroup.get(key);
+      control?.markAsTouched();
+
+      if (control instanceof FormGroup) {
+        this.markFormGroupTouched(control);
+      }
+    });
   }
 
   onCancel(): void {

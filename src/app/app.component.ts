@@ -9,8 +9,14 @@ import { AuthService } from './core/services/auth.service';
 })
 export class AppComponent implements OnInit {
   isAuthenticated = false;
+  isSidebarCollapsed = false;
+  isMobile = false;
+  isSidebarOpen = false;
 
-  constructor(private authService: AuthService, private router: Router) {}
+  constructor(private authService: AuthService, private router: Router) {
+    this.checkScreenSize();
+    window.addEventListener('resize', () => this.checkScreenSize());
+  }
 
   ngOnInit(): void {
     this.isAuthenticated = this.authService.isLoggedIn();
@@ -20,5 +26,30 @@ export class AppComponent implements OnInit {
     this.authService.logout();
     this.isAuthenticated = false;
     this.router.navigate(['/auth/login']);
+  }
+
+  isLoggedIn(): boolean {
+    return this.authService.isLoggedIn();
+  }
+
+  checkScreenSize() {
+    this.isMobile = window.innerWidth <= 768;
+    if (this.isMobile) {
+      this.isSidebarOpen = false;
+    }
+  }
+
+  toggleSidebar() {
+    if (this.isMobile) {
+      this.isSidebarOpen = !this.isSidebarOpen;
+    } else {
+      this.isSidebarCollapsed = !this.isSidebarCollapsed;
+    }
+  }
+
+  closeSidebar() {
+    if (this.isMobile) {
+      this.isSidebarOpen = false;
+    }
   }
 }

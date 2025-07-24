@@ -1,17 +1,53 @@
 // src/app/core/services/auth.service.ts
+// Update with your actual API URL
+// src/app/core/services/auth.service.ts
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { map, tap } from 'rxjs/operators';
-import { AuthResponse, LoginRequest, RegisterRequest, User } from '../models/auth.model';
-import { environment } from '../../../environments/environment';
+// import { environment } from '../../../environments/environment';
 import { JwtHelperService } from '@auth0/angular-jwt';
+
+// Updated interfaces to match API
+// Auth service में User interface को update करें:
+export interface User {
+  id: number;
+  username: string;
+  name: string;     // Add this line
+  email: string;
+  first_name?: string;
+  last_name?: string;
+  role?: string;
+}
+
+export interface LoginRequest {
+  email: string;
+  password: string;
+}
+
+export interface RegisterRequest {
+  name: string;
+  email: string;
+  password: string;
+  role: 'ADMIN' | 'MANAGER' | 'EMPLOYEE';
+}
+
+export interface AuthResponse {
+  access_token: string;
+  user: User;
+}
+
+export interface UserListItem {
+  id: number;
+  name: string;
+}
 
 @Injectable({
   providedIn: 'root'
 })
 export class AuthService {
-  private apiUrl = `${environment.apiUrl}/api/auth`;
+  // private apiUrl = `${environment.apiUrl}/api/auth`;
+  private apiUrl = 'http://127.0.0.1:5000/api/auth'; 
   private currentUserSubject = new BehaviorSubject<User | null>(null);
   public currentUser$ = this.currentUserSubject.asObservable();
   private jwtHelper = new JwtHelperService();
@@ -26,17 +62,16 @@ export class AuthService {
     }
   }
 
-  register(registerData: RegisterRequest): Observable<AuthResponse> {
-    return this.http.post<AuthResponse>(`${this.apiUrl}/register`, registerData);
+  register(registerData: RegisterRequest): Observable<{ message: string; user: User }> {
+    return this.http.post<{ message: string; user: User }>(`${this.apiUrl}/register`, registerData);
   }
 
   login(loginData: LoginRequest): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.apiUrl}/login`, loginData)
       .pipe(
         tap(response => {
-          // Store user details and tokens in local storage
+          // Store user details and token in local storage
           localStorage.setItem('access_token', response.access_token);
-          localStorage.setItem('refresh_token', response.refresh_token);
           localStorage.setItem('user', JSON.stringify(response.user));
           this.currentUserSubject.next(response.user);
         })
@@ -46,10 +81,7 @@ export class AuthService {
   logout(): void {
     // Remove user from local storage and set current user to null
     localStorage.removeItem('access_token');
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('refresh_token');
     localStorage.removeItem('user');
-    localStorage.removeItem('userEmail');
     this.currentUserSubject.next(null);
   }
 
@@ -57,23 +89,19 @@ export class AuthService {
     return this.http.get<User>(`${this.apiUrl}/me`);
   }
 
-  updateProfile(userData: Partial<User>): Observable<any> {
-    return this.http.put(`${this.apiUrl}/profile`, userData)
+  updateProfile(userData: { name?: string; email?: string; password?: string }): Observable<{ message: string; user: User }> {
+    return this.http.put<{ message: string; user: User }>(`${this.apiUrl}/profile`, userData)
       .pipe(
-        tap(() => {
+        tap(response => {
           // Update the current user data
-          const currentUser = this.currentUserSubject.value;
-          if (currentUser) {
-            const updatedUser = { ...currentUser, ...userData };
-            localStorage.setItem('user', JSON.stringify(updatedUser));
-            this.currentUserSubject.next(updatedUser);
-          }
+          localStorage.setItem('user', JSON.stringify(response.user));
+          this.currentUserSubject.next(response.user);
         })
       );
   }
 
-  changePassword(currentPassword: string, newPassword: string): Observable<any> {
-    return this.http.post(`${this.apiUrl}/change-password`, {
+  changePassword(currentPassword: string, newPassword: string): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${this.apiUrl}/change-password`, {
       current_password: currentPassword,
       new_password: newPassword
     });
@@ -92,17 +120,13 @@ export class AuthService {
     return this.currentUserSubject.value;
   }
 
-  getUsers(): Observable<User[]> { // ✅ Fix: Return Observable<User[]>
-    return this.http.get<any[]>(`${this.apiUrl}/users`).pipe( // ✅ Ensure `get<any[]>` for array
-      map(response => response.map(user => ({ // ✅ `response` should be an array
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        avatar: user.profile_picture, // Map `profile_picture` to `avatar`
-        createdAt: user.created_at ? new Date(user.created_at) : undefined, // Convert string to Date
-        updatedAt: user.updated_at ? new Date(user.updated_at) : undefined // Convert string to Date
-      }) as User))
-    );
-  }  
+  // Updated to match API response - returns only id and name
+  getUsers(): Observable<UserListItem[]> {
+    return this.http.get<UserListItem[]>(`${this.apiUrl}/users`);
+  }
+
+  // Health check endpoint
+  ping(): Observable<{ message: string }> {
+    return this.http.get<{ message: string }>(`${this.apiUrl}/ping`);
+  }
 }

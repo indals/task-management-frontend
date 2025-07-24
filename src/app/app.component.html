@@ -1,8 +1,27 @@
-<app-header></app-header>
-<div class="app-container">
-  <app-sidebar></app-sidebar>
+<!-- app.component.html -->
+<app-header (toggleSidebar)="toggleSidebar()"></app-header>
+
+<div class="app-container" 
+     [class.sidebar-collapsed]="!isMobile && isSidebarCollapsed"
+     [class.sidebar-open]="isMobile && isSidebarOpen">
+  
+  <!-- Sidebar Component -->
+  <app-sidebar 
+    [collapsed]="!isMobile && isSidebarCollapsed"
+    [mobile]="isMobile"
+    [open]="isMobile && isSidebarOpen"
+    (toggleSidebar)="toggleSidebar()"
+    (closeSidebar)="closeSidebar()">
+  </app-sidebar>
+
+  <!-- Mobile Overlay -->
+  <div class="sidebar-overlay" 
+       [class.open]="isMobile && isSidebarOpen"
+       (click)="closeSidebar()">
+  </div>
+
+  <!-- Main Content Area -->
   <main class="content-area">
     <router-outlet></router-outlet>
   </main>
 </div>
-

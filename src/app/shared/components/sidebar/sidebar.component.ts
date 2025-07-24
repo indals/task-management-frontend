@@ -1,12 +1,12 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+// src/app/shared/components/sidebar/sidebar.component.ts
+import { Component, OnInit, OnDestroy, Input } from '@angular/core';
 import { Router, NavigationEnd } from '@angular/router';
 import { filter } from 'rxjs/operators';
 import { Subscription } from 'rxjs';
-import { AuthService } from '../../../core/services/auth.service';
+import { AuthService, User } from '../../../core/services/auth.service';
 import { LayoutService } from '../../../core/services/layout.service';
-import { ProjectService } from '../../../core/services/project.service';
-import { User } from '../../../core/models/user.model';
-import { Project } from '../../../core/models/project.model';
+import { ProjectService, Project } from '../../../core/services/project.service';
+import { NotificationService } from '../../../core/services/notification.service';
 
 interface NavItem {
   title: string;
@@ -43,8 +43,13 @@ export class SidebarComponent implements OnInit, OnDestroy {
     private router: Router,
     private authService: AuthService,
     private layoutService: LayoutService,
-    private projectService: ProjectService
+    private projectService: ProjectService,
+    private notificationService: NotificationService
   ) {}
+
+  @Input() collapsed: boolean = false;
+  @Input() mobile: boolean = false;
+  @Input() open: boolean = false;
 
   ngOnInit(): void {
     // Get current user
@@ -52,10 +57,12 @@ export class SidebarComponent implements OnInit, OnDestroy {
       this.authService.currentUser$.subscribe(user => {
         this.currentUser = user;
         // Check user permissions for projects access
-        this.hasProjectAccess = user?.role !== 'guest';
+        // All roles have project access, but might have different permissions
+        this.hasProjectAccess = user !== null;
         
         if (this.hasProjectAccess) {
           this.loadRecentProjects();
+          this.loadNotificationCount();
         }
       })
     );
@@ -114,13 +121,31 @@ export class SidebarComponent implements OnInit, OnDestroy {
   }
   
   private loadRecentProjects(): void {
-    this.projectService.getRecentProjects().subscribe(
-      (projects: Project[]) => {
-        this.recentProjects = projects.slice(0, 3); // Show only 3 most recent projects
-      },
-      (error: any) => {
-        console.error('Error loading recent projects', error);
-      }
+    this.subscriptions.push(
+      this.projectService.getRecentProjects().subscribe(
+        (projects: Project[]) => {
+          this.recentProjects = projects.slice(0, 3); // Show only 3 most recent projects
+        },
+        (error: any) => {
+          console.error('Error loading recent projects', error);
+        }
+      )
+    );
+  }
+
+  private loadNotificationCount(): void {
+    this.subscriptions.push(
+      this.notificationService.getUnreadCount().subscribe(
+        (count: number) => {
+          const notificationItem = this.navItems.find(item => item.route === '/notifications');
+          if (notificationItem) {
+            notificationItem.badge = count > 0 ? count : undefined;
+          }
+        },
+        (error: any) => {
+          console.error('Error loading notification count', error);
+        }
+      )
     );
   }
 }

@@ -1,18 +1,51 @@
+// .app-container {
+//     display: flex;
+//     height: 100vh;
+//   }
+  
+//   .content-area {
+//     flex: 1;
+//     // margin-left: 250px; /* Adjust based on sidebar width */
+//     margin-top: 64px; /* Adjust based on header height */
+//     padding: 20px;
+//     overflow-y: auto;
+//     transition: margin-left 0.3s ease;
+//   }
+  
+//   /* Add this class when sidebar is collapsed */
+//   .sidebar-collapsed .content-area {
+//     margin-left: 64px;
+//   }
+
+
+
+
 .app-container {
-    display: flex;
-    height: 100vh;
-  }
-  
+  display: flex;
+  height: 100vh;
+}
+
+.content-area {
+  flex: 1;
+  margin-left: 250px; /* Full sidebar width */
+  margin-top: 64px; /* Header height */
+  padding: 20px;
+  overflow-y: auto;
+  transition: margin-left 0.3s ease;
+}
+
+/* When sidebar is collapsed */
+.sidebar-collapsed .content-area {
+  margin-left: 64px; /* Collapsed sidebar width */
+}
+
+/* Mobile responsive - when sidebar is hidden */
+@media (max-width: 768px) {
   .content-area {
-    flex: 1;
-    // margin-left: 250px; /* Adjust based on sidebar width */
-    margin-top: 64px; /* Adjust based on header height */
-    padding: 20px;
-    overflow-y: auto;
-    transition: margin-left 0.3s ease;
+    margin-left: 0; /* No margin on mobile when sidebar is hidden */
   }
   
-  /* Add this class when sidebar is collapsed */
-  .sidebar-collapsed .content-area {
-    margin-left: 64px;
+  .sidebar-open .content-area {
+    margin-left: 0; /* Keep no margin even when sidebar is open on mobile (overlay mode) */
   }
+}

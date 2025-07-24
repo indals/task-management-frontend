@@ -1,88 +1,79 @@
 // src/app/core/services/notification.service.ts
 import { Injectable } from '@angular/core';
-import { Observable, of } from 'rxjs';
+import { HttpClient, HttpParams } from '@angular/common/http';
+import { Observable } from 'rxjs';
+// import { environment } from '../../../environments/environment';
 
-// Rename to AppNotification to avoid conflicts with built-in Notification
+// Updated interfaces to match API
+export interface User {
+  id: number;
+  name: string;
+  email: string;
+  role: 'ADMIN' | 'MANAGER' | 'EMPLOYEE';
+}
+
+export interface TaskSummary {
+  id: number;
+  title: string;
+}
+
 export interface AppNotification {
-  id: string;
+  id: number;
+  user_id: number;
+  task_id: number;
   message: string;
   read: boolean;
-  createdAt: Date;
+  created_at: string;
+  updated_at: string;
+  user: User;
+  task: TaskSummary;
+  // For backward compatibility with existing frontend code
+  createdAt?: Date;
+  type?: 'info' | 'warning' | 'success' | 'error';
   link?: string;
-  type: 'info' | 'warning' | 'success' | 'error';
 }
 
 @Injectable({
   providedIn: 'root'
 })
 export class NotificationService {
-  // Mock notifications for development
-  private mockNotifications: AppNotification[] = [
-    {
-      id: '1',
-      message: 'New task assigned to you: "Update documentation"',
-      read: false,
-      createdAt: new Date(),
-      link: '/tasks/123',
-      type: 'info'
-    },
-    {
-      id: '2',
-      message: 'Project "Website Redesign" is due in 2 days',
-      read: false,
-      createdAt: new Date(Date.now() - 3600000), // 1 hour ago
-      link: '/projects/1',
-      type: 'warning'
-    },
-    {
-      id: '3',
-      message: 'Your task "Fix login bug" was marked as completed',
-      read: true,
-      createdAt: new Date(Date.now() - 86400000), // 1 day ago
-      link: '/tasks/456',
-      type: 'success'
-    }
-  ];
+  // private apiUrl = `${environment.apiUrl}/api/notifications`;
+  private apiUrl = 'http://127.0.0.1:5000/api/notifications';
 
-  constructor() { }
+  constructor(private http: HttpClient) { }
 
-  // Update to accept optional unreadOnly parameter
+  // Get user notifications
   getNotifications(unreadOnly?: boolean): Observable<AppNotification[]> {
-    // Filter notifications if unreadOnly is true
+    let params = new HttpParams();
     if (unreadOnly) {
-      return of(this.mockNotifications.filter(n => !n.read));
+      params = params.set('unread_only', 'true');
     }
-    return of(this.mockNotifications);
+    
+    return this.http.get<AppNotification[]>(this.apiUrl, { params });
   }
 
+  // Get count of unread notifications
   getUnreadCount(): Observable<number> {
-    // Count unread notifications
-    const count = this.mockNotifications.filter(n => !n.read).length;
-    return of(count);
+    return new Observable(observer => {
+      this.getNotifications(true).subscribe(
+        notifications => observer.next(notifications.length),
+        error => observer.error(error)
+      );
+    });
   }
 
-  // Update to return the notification object instead of a boolean
-  markAsRead(id: string): Observable<AppNotification> {
-    // Find and mark the notification as read
-    const notification = this.mockNotifications.find(n => n.id === id);
-    if (notification) {
-      notification.read = true;
-      return of(notification);
-    }
-    throw new Error(`Notification with id ${id} not found`);
+  // Mark specific notification as read
+  markAsRead(id: string | number): Observable<AppNotification> {
+    return this.http.post<AppNotification>(`${this.apiUrl}/${id}/read`, {});
   }
 
-  markAllAsRead(): Observable<boolean> {
-    // Mark all notifications as read
-    this.mockNotifications.forEach(n => n.read = true);
-    return of(true);
+  // Mark all notifications as read
+  markAllAsRead(): Observable<{ message: string; updated_count: number }> {
+    return this.http.post<{ message: string; updated_count: number }>(`${this.apiUrl}/read-all`, {});
   }
 
-  // Add missing deleteNotification method
-  deleteNotification(id: string): Observable<boolean> {
-    const initialLength = this.mockNotifications.length;
-    this.mockNotifications = this.mockNotifications.filter(n => n.id !== id);
-    const deleted = this.mockNotifications.length < initialLength;
-    return of(deleted);
+  // Delete specific notification
+  deleteNotification(id: string | number): Observable<{ message: string }> {
+    return this.http.delete<{ message: string }>(`${this.apiUrl}/${id}`);
   }
 }

@@ -29,11 +29,19 @@ export class HeaderComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     // Subscribe to current user
-    this.subscriptions.push(
-      this.authService.currentUser$.subscribe(user => {
-        this.currentUser = user;
-      })
-    );
+// Line 34 को replace करें:
+  this.subscriptions.push(
+    this.authService.currentUser$.subscribe(user => {
+      if (user) {
+        this.currentUser = {
+          ...user,
+          name: user.name || user.username || 'User'
+        };
+      } else {
+        this.currentUser = null;
+      }
+    })
+  );
 
     // Get notification count and subscribe to updates
     this.subscriptions.push(

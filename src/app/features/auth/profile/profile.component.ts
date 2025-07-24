@@ -1,7 +1,10 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { AuthService } from '../../../core/services/auth.service';
-import { User } from '../../../core/models/auth.model';
+// import { User } from '../../../core/models/auth.model';
+import { Router } from '@angular/router';
+// import { User } from '../../../core/models/user.model';
+import { User } from '../../../core/models/user.model';
 
 @Component({
   selector: 'app-profile',
@@ -19,7 +22,8 @@ export class ProfileComponent implements OnInit {
 
   constructor(
     private fb: FormBuilder,
-    private authService: AuthService
+    private authService: AuthService,
+    public router: Router
   ) {
     this.profileForm = this.fb.group({
       name: ['', [Validators.required]],
@@ -36,13 +40,17 @@ export class ProfileComponent implements OnInit {
     this.loadUserProfile();
   }
 
-  loadUserProfile(): void {
+// Line 46 को replace करें:
+loadUserProfile(): void {
     this.authService.currentUser$.subscribe({
       next: (user) => {
         if (user) {
-          this.currentUser = user;
+          this.currentUser = {
+            ...user,
+            name: user.name || user.username || 'User' // Fallback if name missing
+          };
           this.profileForm.patchValue({
-            name: user.name,
+            name: user.name || user.username || 'User',
             email: user.email
           });
         }
@@ -51,7 +59,7 @@ export class ProfileComponent implements OnInit {
         this.errorMessage = 'Failed to load user profile';
       }
     });
-  }
+}
 
   updateProfile(): void {
     if (this.profileForm.invalid) {

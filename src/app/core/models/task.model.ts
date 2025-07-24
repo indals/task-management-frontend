@@ -1,6 +1,6 @@
 // src/app/core/models/task.model.ts
 import { User } from "./user.model";
-import { Comment } from "./comment.model"; // Import from separate file
+import { Comment } from "./comment.model";
 
 export interface Task {
   id: number;
@@ -8,27 +8,32 @@ export interface Task {
   description: string;
   status: string;
   priority: string;
-  assigned_to: User | null;  // Keeping original snake_case for compatibility
-  assignee?: User | null;    // Adding camelCase alias
+  assigned_to: User | null;
+  assignee?: User | null;
   created_by: User;
-  due_date: string | null;   // Keeping original snake_case
-  dueDate?: string | null;   // Adding camelCase alias
+  due_date: string | null;
+  dueDate?: string | null;
   created_at: string;
-  createdAt?: string;        // Adding camelCase alias
+  createdAt?: string;
   updated_at: string;
-  updatedAt?: string;        // Adding camelCase alias
-  
-  // Define subtasks properly to avoid any errors
+  updatedAt?: string;
   subtasks: Array<Subtask>;
-  
-  // Use imported Comment interface
   comments?: Array<Comment>;
 }
 
-// Subtask interface
 export interface Subtask {
   id: number;
   title: string;
   completed: boolean;
   taskId?: number;
+}
+
+export interface UpdateTaskRequest {
+  title?: string;
+  description?: string;
+  status?: string;
+  priority?: string;
+  assigned_to?: number;
+  due_date?: string;
+  subtasks?: Array<Subtask>;
 }

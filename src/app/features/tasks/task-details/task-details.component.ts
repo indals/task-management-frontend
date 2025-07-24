@@ -40,7 +40,7 @@ export class TaskDetailsComponent implements OnInit {
         // Transform API response to match our TypeScript model
         this.task = {
           ...task,
-          comments: task.comments?.map(apiComment => {
+          comments: task.comments?.map((apiComment: any) => {
             const commentText = apiComment.comment || apiComment.text || '';
             const createdAtDate = apiComment.created_at ? 
                 new Date(apiComment.created_at) : new Date();
@@ -88,7 +88,7 @@ export class TaskDetailsComponent implements OnInit {
   markAsComplete(): void {
     if (!this.task) return;
 
-    const updatedTask = { ...this.task, status: 'Completed' };
+    const updatedTask: any = { ...this.task, status: 'Completed' };
     this.taskService.updateTask(this.task.id, updatedTask).subscribe({
       next: (task) => {
         this.task = task;
@@ -103,7 +103,7 @@ export class TaskDetailsComponent implements OnInit {
     if (!this.task || !this.task.subtasks) return;
 
     // Find the subtask and toggle its completed status
-    const updatedSubtasks = this.task.subtasks.map(subtask => {
+    const updatedSubtasks = this.task.subtasks.map((subtask: any) => {
       if (subtask.id === subtaskId) {
         return { ...subtask, completed: !subtask.completed };
       }
@@ -111,7 +111,7 @@ export class TaskDetailsComponent implements OnInit {
     });
 
     // Update the task with the new subtasks
-    const updatedTask = { ...this.task, subtasks: updatedSubtasks };
+    const updatedTask: any = { ...this.task, subtasks: updatedSubtasks };
     this.taskService.updateTask(this.task.id, updatedTask).subscribe({
       next: (task) => {
         this.task = task;
