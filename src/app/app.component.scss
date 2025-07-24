@@ -1,51 +1,274 @@
-// .app-container {
-//     display: flex;
-//     height: 100vh;
-//   }
-  
-//   .content-area {
-//     flex: 1;
-//     // margin-left: 250px; /* Adjust based on sidebar width */
-//     margin-top: 64px; /* Adjust based on header height */
-//     padding: 20px;
-//     overflow-y: auto;
-//     transition: margin-left 0.3s ease;
-//   }
-  
-//   /* Add this class when sidebar is collapsed */
-//   .sidebar-collapsed .content-area {
-//     margin-left: 64px;
-//   }
-
-
-
+/* ============================
+   MODERN APP COMPONENT LAYOUT
+   ============================ */
 
 .app-container {
   display: flex;
   height: 100vh;
+  background: linear-gradient(135deg, var(--gray-50) 0%, var(--white) 100%);
+  overflow: hidden;
 }
 
 .content-area {
   flex: 1;
   margin-left: 250px; /* Full sidebar width */
   margin-top: 64px; /* Header height */
-  padding: 20px;
+  padding: 0;
   overflow-y: auto;
-  transition: margin-left 0.3s ease;
+  transition: all var(--transition-normal);
+  background: linear-gradient(135deg, var(--gray-50) 0%, var(--white) 100%);
+  position: relative;
+
+  /* Glass morphism effect for content area */
+  &::before {
+    content: '';
+    position: fixed;
+    top: 64px;
+    left: 250px;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, 
+      rgba(255, 255, 255, 0.8) 0%, 
+      rgba(249, 250, 251, 0.9) 100%
+    );
+    backdrop-filter: blur(10px);
+    z-index: -1;
+    transition: all var(--transition-normal);
+  }
+
+  /* Custom scrollbar for main content */
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: var(--gray-100);
+    border-radius: var(--radius-lg);
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, var(--primary-300), var(--primary-400));
+    border-radius: var(--radius-lg);
+    transition: background var(--transition-fast);
+
+    &:hover {
+      background: linear-gradient(135deg, var(--primary-400), var(--primary-500));
+    }
+  }
+
+  /* Animated background pattern */
+  &::after {
+    content: '';
+    position: fixed;
+    top: 64px;
+    left: 250px;
+    right: 0;
+    bottom: 0;
+    background-image: 
+      radial-gradient(circle at 80% 20%, var(--primary-100) 0%, transparent 50%),
+      radial-gradient(circle at 20% 80%, var(--primary-50) 0%, transparent 50%),
+      radial-gradient(circle at 60% 60%, var(--gray-100) 0%, transparent 50%);
+    opacity: 0.3;
+    z-index: -1;
+    animation: patternFloat 30s ease-in-out infinite;
+    transition: all var(--transition-normal);
+  }
+
+  @keyframes patternFloat {
+    0%, 100% { 
+      transform: translateY(0) rotate(0deg); 
+      opacity: 0.3;
+    }
+    50% { 
+      transform: translateY(-20px) rotate(2deg); 
+      opacity: 0.5;
+    }
+  }
 }
 
 /* When sidebar is collapsed */
 .sidebar-collapsed .content-area {
   margin-left: 64px; /* Collapsed sidebar width */
+
+  &::before {
+    left: 64px;
+  }
+
+  &::after {
+    left: 64px;
+  }
 }
 
-/* Mobile responsive - when sidebar is hidden */
+/* Mobile responsive styles */
 @media (max-width: 768px) {
   .content-area {
     margin-left: 0; /* No margin on mobile when sidebar is hidden */
+
+    &::before {
+      left: 0;
+    }
+
+    &::after {
+      left: 0;
+    }
   }
-  
+
   .sidebar-open .content-area {
     margin-left: 0; /* Keep no margin even when sidebar is open on mobile (overlay mode) */
+
+    &::before {
+      left: 0;
+    }
+
+    &::after {
+      left: 0;
+    }
+  }
+}
+
+/* Mobile overlay for sidebar */
+.sidebar-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, 
+    rgba(0, 0, 0, 0.6), 
+    rgba(0, 0, 0, 0.4)
+  );
+  backdrop-filter: blur(4px);
+  z-index: calc(var(--z-fixed) - 1);
+  opacity: 0;
+  visibility: hidden;
+  transition: all var(--transition-normal);
+
+  &.open {
+    opacity: 1;
+    visibility: visible;
+  }
+}
+
+/* Enhanced focus states for accessibility */
+*:focus {
+  outline: 2px solid var(--primary-500);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* Smooth transitions for route changes */
+router-outlet + * {
+  animation: routeAnimation var(--transition-normal) ease-in-out;
+}
+
+@keyframes routeAnimation {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Loading state animation */
+.loading-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  background: linear-gradient(135deg, var(--gray-50), var(--white));
+
+  .spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid var(--gray-200);
+    border-top-color: var(--primary-500);
+    border-radius: 50%;
+    animation: loadingSpin 1s linear infinite;
+  }
+
+  @keyframes loadingSpin {
+    to { transform: rotate(360deg); }
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .app-container {
+    background: linear-gradient(135deg, var(--gray-900) 0%, var(--gray-800) 100%);
+  }
+
+  .content-area {
+    background: linear-gradient(135deg, var(--gray-900) 0%, var(--gray-800) 100%);
+
+    &::before {
+      background: linear-gradient(135deg, 
+        rgba(17, 24, 39, 0.9) 0%, 
+        rgba(31, 41, 55, 0.95) 100%
+      );
+    }
+
+    &::after {
+      background-image: 
+        radial-gradient(circle at 80% 20%, var(--gray-700) 0%, transparent 50%),
+        radial-gradient(circle at 20% 80%, var(--gray-800) 0%, transparent 50%),
+        radial-gradient(circle at 60% 60%, var(--gray-700) 0%, transparent 50%);
+    }
+
+    &::-webkit-scrollbar-track {
+      background: var(--gray-800);
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: linear-gradient(135deg, var(--gray-600), var(--gray-500));
+
+      &:hover {
+        background: linear-gradient(135deg, var(--gray-500), var(--gray-400));
+      }
+    }
+  }
+
+  .loading-state {
+    background: linear-gradient(135deg, var(--gray-900), var(--gray-800));
+
+    .spinner {
+      border-color: var(--gray-700);
+      border-top-color: var(--primary-400);
+    }
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .content-area {
+    &::before,
+    &::after {
+      display: none;
+    }
+  }
+
+  .app-container {
+    background: var(--white);
+  }
+
+  .content-area {
+    background: var(--white);
+  }
+}
+
+/* Reduce motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .content-area,
+  .sidebar-overlay,
+  router-outlet + *,
+  .content-area::after {
+    animation: none;
+    transition: none;
+  }
+
+  .content-area::-webkit-scrollbar-thumb {
+    transition: none;
   }
 }
