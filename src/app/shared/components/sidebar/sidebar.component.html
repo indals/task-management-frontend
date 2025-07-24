@@ -1,55 +1,59 @@
-<div class="sidebar-overlay" [class.open]="isMobile && !isCollapsed" (click)="closeSidebar()"></div>
+<div class="sidebar-overlay" [class.open]="mobile && open" (click)="onClose()"></div>
 
-<aside class="app-sidebar" [class.collapsed]="isCollapsed" [class.mobile]="isMobile" [class.open]="isMobile && !isCollapsed">
+<aside class="app-sidebar" [class.collapsed]="collapsed" [class.mobile]="mobile" [class.open]="mobile && open">
   <div class="sidebar-header">
     <div class="logo-container">
-      <i class="fa fa-tasks app-logo"></i>
-      <h2 class="app-title" *ngIf="!isCollapsed">Task Manager</h2>
+      <i class="material-icons app-logo">assignment</i>
+      <h2 class="app-title" *ngIf="!collapsed">Task Manager</h2>
     </div>
-    <button class="collapse-btn" (click)="toggleSidebar()">
-      <i class="fa" [class.fa-angle-left]="!isCollapsed" [class.fa-angle-right]="isCollapsed"></i>
+    <button class="collapse-btn" (click)="onToggle()">
+      <i class="material-icons">{{ collapsed ? 'chevron_right' : 'chevron_left' }}</i>
     </button>
   </div>
 
   <div class="nav-container">
     <ul class="nav-list">
-      <div class="nav-category" *ngIf="!isCollapsed">Main Navigation</div>
+      <div class="nav-category" *ngIf="!collapsed">Main Navigation</div>
       
-      <li *ngFor="let item of navItems" 
-          [routerLink]="item.route" 
-          routerLinkActive="active"
+      <li *ngFor="let item of menuItems" 
           [class.active]="item.active"
-          class="nav-item">
-        <!-- FIXED: Changed from [class] to class with string interpolation -->
-        <i class="nav-icon {{item.icon}}"></i>
-        <span class="nav-title" *ngIf="!isCollapsed">{{ item.title }}</span>
-        <span class="nav-badge" *ngIf="!isCollapsed && item.badge">{{ item.badge }}</span>
-        <span class="tooltip" *ngIf="isCollapsed">{{ item.title }}</span>
+          class="nav-item"
+          (click)="navigate(item.route)">
+        <i class="material-icons nav-icon">{{item.icon}}</i>
+        <span class="nav-title" *ngIf="!collapsed">{{ item.label }}</span>
+        <span class="tooltip" *ngIf="collapsed">{{ item.label }}</span>
       </li>
       
-      <div class="nav-category" *ngIf="!isCollapsed && hasProjectAccess">Projects</div>
+      <div class="nav-category" *ngIf="!collapsed && currentUser">Recent Projects</div>
       
-      <ng-container *ngIf="hasProjectAccess && !isCollapsed">
+      <ng-container *ngIf="currentUser && !collapsed">
         <li *ngFor="let project of recentProjects" 
-            [routerLink]="['/projects', project.id]" 
-            routerLinkActive="active"
-            class="nav-item">
-          <i class="nav-icon fa fa-folder"></i>
+            class="nav-item sub-item"
+            (click)="navigate('/projects/' + project.id)">
+          <i class="material-icons nav-icon">folder</i>
           <span class="nav-title">{{ project.name }}</span>
+        </li>
+        
+        <li class="nav-item sub-item" (click)="navigate('/projects')">
+          <i class="material-icons nav-icon">add</i>
+          <span class="nav-title">View All Projects</span>
         </li>
       </ng-container>
     </ul>
   </div>
 
-  <div class="sidebar-footer" *ngIf="!isCollapsed && currentUser">
-    <div class="user-info">
-      <div class="avatar">
-        {{ currentUser.name.charAt(0) || 'U' }}
+  <div class="sidebar-footer" *ngIf="!collapsed && currentUser">
+    <div class="user-profile">
+      <div class="user-avatar">
+        <i class="material-icons">person</i>
       </div>
-      <div class="user-details">
-        <div class="user-name">{{ currentUser.name }}</div>
-        <div class="user-role">{{ currentUser.role || 'User' }}</div>
+      <div class="user-info">
+        <div class="user-name">{{ getUserDisplayName() }}</div>
+        <div class="user-email">{{ currentUser.email }}</div>
       </div>
     </div>
+    <button class="logout-btn" (click)="logout()" title="Logout">
+      <i class="material-icons">logout</i>
+    </button>
   </div>
 </aside>
