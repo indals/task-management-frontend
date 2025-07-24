@@ -1,12 +1,9 @@
-// src/app/core/services/auth.service.ts
-// Update with your actual API URL
-// src/app/core/services/auth.service.ts
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { map, tap } from 'rxjs/operators';
-// import { environment } from '../../../environments/environment';
 import { JwtHelperService } from '@auth0/angular-jwt';
+import { environment } from '../../../environments/environment';
 
 // Updated interfaces to match API
 // Auth service में User interface को update करें:
@@ -46,16 +43,21 @@ export interface UserListItem {
   providedIn: 'root'
 })
 export class AuthService {
-  // private apiUrl = `${environment.apiUrl}/api/auth`;
-  private apiUrl = 'http://127.0.0.1:5000/api/auth'; 
-  private currentUserSubject = new BehaviorSubject<User | null>(null);
-  public currentUser$ = this.currentUserSubject.asObservable();
-  private jwtHelper = new JwtHelperService();
+  private readonly apiUrl = `${environment.apiUrl}/auth`;
+  private readonly currentUserSubject = new BehaviorSubject<User | null>(null);
+  public readonly currentUser$ = this.currentUserSubject.asObservable();
+  private readonly jwtHelper = new JwtHelperService();
 
-  constructor(private http: HttpClient) {
-    // Check if the user is already logged in
-    const token = localStorage.getItem('access_token');
-    const user = localStorage.getItem('user');
+  constructor(private readonly http: HttpClient) {
+    this.initializeUser();
+  }
+
+  /**
+   * Initialize user from stored token and user data
+   */
+  private initializeUser(): void {
+    const token = localStorage.getItem(environment.tokenKey);
+    const user = localStorage.getItem(environment.userKey);
     
     if (token && user && !this.jwtHelper.isTokenExpired(token)) {
       this.currentUserSubject.next(JSON.parse(user));
@@ -66,22 +68,40 @@ export class AuthService {
     return this.http.post<{ message: string; user: User }>(`${this.apiUrl}/register`, registerData);
   }
 
+  /**
+   * Authenticate user with credentials
+   */
   login(loginData: LoginRequest): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.apiUrl}/login`, loginData)
       .pipe(
         tap(response => {
-          // Store user details and token in local storage
-          localStorage.setItem('access_token', response.access_token);
-          localStorage.setItem('user', JSON.stringify(response.user));
-          this.currentUserSubject.next(response.user);
+          this.storeAuthData(response);
         })
       );
   }
 
+  /**
+   * Logout user and clear stored data
+   */
   logout(): void {
-    // Remove user from local storage and set current user to null
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('user');
+    this.clearAuthData();
+  }
+
+  /**
+   * Store authentication data in localStorage
+   */
+  private storeAuthData(response: AuthResponse): void {
+    localStorage.setItem(environment.tokenKey, response.access_token);
+    localStorage.setItem(environment.userKey, JSON.stringify(response.user));
+    this.currentUserSubject.next(response.user);
+  }
+
+  /**
+   * Clear authentication data from localStorage
+   */
+  private clearAuthData(): void {
+    localStorage.removeItem(environment.tokenKey);
+    localStorage.removeItem(environment.userKey);
     this.currentUserSubject.next(null);
   }
 
@@ -89,12 +109,14 @@ export class AuthService {
     return this.http.get<User>(`${this.apiUrl}/me`);
   }
 
+  /**
+   * Update user profile
+   */
   updateProfile(userData: { name?: string; email?: string; password?: string }): Observable<{ message: string; user: User }> {
     return this.http.put<{ message: string; user: User }>(`${this.apiUrl}/profile`, userData)
       .pipe(
         tap(response => {
-          // Update the current user data
-          localStorage.setItem('user', JSON.stringify(response.user));
+          localStorage.setItem(environment.userKey, JSON.stringify(response.user));
           this.currentUserSubject.next(response.user);
         })
       );
@@ -107,13 +129,19 @@ export class AuthService {
     });
   }
 
+  /**
+   * Check if user is authenticated
+   */
   isLoggedIn(): boolean {
-    const token = localStorage.getItem('access_token');
+    const token = localStorage.getItem(environment.tokenKey);
     return token !== null && !this.jwtHelper.isTokenExpired(token);
   }
 
+  /**
+   * Get stored authentication token
+   */
   getToken(): string | null {
-    return localStorage.getItem('access_token');
+    return localStorage.getItem(environment.tokenKey);
   }
 
   getCurrentUser(): User | null {
