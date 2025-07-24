@@ -3,7 +3,6 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable, Subject, timer } from 'rxjs';
 import { map, catchError, takeUntil } from 'rxjs/operators';
-import { MatSnackBar } from '@angular/material/snack-bar';
 
 import { Notification } from '../models/notification.model';
 import { API_ENDPOINTS } from '../constants/api.constants';
@@ -35,8 +34,7 @@ export class NotificationService {
 
   constructor(
     private http: HttpClient,
-    private errorHandler: ErrorHandlerService,
-    private snackBar: MatSnackBar
+    private errorHandler: ErrorHandlerService
   ) {
     this.startPolling();
   }
@@ -130,28 +128,10 @@ export class NotificationService {
     );
   }
 
-  // Show in-app notification (using Material Snackbar)
+  // Show in-app notification (simple console log for now)
   showNotification(options: NotificationOptions): void {
-    const config: any = {
-      duration: options.persistent ? 0 : (options.duration || 5000),
-      horizontalPosition: 'right',
-      verticalPosition: 'top',
-      panelClass: [`notification-${options.type || 'info'}`]
-    };
-
-    let snackBarRef;
+    console.log(`[${options.type?.toUpperCase() || 'INFO'}] ${options.message}`);
     
-    if (options.actionText && options.actionCallback) {
-      snackBarRef = this.snackBar.open(options.message, options.actionText, config);
-      snackBarRef.onAction().subscribe(() => {
-        if (options.actionCallback) {
-          options.actionCallback();
-        }
-      });
-    } else {
-      snackBarRef = this.snackBar.open(options.message, 'Close', config);
-    }
-
     // Store in queue for potential replay
     this.inAppNotifications.push(options);
     

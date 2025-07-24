@@ -11,7 +11,6 @@ import { MaterialModule } from './material.module';
 import { HeaderComponent } from './components/header/header.component';
 import { SidebarComponent } from './components/sidebar/sidebar.component';
 import { LoadingComponent } from './components/loading/loading.component';
-import { ConfirmationDialogComponent } from './components/confirmation-dialog/confirmation-dialog.component';
 
 // Import shared directives and pipes
 import { ClickOutsideDirective } from './directives/click-outside.directive';
@@ -22,7 +21,6 @@ import { StatusColorPipe } from './pipes/status-color.pipe';
     HeaderComponent,
     SidebarComponent,
     LoadingComponent,
-    ConfirmationDialogComponent,
     ClickOutsideDirective,
     StatusColorPipe
   ],
@@ -44,7 +42,6 @@ import { StatusColorPipe } from './pipes/status-color.pipe';
     HeaderComponent,
     SidebarComponent,
     LoadingComponent,
-    ConfirmationDialogComponent,
     
     // Directives
     ClickOutsideDirective,

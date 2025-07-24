@@ -30,7 +30,11 @@ export class AnalyticsComponent implements OnInit {
     avgTasksPerEmployee: 0
   };
   
-  taskTrends = {
+  taskTrends: {
+    labels: string[];
+    completed: number[];
+    created: number[];
+  } = {
     labels: [],
     completed: [],
     created: []
@@ -90,7 +94,7 @@ export class AnalyticsComponent implements OnInit {
   private loadTaskTrends(): Promise<void> {
     return new Promise((resolve) => {
       // Mock data - replace with actual service call
-      const last7Days = [];
+      const last7Days: string[] = [];
       for (let i = 6; i >= 0; i--) {
         const date = new Date();
         date.setDate(date.getDate() - i);

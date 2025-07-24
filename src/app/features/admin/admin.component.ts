@@ -1,7 +1,5 @@
 // src/app/features/admin/admin.component.ts
 import { Component, OnInit } from '@angular/core';
-import { MatDialog } from '@angular/material/dialog';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { AuthService } from '../../core/services/auth.service';
 import { User } from '../../core/models/user.model';
 
@@ -24,9 +22,7 @@ export class AdminComponent implements OnInit {
   };
 
   constructor(
-    private authService: AuthService,
-    private dialog: MatDialog,
-    private snackBar: MatSnackBar
+    private authService: AuthService
   ) {}
 
   ngOnInit(): void {
@@ -101,29 +97,26 @@ export class AdminComponent implements OnInit {
     };
   }
 
-  changeUserRole(user: User, newRole: string): void {
+  changeUserRole(user: User, newRole: string | any): void {
+    // Handle both string and event target value
+    const roleValue = typeof newRole === 'string' ? newRole : newRole.target?.value || newRole;
+    
     // In a real app, this would call an API
     const userIndex = this.users.findIndex(u => u.id === user.id);
     if (userIndex !== -1) {
-      this.users[userIndex].role = newRole as any;
-      this.snackBar.open(`Role updated for ${user.name}`, 'Close', {
-        duration: 3000
-      });
+      this.users[userIndex].role = roleValue as any;
+      console.log(`Role updated for ${user.name} to ${roleValue}`);
     }
   }
 
   deactivateUser(user: User): void {
     // In a real app, this would call an API
-    this.snackBar.open(`User ${user.name} deactivated`, 'Close', {
-      duration: 3000
-    });
+    console.log(`User ${user.name} deactivated`);
   }
 
   resetUserPassword(user: User): void {
     // In a real app, this would call an API
-    this.snackBar.open(`Password reset email sent to ${user.email}`, 'Close', {
-      duration: 3000
-    });
+    console.log(`Password reset email sent to ${user.email}`);
   }
 
   getRoleColor(role: string): string {

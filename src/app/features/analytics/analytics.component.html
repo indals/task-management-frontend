@@ -6,12 +6,12 @@
       <p class="analytics-subtitle">Team performance insights and metrics</p>
     </div>
     <div class="header-actions">
-      <button mat-raised-button color="primary" (click)="refreshData()" [disabled]="isLoading">
-        <mat-icon>refresh</mat-icon>
+      <button class="btn btn-primary" (click)="refreshData()" [disabled]="isLoading">
+        <span class="icon">🔄</span>
         Refresh
       </button>
-      <button mat-raised-button color="accent" (click)="exportReport()">
-        <mat-icon>download</mat-icon>
+      <button class="btn btn-accent" (click)="exportReport()">
+        <span class="icon">📥</span>
         Export Report
       </button>
     </div>
@@ -19,7 +19,7 @@
 
   <!-- Loading State -->
   <div *ngIf="isLoading" class="loading-container">
-    <mat-spinner></mat-spinner>
+    <div class="loading-spinner"></div>
     <p>Loading analytics data...</p>
   </div>
 
@@ -28,103 +28,103 @@
     
     <!-- Key Metrics Cards -->
     <div class="metrics-grid">
-      <mat-card class="metric-card hover-card">
-        <mat-card-content>
+      <div class="metric-card hover-card">
+        <div class="card-content">
           <div class="metric-header">
-            <mat-icon class="metric-icon team">groups</mat-icon>
+            <span class="metric-icon team">👥</span>
             <span class="metric-label">Team Members</span>
           </div>
           <div class="metric-value">{{ teamMetrics.totalEmployees }}</div>
-        </mat-card-content>
-      </mat-card>
+        </div>
+      </div>
 
-      <mat-card class="metric-card hover-card">
-        <mat-card-content>
+      <div class="metric-card hover-card">
+        <div class="card-content">
           <div class="metric-header">
-            <mat-icon class="metric-icon tasks">assignment</mat-icon>
+            <span class="metric-icon tasks">📋</span>
             <span class="metric-label">Active Tasks</span>
           </div>
           <div class="metric-value">{{ teamMetrics.activeTasks }}</div>
-        </mat-card-content>
-      </mat-card>
+        </div>
+      </div>
 
-      <mat-card class="metric-card hover-card">
-        <mat-card-content>
+      <div class="metric-card hover-card">
+        <div class="card-content">
           <div class="metric-header">
-            <mat-icon class="metric-icon completion">check_circle</mat-icon>
+            <span class="metric-icon completion">✅</span>
             <span class="metric-label">Completion Rate</span>
           </div>
           <div class="metric-value">{{ teamMetrics.completionRate }}%</div>
-        </mat-card-content>
-      </mat-card>
+        </div>
+      </div>
 
-      <mat-card class="metric-card hover-card">
-        <mat-card-content>
+      <div class="metric-card hover-card">
+        <div class="card-content">
           <div class="metric-header">
-            <mat-icon class="metric-icon average">trending_up</mat-icon>
+            <span class="metric-icon average">📈</span>
             <span class="metric-label">Avg Tasks/Employee</span>
           </div>
           <div class="metric-value">{{ teamMetrics.avgTasksPerEmployee }}</div>
-        </mat-card-content>
-      </mat-card>
+        </div>
+      </div>
     </div>
 
     <!-- Charts Section -->
     <div class="charts-section">
       <div class="charts-row">
         <!-- Team Performance Chart -->
-        <mat-card class="chart-card">
-          <mat-card-header>
-            <mat-card-title>Team Performance Overview</mat-card-title>
-            <mat-card-subtitle>Current task distribution</mat-card-subtitle>
-          </mat-card-header>
-          <mat-card-content>
+        <div class="chart-card">
+          <div class="card-header">
+            <h3 class="card-title">Team Performance Overview</h3>
+            <p class="card-subtitle">Current task distribution</p>
+          </div>
+          <div class="card-content">
             <div class="chart-container">
               <canvas id="teamPerformanceChart" width="400" height="300"></canvas>
             </div>
-          </mat-card-content>
-        </mat-card>
+          </div>
+        </div>
 
         <!-- Task Trends Chart -->
-        <mat-card class="chart-card">
-          <mat-card-header>
-            <mat-card-title>Task Trends</mat-card-title>
-            <mat-card-subtitle>Last 7 days</mat-card-subtitle>
-          </mat-card-header>
-          <mat-card-content>
+        <div class="chart-card">
+          <div class="card-header">
+            <h3 class="card-title">Task Trends</h3>
+            <p class="card-subtitle">Last 7 days</p>
+          </div>
+          <div class="card-content">
             <div class="chart-container">
               <canvas id="taskTrendsChart" width="400" height="300"></canvas>
             </div>
-          </mat-card-content>
-        </mat-card>
+          </div>
+        </div>
       </div>
 
       <div class="charts-row">
         <!-- Project Progress Chart -->
-        <mat-card class="chart-card">
-          <mat-card-header>
-            <mat-card-title>Project Progress</mat-card-title>
-            <mat-card-subtitle>Current projects status</mat-card-subtitle>
-          </mat-card-header>
-          <mat-card-content>
+        <div class="chart-card">
+          <div class="card-header">
+            <h3 class="card-title">Project Progress</h3>
+            <p class="card-subtitle">Current projects status</p>
+          </div>
+          <div class="card-content">
             <div class="chart-container">
               <canvas id="projectProgressChart" width="400" height="300"></canvas>
             </div>
-          </mat-card-content>
-        </mat-card>
+          </div>
+        </div>
 
         <!-- Workload Distribution Chart -->
-        <mat-card class="chart-card">
-          <mat-card-header>
-            <mat-card-title>Workload Distribution</mat-card-title>
-            <mat-card-subtitle>By department</mat-card-subtitle>
-          </mat-card-header>
-          <mat-card-content>
+        <div class="chart-card">
+          <div class="card-header">
+            <h3 class="card-title">Workload Distribution</h3>
+            <p class="card-subtitle">By department</p>
+          </div>
+          <div class="card-content">
             <div class="chart-container">
               <canvas id="workloadDistributionChart" width="400" height="300"></canvas>
             </div>
-          </mat-card-content>
-        </mat-card>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -132,89 +132,81 @@
     <div class="tables-section">
       <div class="tables-row">
         <!-- Top Performers Table -->
-        <mat-card class="table-card">
-          <mat-card-header>
-            <mat-card-title>Top Performers</mat-card-title>
-            <mat-card-subtitle>This month's top contributors</mat-card-subtitle>
-          </mat-card-header>
-          <mat-card-content>
-            <table mat-table [dataSource]="topPerformers" class="performers-table">
-              <ng-container matColumnDef="rank">
-                <th mat-header-cell *matHeaderCellDef> Rank </th>
-                <td mat-cell *matCellDef="let element; let i = index"> {{i + 1}} </td>
-              </ng-container>
-
-              <ng-container matColumnDef="name">
-                <th mat-header-cell *matHeaderCellDef> Name </th>
-                <td mat-cell *matCellDef="let element"> {{element.name}} </td>
-              </ng-container>
-
-              <ng-container matColumnDef="tasksCompleted">
-                <th mat-header-cell *matHeaderCellDef> Tasks Completed </th>
-                <td mat-cell *matCellDef="let element"> {{element.tasksCompleted}} </td>
-              </ng-container>
-
-              <ng-container matColumnDef="completionRate">
-                <th mat-header-cell *matHeaderCellDef> Completion Rate </th>
-                <td mat-cell *matCellDef="let element">
-                  <span class="completion-rate" [class.high]="element.completionRate >= 90" 
-                        [class.medium]="element.completionRate >= 80 && element.completionRate < 90"
-                        [class.low]="element.completionRate < 80">
-                    {{element.completionRate}}%
-                  </span>
-                </td>
-              </ng-container>
-
-              <tr mat-header-row *matHeaderRowDef="['rank', 'name', 'tasksCompleted', 'completionRate']"></tr>
-              <tr mat-row *matRowDef="let row; columns: ['rank', 'name', 'tasksCompleted', 'completionRate'];"></tr>
+        <div class="table-card">
+          <div class="card-header">
+            <h3 class="card-title">Top Performers</h3>
+            <p class="card-subtitle">This month's top contributors</p>
+          </div>
+          <div class="card-content">
+            <table class="performers-table">
+              <thead>
+                <tr>
+                  <th>Rank</th>
+                  <th>Name</th>
+                  <th>Tasks Completed</th>
+                  <th>Completion Rate</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let element of topPerformers; let i = index">
+                  <td>{{i + 1}}</td>
+                  <td>{{element.name}}</td>
+                  <td>{{element.tasksCompleted}}</td>
+                  <td>
+                    <span class="completion-rate" 
+                          [class.high]="element.completionRate >= 90" 
+                          [class.medium]="element.completionRate >= 80 && element.completionRate < 90"
+                          [class.low]="element.completionRate < 80">
+                      {{element.completionRate}}%
+                    </span>
+                  </td>
+                </tr>
+              </tbody>
             </table>
-          </mat-card-content>
-        </mat-card>
+          </div>
+        </div>
 
         <!-- Projects Overview Table -->
-        <mat-card class="table-card">
-          <mat-card-header>
-            <mat-card-title>Projects Overview</mat-card-title>
-            <mat-card-subtitle>Current project status</mat-card-subtitle>
-          </mat-card-header>
-          <mat-card-content>
-            <table mat-table [dataSource]="projectsOverview" class="projects-table">
-              <ng-container matColumnDef="name">
-                <th mat-header-cell *matHeaderCellDef> Project </th>
-                <td mat-cell *matCellDef="let element"> {{element.name}} </td>
-              </ng-container>
-
-              <ng-container matColumnDef="progress">
-                <th mat-header-cell *matHeaderCellDef> Progress </th>
-                <td mat-cell *matCellDef="let element">
-                  <div class="progress-container">
-                    <mat-progress-bar mode="determinate" [value]="element.progress"></mat-progress-bar>
-                    <span class="progress-text">{{element.progress}}%</span>
-                  </div>
-                </td>
-              </ng-container>
-
-              <ng-container matColumnDef="status">
-                <th mat-header-cell *matHeaderCellDef> Status </th>
-                <td mat-cell *matCellDef="let element">
-                  <mat-chip [class.on-track]="element.status === 'On Track'"
-                           [class.ahead]="element.status === 'Ahead'"
-                           [class.behind]="element.status === 'Behind'">
-                    {{element.status}}
-                  </mat-chip>
-                </td>
-              </ng-container>
-
-              <ng-container matColumnDef="dueDate">
-                <th mat-header-cell *matHeaderCellDef> Due Date </th>
-                <td mat-cell *matCellDef="let element"> {{element.dueDate | date:'MMM d, y'}} </td>
-              </ng-container>
-
-              <tr mat-header-row *matHeaderRowDef="['name', 'progress', 'status', 'dueDate']"></tr>
-              <tr mat-row *matRowDef="let row; columns: ['name', 'progress', 'status', 'dueDate'];"></tr>
+        <div class="table-card">
+          <div class="card-header">
+            <h3 class="card-title">Projects Overview</h3>
+            <p class="card-subtitle">Current project status</p>
+          </div>
+          <div class="card-content">
+            <table class="projects-table">
+              <thead>
+                <tr>
+                  <th>Project</th>
+                  <th>Progress</th>
+                  <th>Status</th>
+                  <th>Due Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let element of projectsOverview">
+                  <td>{{element.name}}</td>
+                  <td>
+                    <div class="progress-container">
+                      <div class="progress-bar">
+                        <div class="progress-fill" [style.width.%]="element.progress"></div>
+                      </div>
+                      <span class="progress-text">{{element.progress}}%</span>
+                    </div>
+                  </td>
+                  <td>
+                    <span class="status-chip" 
+                          [class.on-track]="element.status === 'On Track'"
+                          [class.ahead]="element.status === 'Ahead'"
+                          [class.behind]="element.status === 'Behind'">
+                      {{element.status}}
+                    </span>
+                  </td>
+                  <td>{{element.dueDate | date:'MMM d, y'}}</td>
+                </tr>
+              </tbody>
             </table>
-          </mat-card-content>
-        </mat-card>
+          </div>
+        </div>
       </div>
     </div>
   </div>
