@@ -1,21 +1,12 @@
 import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
-import { HttpClientModule, HTTP_INTERCEPTORS } from '@angular/common/http';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
-import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 
 import { AppComponent } from './app.component';
 import { AppRoutingModule } from './app-routing.module';
-import { AuthModule } from './features/auth/auth.module';
 
-// Services
-import { AuthService } from './core/services/auth.service';
-import { TaskService } from './core/services/task.service';
-import { NotificationService } from './core/services/notification.service';
-import { AnalyticsService } from './core/services/analytics.service';
-
-// Interceptors
-import { JwtInterceptor } from './core/interceptors/jwt.interceptor';
+// Core and Shared modules
+import { CoreModule } from './core/core.module';
 import { SharedModule } from './shared/shared.module';
 
 @NgModule({
@@ -25,19 +16,16 @@ import { SharedModule } from './shared/shared.module';
   imports: [
     BrowserModule,
     BrowserAnimationsModule,
-    HttpClientModule,
-    ReactiveFormsModule,
     AppRoutingModule,
-    AuthModule,
-    FormsModule,
+    
+    // Core module with all services, guards, and interceptors
+    CoreModule.forRoot(),
+    
+    // Shared module with common components
     SharedModule
   ],
   providers: [
-    AuthService,
-    TaskService,
-    NotificationService,
-    AnalyticsService,
-    { provide: HTTP_INTERCEPTORS, useClass: JwtInterceptor, multi: true }
+    // No providers needed here - they're in CoreModule
   ],
   bootstrap: [AppComponent]
 })

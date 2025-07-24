@@ -1,52 +1,72 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
-import { LoginComponent } from './features/auth/login/login.component';
-import { RegisterComponent } from './features/auth/register/register.component';
-import { ProfileComponent } from './features/auth/profile/profile.component';
-import { AuthGuard } from './core/guards/auth.guard';
+import { authGuard } from './core/guards/auth.guard';
 
 const routes: Routes = [
-  { path: '', redirectTo: 'login', pathMatch: 'full' },
-  { path: 'login', component: LoginComponent },
-  { path: 'register', component: RegisterComponent },
-  { path: 'profile', component: ProfileComponent, canActivate: [AuthGuard] },
+  { 
+    path: '', 
+    redirectTo: '/login', 
+    pathMatch: 'full' 
+  },
+  {
+    path: 'auth',
+    loadChildren: () => import('./features/auth/auth.module').then(m => m.AuthModule)
+  },
+  // Keep login/register at root level for backward compatibility
+  {
+    path: 'login',
+    loadComponent: () => import('./features/auth/login/login.component').then(c => c.LoginComponent)
+  },
+  {
+    path: 'register',
+    loadComponent: () => import('./features/auth/register/register.component').then(c => c.RegisterComponent)
+  },
+  {
+    path: 'profile',
+    loadComponent: () => import('./features/auth/profile/profile.component').then(c => c.ProfileComponent),
+    canActivate: [authGuard]
+  },
   {
     path: 'dashboard',
     loadChildren: () => import('./features/dashboard/dashboard.module').then(m => m.DashboardModule),
-    canActivate: [AuthGuard]
+    canActivate: [authGuard]
   },
   {
     path: 'tasks',
     loadChildren: () => import('./features/tasks/tasks.module').then(m => m.TasksModule),
-    canActivate: [AuthGuard]
+    canActivate: [authGuard]
   },
   {
     path: 'projects',
     loadComponent: () => import('./features/projects/projects.component').then(c => c.ProjectsComponent),
-    canActivate: [AuthGuard]
+    canActivate: [authGuard]
   },
   {
     path: 'calendar',
     loadComponent: () => import('./features/calendar/calendar.component').then(c => c.CalendarComponent),
-    canActivate: [AuthGuard]
+    canActivate: [authGuard]
   },
   {
     path: 'reports',
     loadComponent: () => import('./features/reports/reports.component').then(c => c.ReportsComponent),
-    canActivate: [AuthGuard]
+    canActivate: [authGuard]
   },
   {
     path: 'notifications',
     loadChildren: () => import('./features/notifications/notifications.module').then(m => m.NotificationsModule),
-    canActivate: [AuthGuard]
+    canActivate: [authGuard]
   },
-  { path: '**', redirectTo: 'login' }
+  { 
+    path: '**', 
+    redirectTo: '/login' 
+  }
 ];
 
 @NgModule({
   imports: [RouterModule.forRoot(routes, {
     enableTracing: false,
-    scrollPositionRestoration: 'top'
+    scrollPositionRestoration: 'top',
+    preloadingStrategy: 'optional' // Optimize bundle loading
   })],
   exports: [RouterModule]
 })

@@ -1,11 +1,14 @@
 // login.component.ts
 import { Component } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
+import { CommonModule } from '@angular/common';
+import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
+import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 
 @Component({
   selector: 'app-login',
+  standalone: true,
+  imports: [CommonModule, ReactiveFormsModule, RouterModule],
   templateUrl: './login.component.html',
   styleUrls: ['./login.component.scss']
 })
@@ -33,12 +36,19 @@ export class LoginComponent {
     this.isSubmitting = true;
     this.errorMessage = null;
 
-    this.authService.login(this.loginForm.value).subscribe({
-      next: () => {
+    const { email, password } = this.loginForm.value;
+
+    this.authService.login({ email, password }).subscribe({
+      next: (response) => {
+        console.log('Login successful:', response);
         this.router.navigate(['/dashboard']);
       },
       error: (error) => {
-        this.errorMessage = error.error?.error || 'Invalid credentials';
+        console.error('Login failed:', error);
+        this.errorMessage = error?.error?.message || 'Login failed. Please try again.';
+        this.isSubmitting = false;
+      },
+      complete: () => {
         this.isSubmitting = false;
       }
     });
