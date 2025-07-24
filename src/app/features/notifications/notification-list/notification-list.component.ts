@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
-import { NotificationService, AppNotification } from '../../../core/services/notification.service';
+import { NotificationService } from '../../../core/services/notification.service';
+import { Notification } from '../../../core/models/notification.model';
 
 @Component({
   selector: 'app-notification-list',
@@ -7,13 +8,12 @@ import { NotificationService, AppNotification } from '../../../core/services/not
   styleUrls: ['./notification-list.component.scss']
 })
 export class NotificationListComponent implements OnInit {
-  notifications: AppNotification[] = [];
-  isLoading = false; // or loading:boolean = false; whichever you prefer.
-  errorMessage = '';
-  showAll = true; // Initialize to 'all'
-  filter: 'all' | 'unread' = 'all';
+  notifications: Notification[] = [];
+  isLoading = false;
+  filter = 'all'; // 'all' | 'unread'
+  showAll = true; // For template compatibility
 
-  constructor(private notificationService: NotificationService) { }
+  constructor(private notificationService: NotificationService) {}
 
   ngOnInit(): void {
     this.loadNotifications();
@@ -21,67 +21,108 @@ export class NotificationListComponent implements OnInit {
 
   loadNotifications(): void {
     this.isLoading = true;
-    this.notificationService.getNotifications(this.filter === 'unread').subscribe({
-      next: (data) => {
-        this.notifications = data;
+    this.notificationService.fetchNotifications().subscribe({
+      next: (notifications) => {
+        this.notifications = this.filterNotifications(notifications);
         this.isLoading = false;
       },
       error: (error) => {
-        this.errorMessage = 'Failed to load notifications';
+        console.error('Error loading notifications:', error);
         this.isLoading = false;
-        console.error(error);
       }
     });
   }
 
-  markAsRead(notification: AppNotification): void {
-    if (notification.read) return;
+  private filterNotifications(notifications: Notification[]): Notification[] {
+    if (this.filter === 'unread') {
+      return notifications.filter(n => !n.read);
+    }
+    return notifications;
+  }
 
-    this.notificationService.markAsRead(notification.id).subscribe({
-      next: (updatedNotification) => {
-        const index = this.notifications.findIndex(n => n.id === notification.id);
-        if (index !== -1) {
-          this.notifications[index] = updatedNotification;
+  markAsRead(notification: Notification): void {
+    if (!notification.read) {
+      this.notificationService.markAsRead(notification.id).subscribe({
+        next: () => {
+          notification.read = true;
+        },
+        error: (error) => {
+          console.error('Error marking notification as read:', error);
         }
-      },
-      error: (error: any) => {
-        this.errorMessage = 'Failed to mark notification as read';
-        console.error(error);
-      }
-    });
+      });
+    }
   }
 
   markAllAsRead(): void {
     this.notificationService.markAllAsRead().subscribe({
       next: () => {
-        this.notifications.forEach(n => n.read = true);
+        this.notifications = this.notifications.map(n => ({ ...n, read: true }));
       },
-      error: (error: any) => {
-        this.errorMessage = 'Failed to mark all notifications as read';
-        console.error(error);
+      error: (error) => {
+        console.error('Error marking all as read:', error);
       }
     });
   }
 
-deleteNotification(id: number): void {  // string ki jagah number
-  this.notificationService.deleteNotification(id).subscribe({
-    next: () => {
-      this.notifications = this.notifications.filter(n => n.id !== id);  // String() remove karo
-    },
-    error: (error: any) => {
-      this.errorMessage = 'Failed to delete notification';
-      console.error(error);
-    }
-  });
-}
+  deleteNotification(notification: Notification): void {
+    this.notificationService.deleteNotification(notification.id).subscribe({
+      next: () => {
+        this.notifications = this.notifications.filter(n => n.id !== notification.id);
+      },
+      error: (error) => {
+        console.error('Error deleting notification:', error);
+      }
+    });
+  }
 
-  setFilter(filter: 'all' | 'unread'): void {
+  // Template compatibility methods
+  setFilter(filter: string): void {
     this.filter = filter;
     this.showAll = filter === 'all';
-    this.loadNotifications(); // Reload notifications with the new filter
+    this.loadNotifications();
+  }
+
+  onFilterChange(filter: string): void {
+    this.setFilter(filter);
   }
 
   get hasUnreadNotifications(): boolean {
     return this.notifications.some(notification => !notification.read);
+  }
+
+  getNotificationIcon(type?: string): string {
+    switch (type) {
+      case 'task_assignment':
+        return 'assignment';
+      case 'task_update':
+        return 'update';
+      case 'deadline_reminder':
+        return 'schedule';
+      case 'error':
+        return 'error';
+      case 'warning':
+        return 'warning';
+      case 'success':
+        return 'check_circle';
+      default:
+        return 'info';
+    }
+  }
+
+  formatDate(dateString: string): string {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - date.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 0) {
+      return 'Today';
+    } else if (diffDays === 1) {
+      return 'Yesterday';
+    } else if (diffDays < 7) {
+      return `${diffDays} days ago`;
+    } else {
+      return date.toLocaleDateString();
+    }
   }
 }

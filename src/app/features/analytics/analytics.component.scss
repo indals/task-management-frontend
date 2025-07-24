@@ -1,0 +1,298 @@
+// Analytics Dashboard Styles
+.analytics-container {
+  padding: 24px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.analytics-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 32px;
+  
+  .header-content {
+    .analytics-title {
+      font-size: 2rem;
+      font-weight: 600;
+      color: #1a1a1a;
+      margin: 0 0 8px 0;
+    }
+    
+    .analytics-subtitle {
+      font-size: 1rem;
+      color: #666;
+      margin: 0;
+    }
+  }
+  
+  .header-actions {
+    display: flex;
+    gap: 12px;
+    
+    button {
+      mat-icon {
+        margin-right: 8px;
+      }
+    }
+  }
+}
+
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  
+  p {
+    margin-top: 16px;
+    color: #666;
+  }
+}
+
+.analytics-content {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+// Metrics Grid
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 24px;
+}
+
+.metric-card {
+  .mat-mdc-card-content {
+    padding: 24px !important;
+  }
+  
+  .metric-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 16px;
+    
+    .metric-icon {
+      font-size: 24px;
+      width: 24px;
+      height: 24px;
+      margin-right: 12px;
+      
+      &.team { color: #2196f3; }
+      &.tasks { color: #ff9800; }
+      &.completion { color: #4caf50; }
+      &.average { color: #9c27b0; }
+    }
+    
+    .metric-label {
+      font-size: 0.875rem;
+      color: #666;
+      font-weight: 500;
+    }
+  }
+  
+  .metric-value {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #1a1a1a;
+    line-height: 1;
+  }
+}
+
+// Charts Section
+.charts-section {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.charts-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+  gap: 24px;
+}
+
+.chart-card {
+  .mat-mdc-card-header {
+    padding-bottom: 16px;
+  }
+  
+  .mat-mdc-card-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+  }
+  
+  .mat-mdc-card-subtitle {
+    color: #666;
+    margin-top: 4px;
+  }
+  
+  .chart-container {
+    position: relative;
+    height: 300px;
+    width: 100%;
+  }
+}
+
+// Tables Section
+.tables-section {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.tables-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+  gap: 24px;
+}
+
+.table-card {
+  .mat-mdc-card-content {
+    padding: 0 !important;
+  }
+  
+  .performers-table,
+  .projects-table {
+    width: 100%;
+    
+    .mat-mdc-header-cell {
+      font-weight: 600;
+      color: #1a1a1a;
+    }
+    
+    .mat-mdc-cell {
+      padding: 12px 8px;
+    }
+  }
+}
+
+// Top Performers Table
+.completion-rate {
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  
+  &.high {
+    background-color: #e8f5e9;
+    color: #2e7d32;
+  }
+  
+  &.medium {
+    background-color: #fff3e0;
+    color: #ef6c00;
+  }
+  
+  &.low {
+    background-color: #ffebee;
+    color: #c62828;
+  }
+}
+
+// Projects Table
+.progress-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  
+  .mat-mdc-progress-bar {
+    flex: 1;
+    height: 8px;
+    border-radius: 4px;
+  }
+  
+  .progress-text {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #666;
+    min-width: 35px;
+  }
+}
+
+.mat-mdc-chip {
+  font-size: 0.75rem;
+  font-weight: 600;
+  
+  &.on-track {
+    background-color: #e3f2fd;
+    color: #1565c0;
+  }
+  
+  &.ahead {
+    background-color: #e8f5e9;
+    color: #2e7d32;
+  }
+  
+  &.behind {
+    background-color: #ffebee;
+    color: #c62828;
+  }
+}
+
+// Responsive Design
+@media (max-width: 768px) {
+  .analytics-container {
+    padding: 16px;
+  }
+  
+  .analytics-header {
+    flex-direction: column;
+    gap: 16px;
+    align-items: stretch;
+    
+    .header-actions {
+      justify-content: flex-end;
+    }
+  }
+  
+  .metrics-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .charts-row,
+  .tables-row {
+    grid-template-columns: 1fr;
+  }
+  
+  .metric-card .metric-value {
+    font-size: 2rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .analytics-container {
+    padding: 12px;
+  }
+  
+  .header-actions {
+    flex-direction: column;
+    gap: 8px;
+    
+    button {
+      width: 100%;
+    }
+  }
+  
+  .chart-container {
+    height: 250px;
+  }
+}
+
+// Animation
+.fade-in {
+  animation: fadeInUp 0.5s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

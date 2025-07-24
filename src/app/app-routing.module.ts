@@ -1,72 +1,78 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
-import { authGuard } from './core/guards/auth.guard';
 
-export const routes: Routes = [
-  { 
-    path: '', 
-    redirectTo: '/login', 
-    pathMatch: 'full' 
-  },
+// Import guards
+import { authGuard, roleGuard } from './core/guards';
+
+const routes: Routes = [
   {
-    path: 'auth',
-    loadChildren: () => import('./features/auth/auth.module').then(m => m.AuthModule)
+    path: '',
+    redirectTo: '/dashboard',
+    pathMatch: 'full'
   },
-  // Keep login/register at root level for backward compatibility
   {
     path: 'login',
-    loadComponent: () => import('./features/auth/login/login.component').then(c => c.LoginComponent)
+    loadChildren: () => import('./features/auth/auth.module').then(m => m.AuthModule)
   },
   {
     path: 'register',
-    loadComponent: () => import('./features/auth/register/register.component').then(c => c.RegisterComponent)
-  },
-  {
-    path: 'profile',
-    loadComponent: () => import('./features/auth/profile/profile.component').then(c => c.ProfileComponent),
-    canActivate: [authGuard]
+    loadChildren: () => import('./features/auth/auth.module').then(m => m.AuthModule)
   },
   {
     path: 'dashboard',
-    loadChildren: () => import('./features/dashboard/dashboard.module').then(m => m.DashboardModule),
-    canActivate: [authGuard]
+    canActivate: [authGuard],
+    loadChildren: () => import('./features/dashboard/dashboard.module').then(m => m.DashboardModule)
   },
   {
     path: 'tasks',
-    loadChildren: () => import('./features/tasks/tasks.module').then(m => m.TasksModule),
-    canActivate: [authGuard]
+    canActivate: [authGuard],
+    loadChildren: () => import('./features/tasks/tasks.module').then(m => m.TasksModule)
   },
   {
     path: 'projects',
-    loadComponent: () => import('./features/projects/projects.component').then(c => c.ProjectsComponent),
-    canActivate: [authGuard]
+    canActivate: [authGuard, roleGuard],
+    data: { roles: ['ADMIN', 'MANAGER', 'admin', 'manager'] },
+    loadChildren: () => import('./features/projects/projects.module').then(m => m.ProjectsModule)
   },
   {
-    path: 'calendar',
-    loadComponent: () => import('./features/calendar/calendar.component').then(c => c.CalendarComponent),
-    canActivate: [authGuard]
+    path: 'analytics',
+    canActivate: [authGuard, roleGuard],
+    data: { roles: ['ADMIN', 'MANAGER', 'admin', 'manager'] },
+    loadChildren: () => import('./features/analytics/analytics.module').then(m => m.AnalyticsModule)
   },
   {
     path: 'reports',
-    loadComponent: () => import('./features/reports/reports.component').then(c => c.ReportsComponent),
-    canActivate: [authGuard]
+    canActivate: [authGuard, roleGuard],
+    data: { roles: ['ADMIN', 'MANAGER', 'admin', 'manager'] },
+    loadChildren: () => import('./features/reports/reports.module').then(m => m.ReportsModule)
   },
   {
     path: 'notifications',
-    loadChildren: () => import('./features/notifications/notifications.module').then(m => m.NotificationsModule),
-    canActivate: [authGuard]
+    canActivate: [authGuard],
+    loadChildren: () => import('./features/notifications/notifications.module').then(m => m.NotificationsModule)
   },
-  { 
-    path: '**', 
-    redirectTo: '/login' 
+  {
+    path: 'profile',
+    canActivate: [authGuard],
+    loadChildren: () => import('./features/auth/auth.module').then(m => m.AuthModule)
+  },
+  {
+    path: 'admin',
+    canActivate: [authGuard, roleGuard],
+    data: { roles: ['ADMIN', 'admin'] },
+    loadChildren: () => import('./features/admin/admin.module').then(m => m.AdminModule)
+  },
+  {
+    path: '**',
+    redirectTo: '/dashboard'
   }
 ];
 
 @NgModule({
   imports: [RouterModule.forRoot(routes, {
-    enableTracing: false,
+    enableTracing: false, // Set to true for debugging
     scrollPositionRestoration: 'top',
-    preloadingStrategy: 'optional' // Optimize bundle loading
+    anchorScrolling: 'enabled'
   })],
   exports: [RouterModule]
 })

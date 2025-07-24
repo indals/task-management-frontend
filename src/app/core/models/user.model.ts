@@ -21,4 +21,7 @@ export interface UserListItem {
   email: string;
   first_name?: string;
   last_name?: string;
+  role?: string; // Added role field
+  created_at?: string; // Added created_at field
+  updated_at?: string; // Added updated_at field
 }
