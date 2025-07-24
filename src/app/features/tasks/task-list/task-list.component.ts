@@ -125,4 +125,29 @@ applyFilters(): void {
       );
     }
   }
+
+  // Add these methods to your existing task-list.component.ts file
+
+getStatusLabel(status: string): string {
+  switch (status) {
+    case 'PENDING': return 'Pending';
+    case 'IN_PROGRESS': return 'In Progress';
+    case 'COMPLETED': return 'Completed';
+    case 'CANCELLED': return 'Cancelled';
+    default: return status;
+  }
+}
+
+getPriorityClass(priority: string): string {
+  return `priority-${priority.toLowerCase()}`;
+}
+
+getPriorityLabel(priority: string): string {
+  switch (priority) {
+    case 'HIGH': return 'High';
+    case 'MEDIUM': return 'Medium';
+    case 'LOW': return 'Low';
+    default: return priority;
+  }
+}
 }
