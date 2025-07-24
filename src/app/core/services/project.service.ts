@@ -2,74 +2,76 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-// import { environment } from '../../../environments/environment';
-
-// Updated interfaces to match API
-export interface User {
-  id: number;
-  name: string;
-  email: string;
-  role: 'ADMIN' | 'MANAGER' | 'EMPLOYEE';
-}
-
-export interface Project {
-  id: number;
-  name: string;
-  description: string;
-  created_at: string;
-  updated_at: string;
-  owner_id: number;
-  status: 'active' | 'completed' | 'archived';
-  owner: User;
-}
+import { catchError } from 'rxjs/operators';
+import { User } from '../models/user.model';
+import { Project } from '../models/project.model';
+import { ErrorHandlerService } from './error-handler.service';
+import { API_ENDPOINTS } from '../constants/api.constants';
 
 export interface CreateProjectRequest {
   name: string;
   description: string;
+  start_date: string;
+  end_date?: string;
+  status: 'ACTIVE' | 'COMPLETED' | 'ARCHIVED';
 }
 
 export interface UpdateProjectRequest {
   name?: string;
   description?: string;
-  status?: 'active' | 'completed' | 'archived';
+  start_date?: string;
+  end_date?: string;
+  status?: 'ACTIVE' | 'COMPLETED' | 'ARCHIVED';
 }
 
 @Injectable({
   providedIn: 'root'
 })
 export class ProjectService {
-  // private apiUrl = `${environment.apiUrl}/api/projects`;
-  private apiUrl = 'http://127.0.0.1:5000/api/projects';
+  constructor(
+    private http: HttpClient,
+    private errorHandler: ErrorHandlerService
+  ) {}
 
-  constructor(private http: HttpClient) { }
-
-  // Get all projects
   getProjects(): Observable<Project[]> {
-    return this.http.get<Project[]>(this.apiUrl);
+    return this.http.get<Project[]>(API_ENDPOINTS.PROJECTS.BASE)
+      .pipe(
+        catchError(this.errorHandler.handleError.bind(this.errorHandler))
+      );
   }
 
-  // Get single project by ID
-  getProject(id: string | number): Observable<Project> {
-    return this.http.get<Project>(`${this.apiUrl}/${id}`);
-  }
-
-  // Get recent projects
   getRecentProjects(): Observable<Project[]> {
-    return this.http.get<Project[]>(`${this.apiUrl}/recent`);
+    return this.http.get<Project[]>(`${API_ENDPOINTS.PROJECTS.BASE}/recent`)
+      .pipe(
+        catchError(this.errorHandler.handleError.bind(this.errorHandler))
+      );
   }
 
-  // Create new project
+  getProjectById(id: number): Observable<Project> {
+    return this.http.get<Project>(API_ENDPOINTS.PROJECTS.BY_ID(id))
+      .pipe(
+        catchError(this.errorHandler.handleError.bind(this.errorHandler))
+      );
+  }
+
   createProject(project: CreateProjectRequest): Observable<Project> {
-    return this.http.post<Project>(this.apiUrl, project);
+    return this.http.post<Project>(API_ENDPOINTS.PROJECTS.BASE, project)
+      .pipe(
+        catchError(this.errorHandler.handleError.bind(this.errorHandler))
+      );
   }
 
-  // Update existing project
-  updateProject(id: string | number, changes: UpdateProjectRequest): Observable<Project> {
-    return this.http.patch<Project>(`${this.apiUrl}/${id}`, changes);
+  updateProject(id: number, project: UpdateProjectRequest): Observable<Project> {
+    return this.http.put<Project>(API_ENDPOINTS.PROJECTS.BY_ID(id), project)
+      .pipe(
+        catchError(this.errorHandler.handleError.bind(this.errorHandler))
+      );
   }
 
-  // Delete project
-  deleteProject(id: string | number): Observable<{ message: string }> {
-    return this.http.delete<{ message: string }>(`${this.apiUrl}/${id}`);
+  deleteProject(id: number): Observable<void> {
+    return this.http.delete<void>(API_ENDPOINTS.PROJECTS.BY_ID(id))
+      .pipe(
+        catchError(this.errorHandler.handleError.bind(this.errorHandler))
+      );
   }
 }

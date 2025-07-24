@@ -1,19 +1,24 @@
 // src/app/core/models/user.model.ts
 export interface User {
-  id: number; // Change from string to number
+  id: number;
   name: string;
+  username?: string; // Added username for backward compatibility
   email: string;
-  role?: 'admin' | 'user' | 'guest' | string;
+  role?: 'ADMIN' | 'MANAGER' | 'EMPLOYEE' | 'admin' | 'user' | 'guest' | string;
   avatar?: string;
+  first_name?: string;
+  last_name?: string;
   createdAt?: Date;
   updatedAt?: Date;
+  created_at?: string;
+  updated_at?: string;
 }
 
-// Add this interface too:
 export interface UserListItem {
   id: number;
-  username: string;
-  email: string; // This was missing
+  name: string;
+  username?: string;
+  email: string;
   first_name?: string;
   last_name?: string;
 }

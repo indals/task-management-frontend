@@ -13,9 +13,12 @@ import {
   RegisterRequest, 
   AuthResponse, 
   ChangePasswordRequest 
-} from '../interfaces';
+} from '../interfaces/api.interfaces';
 import { API_ENDPOINTS, STORAGE_KEYS } from '../constants/api.constants';
 import { ErrorHandlerService } from './error-handler.service';
+
+// Export types for external use
+export type { User, UserListItem } from '../models';
 
 @Injectable({
   providedIn: 'root'
