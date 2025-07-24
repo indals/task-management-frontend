@@ -1,64 +1,56 @@
 // src/app/shared/shared.module.ts
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
-import { HttpClientModule } from '@angular/common/http';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 
-// Components
-import {
-  HeaderComponent,
-  SidebarComponent,
-  LoadingComponent,
-  ConfirmationDialogComponent
-} from './components';
+// Import MaterialModule
+import { MaterialModule } from './material.module';
 
-// Pipes
-import { StatusColorPipe } from './pipes';
+// Import shared components
+import { HeaderComponent } from './components/header/header.component';
+import { SidebarComponent } from './components/sidebar/sidebar.component';
+import { LoadingComponent } from './components/loading/loading.component';
+import { ConfirmationDialogComponent } from './components/confirmation-dialog/confirmation-dialog.component';
 
-// Directives  
-import { ClickOutsideDirective } from './directives';
-
-// Common Angular modules that features might need
-const ANGULAR_MODULES = [
-  CommonModule,
-  RouterModule,
-  HttpClientModule,
-  FormsModule,
-  ReactiveFormsModule
-];
-
-// Shared components, pipes, and directives
-const SHARED_COMPONENTS = [
-  HeaderComponent,
-  SidebarComponent,
-  LoadingComponent,
-  StatusColorPipe,
-  ClickOutsideDirective
-];
-
-// Standalone components (not declared here)
-const STANDALONE_COMPONENTS = [
-  ConfirmationDialogComponent
-];
+// Import shared directives and pipes
+import { ClickOutsideDirective } from './directives/click-outside.directive';
+import { StatusColorPipe } from './pipes/status-color.pipe';
 
 @NgModule({
   declarations: [
-    ...SHARED_COMPONENTS
+    HeaderComponent,
+    SidebarComponent,
+    LoadingComponent,
+    ConfirmationDialogComponent,
+    ClickOutsideDirective,
+    StatusColorPipe
   ],
   imports: [
-    ...ANGULAR_MODULES
+    CommonModule,
+    FormsModule,
+    ReactiveFormsModule,
+    RouterModule,
+    MaterialModule
   ],
   exports: [
-    // Re-export Angular modules for feature modules
-    ...ANGULAR_MODULES,
-    // Export our shared components
-    ...SHARED_COMPONENTS
+    CommonModule,
+    FormsModule,
+    ReactiveFormsModule,
+    RouterModule,
+    MaterialModule,
+    
+    // Components
+    HeaderComponent,
+    SidebarComponent,
+    LoadingComponent,
+    ConfirmationDialogComponent,
+    
+    // Directives
+    ClickOutsideDirective,
+    
+    // Pipes
+    StatusColorPipe
   ]
 })
-export class SharedModule {
-  // Expose standalone components for import
-  static readonly standaloneComponents = {
-    ConfirmationDialogComponent
-  };
-}
+export class SharedModule { }

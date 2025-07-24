@@ -1,0 +1,296 @@
+// Admin Dashboard Styles
+.admin-container {
+  padding: 24px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.admin-header {
+  margin-bottom: 32px;
+  
+  .header-content {
+    .admin-title {
+      font-size: 2rem;
+      font-weight: 600;
+      color: #1a1a1a;
+      margin: 0 0 8px 0;
+    }
+    
+    .admin-subtitle {
+      font-size: 1rem;
+      color: #666;
+      margin: 0;
+    }
+  }
+}
+
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  
+  p {
+    margin-top: 16px;
+    color: #666;
+  }
+}
+
+.admin-content {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+// Metrics Grid
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 24px;
+}
+
+.metric-card {
+  .mat-mdc-card-content {
+    padding: 24px !important;
+  }
+  
+  .metric-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 16px;
+    
+    .metric-icon {
+      font-size: 24px;
+      width: 24px;
+      height: 24px;
+      margin-right: 12px;
+      
+      &.users { color: #2196f3; }
+      &.active { color: #4caf50; }
+      &.tasks { color: #ff9800; }
+      &.health { color: #9c27b0; }
+    }
+    
+    .metric-label {
+      font-size: 0.875rem;
+      color: #666;
+      font-weight: 500;
+    }
+  }
+  
+  .metric-value {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #1a1a1a;
+    line-height: 1;
+    
+    &.status {
+      font-size: 1.5rem;
+      color: #4caf50;
+    }
+  }
+}
+
+// User Management Section
+.users-card {
+  .mat-mdc-card-content {
+    padding: 0 !important;
+  }
+  
+  .table-container {
+    overflow-x: auto;
+  }
+  
+  .users-table {
+    width: 100%;
+    
+    .mat-mdc-header-cell {
+      font-weight: 600;
+      color: #1a1a1a;
+      padding: 16px 8px;
+    }
+    
+    .mat-mdc-cell {
+      padding: 16px 8px;
+    }
+  }
+}
+
+// User Info in Table
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  
+  .user-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: #e3f2fd;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    
+    mat-icon {
+      color: #1976d2;
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
+    }
+  }
+  
+  .user-details {
+    .user-name {
+      font-weight: 500;
+      color: #1a1a1a;
+    }
+  }
+}
+
+// Action Buttons
+.action-buttons {
+  display: flex;
+  gap: 8px;
+  
+  button {
+    &:hover {
+      transform: scale(1.1);
+    }
+  }
+}
+
+// Settings Section
+.settings-section {
+  display: grid;
+  gap: 24px;
+}
+
+.settings-card {
+  .settings-grid {
+    display: grid;
+    gap: 24px;
+    
+    .setting-item {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      
+      .mat-mdc-slide-toggle {
+        width: fit-content;
+      }
+      
+      .setting-description {
+        font-size: 0.875rem;
+        color: #666;
+        margin: 0;
+        margin-left: 24px;
+      }
+    }
+  }
+  
+  .mat-mdc-card-actions {
+    padding: 16px 24px;
+    display: flex;
+    gap: 12px;
+    
+    button {
+      &:first-child {
+        margin-right: auto;
+      }
+    }
+  }
+}
+
+// Role Select Styling
+.mat-mdc-select {
+  .mat-mdc-select-value {
+    font-weight: 500;
+  }
+}
+
+// Responsive Design
+@media (max-width: 768px) {
+  .admin-container {
+    padding: 16px;
+  }
+  
+  .metrics-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .metric-card .metric-value {
+    font-size: 2rem;
+    
+    &.status {
+      font-size: 1.25rem;
+    }
+  }
+  
+  .users-table {
+    .mat-mdc-header-cell,
+    .mat-mdc-cell {
+      padding: 12px 4px;
+      
+      &:first-child {
+        padding-left: 16px;
+      }
+      
+      &:last-child {
+        padding-right: 16px;
+      }
+    }
+  }
+  
+  .user-info {
+    .user-avatar {
+      width: 32px;
+      height: 32px;
+      
+      mat-icon {
+        font-size: 16px;
+        width: 16px;
+        height: 16px;
+      }
+    }
+  }
+  
+  .action-buttons {
+    flex-direction: column;
+    gap: 4px;
+    
+    button {
+      transform: scale(0.9);
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .admin-container {
+    padding: 12px;
+  }
+  
+  .settings-grid {
+    .setting-item {
+      .setting-description {
+        margin-left: 16px;
+      }
+    }
+  }
+}
+
+// Animation
+.fade-in {
+  animation: fadeInUp 0.5s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

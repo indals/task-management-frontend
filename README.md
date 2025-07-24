@@ -1,248 +1,304 @@
-# Task Management System - Angular Frontend
+# 📋 Task Management System - Angular Frontend
 
-A modern, scalable Angular 18 application for task management with clean architecture and best practices.
+A comprehensive, enterprise-grade Task Management System built with Angular 18, featuring role-based access control, real-time notifications, analytics, and modern UI/UX design.
 
-## 🏗️ Project Architecture
+## 🚀 Features
 
-This project follows Angular best practices with a clean, modular architecture:
+### 👥 User Roles & Access Control
+- **Manager** - Full access to projects, analytics, team management, and task assignment
+- **Employee** - Access to assigned tasks, personal dashboard, and notifications
+- **Admin** - System administration, user management, and full system access
+
+### 🎯 Core Functionality
+- **Authentication & Authorization** - JWT-based authentication with role-based route protection
+- **Task Management** - Create, assign, update, and track tasks with priorities and deadlines
+- **Project Organization** - Group tasks into projects with progress tracking
+- **Real-time Notifications** - Instant notifications for task assignments and status changes
+- **Analytics Dashboard** - Comprehensive metrics and performance insights
+- **Comments & Collaboration** - Task-level comments and team collaboration
+- **File Attachments** - Support for task-related file uploads
+- **Advanced Filtering** - Filter tasks by status, priority, assignee, and date ranges
+
+### 📊 Analytics & Reporting
+- **Performance Metrics** - Team and individual performance tracking
+- **Task Analytics** - Completion rates, time tracking, and productivity insights
+- **Visual Charts** - Interactive charts using Chart.js for data visualization
+- **Export Capabilities** - Export reports and analytics data
+
+### 🎨 Modern UI/UX
+- **Angular Material Design** - Consistent, accessible, and beautiful UI components
+- **Responsive Design** - Optimized for desktop, tablet, and mobile devices
+- **Dark/Light Themes** - User preference-based theming
+- **Progressive Web App** - PWA capabilities for offline functionality
+
+## 🏗️ Architecture
+
+The application follows Angular best practices with a modular, scalable architecture:
 
 ```
 src/app/
-├── core/                          # Singleton services, guards, interceptors
-│   ├── constants/                 # Application constants
-│   │   └── api.constants.ts      # API endpoints and configuration
-│   ├── guards/                    # Route guards
-│   │   ├── auth.guard.ts         # Authentication guard (functional)
-│   │   └── index.ts              # Barrel exports
-│   ├── interceptors/             # HTTP interceptors
-│   │   ├── jwt.interceptor.ts    # JWT token injection
-│   │   ├── error.interceptor.ts  # Global error handling
-│   │   └── index.ts              # Barrel exports
-│   ├── interfaces/               # API interfaces
-│   │   ├── api.interfaces.ts     # Request/Response interfaces
-│   │   └── index.ts              # Barrel exports
-│   ├── models/                   # Business domain models
-│   │   ├── user.model.ts
-│   │   ├── task.model.ts
-│   │   ├── project.model.ts
-│   │   ├── enums.ts              # Application enums
-│   │   └── index.ts              # Barrel exports
-│   ├── services/                 # Core business services
-│   │   ├── auth.service.ts       # Authentication service
-│   │   ├── task.service.ts       # Task management
-│   │   ├── error-handler.service.ts # Error handling
-│   │   └── index.ts              # Barrel exports
-│   ├── core.module.ts            # Core module (import once)
-│   └── index.ts                  # Main core barrel export
+├── 📁 core/                          # Singleton services, guards, interceptors
+│   ├── 📁 constants/                 # Application constants and configuration
+│   ├── 📁 guards/                    # Authentication and role-based guards
+│   ├── 📁 interceptors/             # HTTP interceptors (JWT, error handling)
+│   ├── 📁 interfaces/               # TypeScript interfaces for API
+│   ├── 📁 models/                   # Domain models and DTOs
+│   ├── 📁 services/                 # Business logic services
+│   └── 📄 core.module.ts            # Core module with forRoot pattern
 │
-├── shared/                       # Reusable components, pipes, directives
-│   ├── components/               # Shared components
-│   │   ├── header/
-│   │   ├── sidebar/
-│   │   ├── loading/
-│   │   ├── confirmation-dialog/  # Reusable dialog
-│   │   └── index.ts
-│   ├── directives/               # Custom directives
-│   │   ├── click-outside.directive.ts
-│   │   └── index.ts
-│   ├── pipes/                    # Custom pipes
-│   │   ├── status-color.pipe.ts
-│   │   └── index.ts
-│   ├── shared.module.ts          # Shared module
-│   └── index.ts                  # Main shared barrel export
+├── 📁 shared/                       # Reusable components and utilities
+│   ├── 📁 components/               # Shared UI components
+│   ├── 📁 directives/               # Custom directives
+│   ├── 📁 pipes/                    # Custom pipes
+│   ├── 📄 material.module.ts        # Angular Material imports
+│   └── 📄 shared.module.ts          # Shared module exports
 │
-├── features/                     # Feature modules (lazy loaded)
-│   ├── auth/                     # Authentication feature
-│   │   ├── login/                # Standalone component
-│   │   ├── register/             # Standalone component
-│   │   ├── profile/              # Standalone component
-│   │   ├── auth-routing.module.ts
-│   │   └── auth.module.ts
-│   ├── dashboard/                # Dashboard feature
-│   ├── tasks/                    # Task management feature
-│   ├── projects/                 # Project management feature
-│   ├── calendar/                 # Calendar feature
-│   ├── reports/                  # Reports feature
-│   └── notifications/            # Notifications feature
+├── 📁 features/                     # Feature modules (lazy loaded)
+│   ├── 📁 auth/                     # Authentication & user management
+│   ├── 📁 dashboard/                # Main dashboard with metrics
+│   ├── 📁 tasks/                    # Task management features
+│   ├── 📁 projects/                 # Project management (Manager only)
+│   ├── 📁 analytics/                # Advanced analytics (Manager only)
+│   ├── 📁 notifications/            # Notification center
+│   ├── 📁 reports/                  # Reporting features (Manager only)
+│   └── 📁 admin/                    # Admin panel (Admin only)
 │
-├── app-routing.module.ts         # Main routing configuration
-├── app.component.ts              # Root component
-├── app.module.ts                 # Root module
-└── environments/                 # Environment configurations
-    ├── environment.ts            # Development environment
-    └── environment.prod.ts       # Production environment
+└── 📁 environments/                 # Environment configurations
 ```
 
-## 🎯 Architecture Principles
-
-### Core Module Pattern
-- **Single Instance**: Core module can only be imported once (in AppModule)
-- **Singleton Services**: Authentication, HTTP services, guards
-- **Global Configuration**: API endpoints, constants, error handling
-
-### Shared Module Pattern
-- **Reusable Components**: Header, sidebar, loading components
-- **Common Utilities**: Pipes, directives, validators
-- **Angular Modules Re-export**: CommonModule, ReactiveFormsModule, etc.
-
-### Feature Module Pattern
-- **Lazy Loading**: Each feature is loaded on demand
-- **Self-Contained**: Each feature has its own routing and components
-- **Standalone Components**: Modern Angular approach for better tree-shaking
-
-### Barrel Exports (index.ts)
-- **Clean Imports**: Simplified import statements
-- **Better Maintainability**: Easy to refactor and reorganize
-- **Encapsulation**: Control what gets exported from each module
-
-## 🔧 Key Features
-
-### Modern Angular Patterns
-- ✅ Functional Guards (authGuard)
-- ✅ Standalone Components
-- ✅ Lazy Loading with loadComponent/loadChildren
-- ✅ Barrel Exports for clean imports
-- ✅ TypeScript strict mode
-- ✅ RxJS best practices
-
-### Security & Error Handling
-- ✅ JWT Authentication with automatic token refresh
-- ✅ Route protection with guards
-- ✅ Global error interceptor
-- ✅ Centralized error handling service
-- ✅ Environment-based configuration
-
-### Performance Optimization
-- ✅ Lazy loading for all features
-- ✅ OnPush change detection strategy
-- ✅ Tree-shakable imports
-- ✅ Bundle optimization
-
-## 🚀 Getting Started
+## 🛠️ Setup Instructions
 
 ### Prerequisites
-- Node.js 18+
-- Angular CLI 18+
+- Node.js (18.x or higher)
 - npm or yarn
+- Angular CLI (`npm install -g @angular/cli`)
 
 ### Installation
-```bash
-# Clone the repository
-git clone <repository-url>
-cd task-manager-frontend
 
-# Install dependencies
-npm install
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd task-manager-frontend
+   ```
 
-# Start development server
-npm start
-```
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
 
-### Environment Configuration
-Update the API URL in `src/environments/environment.ts`:
-```typescript
-export const environment = {
-  production: false,
-  apiUrl: 'http://your-api-domain.com/api',
-  // ... other configuration
-};
-```
+3. **Environment Configuration**
+   
+   Update `src/environments/environment.ts` with your backend API configuration:
+   ```typescript
+   export const environment = {
+     production: false,
+     apiUrl: 'http://localhost:5000/api',  // Your backend API URL
+     appName: 'Task Manager',
+     version: '1.0.0'
+   };
+   ```
 
-## 📝 Development Guidelines
+4. **Run the development server**
+   ```bash
+   npm start
+   # or
+   ng serve
+   ```
 
-### Code Organization
-1. **Use barrel exports** for clean imports
-2. **Follow the single responsibility principle**
-3. **Keep components focused and small**
-4. **Use TypeScript interfaces** for type safety
-5. **Implement proper error handling**
+5. **Open your browser**
+   
+   Navigate to `http://localhost:4200`
 
-### Component Development
-```typescript
-// ✅ Good: Standalone component with proper imports
-@Component({
-  selector: 'app-example',
-  standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
-  template: `...`
-})
-export class ExampleComponent { }
-
-// ✅ Good: Using proper imports from barrel files
-import { User, Task } from '@core/models';
-import { AuthService } from '@core/services';
-```
-
-### Service Development
-```typescript
-// ✅ Good: Proper error handling and type safety
-@Injectable({ providedIn: 'root' })
-export class ExampleService {
-  constructor(
-    private http: HttpClient,
-    private errorHandler: ErrorHandlerService
-  ) {}
-
-  getData(): Observable<SomeType> {
-    return this.http.get<SomeType>(API_ENDPOINTS.SOME_ENDPOINT)
-      .pipe(
-        catchError(this.errorHandler.handleError.bind(this.errorHandler))
-      );
-  }
-}
-```
-
-### State Management
-- Use services with BehaviorSubject for simple state
-- Consider NgRx for complex state management
-- Implement proper loading and error states
-
-## 🔒 Authentication Flow
-
-1. User logs in → JWT token stored in localStorage
-2. AuthGuard protects routes → checks token validity
-3. JwtInterceptor adds token to API requests
-4. ErrorInterceptor handles 401/403 responses
-5. Auto-logout on token expiration
-
-## 📊 Available Scripts
+### Production Build
 
 ```bash
-npm start           # Development server
-npm run build       # Production build
-npm run test        # Run unit tests
-npm run lint        # Run ESLint
-npm run e2e         # Run e2e tests
+npm run build
+# or
+ng build --configuration production
 ```
 
-## 🏷️ Folder Naming Conventions
+## 🔧 Configuration
 
-- **kebab-case** for files and folders
-- **PascalCase** for classes and interfaces
-- **camelCase** for properties and methods
-- **SCREAMING_SNAKE_CASE** for constants
+### Backend API Requirements
 
-## 🔄 Git Workflow
+The frontend expects a REST API with the following endpoints:
 
-1. Create feature branch: `git checkout -b feature/task-management`
-2. Commit changes: `git commit -m "feat: add task creation"`
-3. Push branch: `git push origin feature/task-management`
-4. Create Pull Request
+**Authentication:**
+- `POST /api/auth/login` - User login
+- `POST /api/auth/register` - User registration
+- `GET /api/auth/me` - Get current user profile
+- `PUT /api/auth/profile` - Update user profile
 
-## 📚 Additional Resources
+**Tasks:**
+- `GET /api/tasks` - Get tasks with filtering
+- `POST /api/tasks` - Create new task
+- `GET /api/tasks/:id` - Get task details
+- `PUT /api/tasks/:id` - Update task
+- `DELETE /api/tasks/:id` - Delete task
 
-- [Angular Style Guide](https://angular.io/guide/styleguide)
-- [RxJS Best Practices](https://rxjs.dev/guide/operators)
-- [TypeScript Handbook](https://www.typescriptlang.org/docs/)
+**Projects:**
+- `GET /api/projects` - Get projects list
+- `POST /api/projects` - Create new project
+- `PUT /api/projects/:id` - Update project
 
----
+**Notifications:**
+- `GET /api/notifications` - Get user notifications
+- `POST /api/notifications` - Create notification
+- `PUT /api/notifications/:id/read` - Mark as read
+
+### JWT Token Management
+
+The application uses JWT tokens stored in localStorage. Configure your backend to:
+- Return JWT tokens in the `access_token` field
+- Include user information in the login response
+- Validate tokens on protected endpoints
+
+## 🎯 Usage Guidelines
+
+### For Managers
+1. **Dashboard** - Monitor team performance and project progress
+2. **Projects** - Create and manage projects, assign tasks to team members
+3. **Analytics** - View detailed performance metrics and reports
+4. **Team Management** - Assign tasks, monitor progress, and provide feedback
+
+### For Employees
+1. **Task Management** - View assigned tasks, update status, and add comments
+2. **Personal Dashboard** - Track personal productivity and deadlines
+3. **Notifications** - Stay updated on new assignments and project changes
+
+### For Administrators
+1. **User Management** - Create users, manage roles, and system permissions
+2. **System Monitoring** - Monitor system health and user activity
+3. **Configuration** - Manage system settings and configurations
+
+## 🔒 Security Features
+
+- **JWT Authentication** - Secure token-based authentication
+- **Role-based Access Control** - Route and feature protection based on user roles
+- **HTTP Interceptors** - Automatic token attachment and error handling
+- **Input Validation** - Client-side validation with Angular Reactive Forms
+- **XSS Protection** - Angular's built-in sanitization
+- **HTTPS Ready** - Production-ready HTTPS configuration
+
+## 🧪 Testing
+
+```bash
+# Run unit tests
+npm test
+
+# Run e2e tests
+npm run e2e
+
+# Run tests with coverage
+npm run test:coverage
+```
+
+## 📱 Progressive Web App
+
+The application includes PWA capabilities:
+- **Offline Support** - Basic offline functionality
+- **App Installation** - Install as a native app
+- **Push Notifications** - Browser-based notifications
+- **Responsive Design** - Mobile-optimized interface
+
+## 🚀 Deployment
+
+### Docker Deployment
+
+```dockerfile
+FROM node:18-alpine as build
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+COPY . .
+RUN npm run build
+
+FROM nginx:alpine
+COPY --from=build /app/dist/task-manager-frontend /usr/share/nginx/html
+COPY nginx.conf /etc/nginx/nginx.conf
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]
+```
+
+### Environment Variables
+
+Set the following environment variables for production:
+
+- `API_URL` - Backend API URL
+- `APP_NAME` - Application name
+- `VERSION` - Application version
 
 ## 🤝 Contributing
 
-1. Follow the established architecture patterns
-2. Write unit tests for new features
-3. Update documentation for significant changes
-4. Follow the coding standards and conventions
-5. Ensure all builds pass before submitting PR
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
-For questions or issues, please create a GitHub issue or contact the development team.
+## 📚 Development Guidelines
+
+### Code Style
+- Follow Angular style guide
+- Use TypeScript strict mode
+- Implement proper error handling
+- Write unit tests for new features
+- Use meaningful component and service names
+
+### Performance Best Practices
+- Lazy load feature modules
+- Use OnPush change detection strategy
+- Implement virtual scrolling for large lists
+- Optimize bundle size with tree shaking
+- Use trackBy functions in *ngFor loops
+
+### Accessibility
+- Follow WCAG 2.1 guidelines
+- Use semantic HTML elements
+- Implement proper ARIA labels
+- Ensure keyboard navigation support
+- Test with screen readers
+
+## 🐛 Troubleshooting
+
+### Common Issues
+
+1. **Module not found errors**
+   - Ensure all dependencies are installed: `npm install`
+   - Check import paths and barrel exports
+
+2. **Authentication issues**
+   - Verify backend API endpoints
+   - Check JWT token format and expiration
+   - Ensure CORS is configured on backend
+
+3. **Build errors**
+   - Clear node_modules and reinstall: `rm -rf node_modules && npm install`
+   - Check Angular and TypeScript versions compatibility
+
+4. **Performance issues**
+   - Enable production mode
+   - Check for memory leaks in subscriptions
+   - Optimize change detection with OnPush
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- **Angular Team** - For the amazing framework
+- **Angular Material** - For the beautiful UI components
+- **Chart.js** - For powerful data visualization
+- **Community Contributors** - For continuous improvements and feedback
+
+## 📞 Support
+
+For support and questions:
+- Create an issue in the repository
+- Check the [documentation](docs/)
+- Contact the development team
+
+---
+
+**Built with ❤️ using Angular 18 and Angular Material**
