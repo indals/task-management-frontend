@@ -4,9 +4,43 @@
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
+    "start:dev": "ng serve --host 0.0.0.0 --port 4200",
     "build": "ng build",
+    "build:prod": "ng build --configuration production",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test"
+    "test": "ng test",
+    "test:coverage": "ng test --code-coverage",
+    "lint": "ng lint",
+    "e2e": "ng e2e",
+    "serve:prod": "ng serve --configuration production",
+    
+    "backend:install": "cd backend && pip install -r requirements.txt",
+    "backend:start": "cd backend && python run.py",
+    "backend:start:prod": "cd backend && python run.py --env production --no-debug",
+    "backend:init-db": "cd backend && python run.py --init-db",
+    "backend:migrate": "cd backend && python run.py --migrate",
+    "backend:test": "cd backend && python -m pytest",
+    
+    "docker:build": "docker-compose build",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "docker:logs": "docker-compose logs -f",
+    "docker:clean": "docker-compose down -v --remove-orphans",
+    "docker:restart": "docker-compose restart",
+    "docker:backend": "docker-compose up -d postgres redis backend",
+    "docker:frontend": "docker-compose up -d frontend",
+    
+    "dev": "concurrently \"npm run backend:start\" \"npm run start\"",
+    "dev:docker": "docker-compose up",
+    "setup": "npm install && npm run backend:install",
+    "setup:docker": "docker-compose build && docker-compose up -d && docker-compose exec backend python run.py --init-db",
+    
+    "format": "prettier --write \"src/**/*.{ts,html,scss}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,html,scss}\"",
+    "analyze": "ng build --stats-json && npx webpack-bundle-analyzer dist/task-manager-frontend/stats.json",
+    
+    "precommit": "npm run lint && npm run test:coverage && npm run format:check",
+    "postinstall": "ngcc"
   },
   "private": true,
   "dependencies": {
@@ -30,12 +64,37 @@
     "@angular/compiler-cli": "^18.2.0",
     "@types/chart.js": "^2.9.41",
     "@types/jasmine": "~5.1.0",
+    "concurrently": "^8.2.2",
     "jasmine-core": "~5.2.0",
     "karma": "~6.4.0",
     "karma-chrome-launcher": "~3.2.0",
     "karma-coverage": "~2.2.0",
     "karma-jasmine": "~5.1.0",
     "karma-jasmine-html-reporter": "~2.1.0",
-    "typescript": "~5.5.2"
-  }
+    "prettier": "^3.0.0",
+    "typescript": "~5.5.2",
+    "webpack-bundle-analyzer": "^4.9.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/your-username/task-management-system.git"
+  },
+  "keywords": [
+    "angular",
+    "task-management",
+    "flask",
+    "postgresql",
+    "typescript",
+    "python"
+  ],
+  "author": "Your Name <your.email@example.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/your-username/task-management-system/issues"
+  },
+  "homepage": "https://github.com/your-username/task-management-system#readme"
 }
