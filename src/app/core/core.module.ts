@@ -1,40 +1,51 @@
-import { NgModule, Optional, SkipSelf, ModuleWithProviders } from '@angular/core';
+import { NgModule, Optional, SkipSelf } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HTTP_INTERCEPTORS } from '@angular/common/http';
 
-// Services
-import {
-  AuthService,
-  TaskService,
-  ProjectService,
-  NotificationService,
-  AnalyticsService,
-  LayoutService,
-  ErrorHandlerService
-} from './services';
+// Material modules for interceptors
+import { MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
-// Guards
-import { AuthGuard } from './guards';
+// Services
+import { AuthService } from './services/auth.service';
+import { TaskService } from './services/task.service';
+import { ProjectService } from './services/project.service';
+import { SprintService } from './services/sprint.service';
+import { NotificationService } from './services/notification.service';
+import { AnalyticsService } from './services/analytics.service';
+import { EnumService } from './services/enum.service';
+import { LoadingService } from './interceptors/loading.interceptor';
 
 // Interceptors
-import { JwtInterceptor, ErrorInterceptor } from './interceptors';
+import { JwtInterceptor } from './interceptors/jwt.interceptor';
+import { ErrorInterceptor } from './interceptors/error.interceptor';
+import { LoadingInterceptor } from './interceptors/loading.interceptor';
+
+// Guards
+import { AuthGuard } from './guards/auth.guard';
 
 @NgModule({
-  imports: [CommonModule],
+  declarations: [],
+  imports: [
+    CommonModule,
+    MatSnackBarModule,
+    MatProgressSpinnerModule
+  ],
   providers: [
-    // Core Services
+    // Services
     AuthService,
     TaskService,
     ProjectService,
+    SprintService,
     NotificationService,
     AnalyticsService,
-    LayoutService,
-    ErrorHandlerService,
+    EnumService,
+    LoadingService,
     
     // Guards
     AuthGuard,
     
-    // HTTP Interceptors
+    // HTTP Interceptors (order matters!)
     {
       provide: HTTP_INTERCEPTORS,
       useClass: JwtInterceptor,
@@ -42,26 +53,25 @@ import { JwtInterceptor, ErrorInterceptor } from './interceptors';
     },
     {
       provide: HTTP_INTERCEPTORS,
+      useClass: LoadingInterceptor,
+      multi: true
+    },
+    {
+      provide: HTTP_INTERCEPTORS,
       useClass: ErrorInterceptor,
       multi: true
     }
+  ],
+  exports: [
+    // Export material modules that might be used by other modules
+    MatSnackBarModule,
+    MatProgressSpinnerModule
   ]
 })
 export class CoreModule {
-  // Prevent multiple imports of CoreModule
   constructor(@Optional() @SkipSelf() parentModule: CoreModule) {
     if (parentModule) {
       throw new Error('CoreModule is already loaded. Import it in the AppModule only.');
     }
-  }
-
-  // Optional: Use forRoot pattern for configuration
-  static forRoot(): ModuleWithProviders<CoreModule> {
-    return {
-      ngModule: CoreModule,
-      providers: [
-        // Any additional providers can be added here
-      ]
-    };
   }
 }

@@ -1,55 +1,103 @@
-import { Component, OnInit } from '@angular/core';
-import { Router } from '@angular/router';
+import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Router, NavigationEnd } from '@angular/router';
+import { Subject } from 'rxjs';
+import { takeUntil, filter } from 'rxjs/operators';
+
 import { AuthService } from './core/services/auth.service';
+import { LoadingService } from './core/interceptors/loading.interceptor';
+import { EnumService } from './core/services/enum.service';
+import { NotificationService } from './core/services/notification.service';
 
 @Component({
   selector: 'app-root',
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.scss']
 })
-export class AppComponent implements OnInit {
+export class AppComponent implements OnInit, OnDestroy {
+  private destroy$ = new Subject<void>();
+  
+  title = 'Task Management System';
   isAuthenticated = false;
-  isSidebarCollapsed = false;
-  isMobile = false;
-  isSidebarOpen = false;
+  isLoading = false;
+  showSidebar = true;
 
-  constructor(private authService: AuthService, private router: Router) {
-    this.checkScreenSize();
-    window.addEventListener('resize', () => this.checkScreenSize());
-  }
+  constructor(
+    private authService: AuthService,
+    private loadingService: LoadingService,
+    private enumService: EnumService,
+    private notificationService: NotificationService,
+    private router: Router
+  ) {}
 
   ngOnInit(): void {
-    this.isAuthenticated = this.authService.isLoggedIn();
+    this.initializeApp();
+    this.setupSubscriptions();
   }
 
-  logout(): void {
-    this.authService.logout();
-    this.isAuthenticated = false;
-    this.router.navigate(['/auth/login']);
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
-  isLoggedIn(): boolean {
-    return this.authService.isLoggedIn();
+  private initializeApp(): void {
+    // Initialize enum service (loads all dropdown data)
+    this.enumService.loadAllEnums().subscribe({
+      next: (enums) => {
+        console.log('✅ Enums loaded successfully');
+      },
+      error: (error) => {
+        console.error('❌ Failed to load enums:', error);
+      }
+    });
+
+    // Start notification polling for authenticated users
+    this.authService.isAuthenticated$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(isAuth => {
+        if (isAuth) {
+          this.notificationService.startPolling();
+        }
+      });
   }
 
-  checkScreenSize() {
-    this.isMobile = window.innerWidth <= 768;
-    if (this.isMobile) {
-      this.isSidebarOpen = false;
-    }
+  private setupSubscriptions(): void {
+    // Authentication state
+    this.authService.isAuthenticated$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(isAuthenticated => {
+        this.isAuthenticated = isAuthenticated;
+        this.updateSidebarVisibility();
+      });
+
+    // Loading state
+    this.loadingService.loading$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(isLoading => {
+        this.isLoading = isLoading;
+      });
+
+    // Router events for sidebar visibility
+    this.router.events
+      .pipe(
+        filter(event => event instanceof NavigationEnd),
+        takeUntil(this.destroy$)
+      )
+      .subscribe((event: NavigationEnd) => {
+        this.updateSidebarVisibility(event.url);
+      });
   }
 
-  toggleSidebar() {
-    if (this.isMobile) {
-      this.isSidebarOpen = !this.isSidebarOpen;
-    } else {
-      this.isSidebarCollapsed = !this.isSidebarCollapsed;
-    }
+  private updateSidebarVisibility(url?: string): void {
+    const currentUrl = url || this.router.url;
+    
+    // Hide sidebar on auth pages and access denied page
+    const hideSidebarRoutes = ['/auth', '/access-denied'];
+    this.showSidebar = this.isAuthenticated && 
+                     !hideSidebarRoutes.some(route => currentUrl.startsWith(route));
   }
 
-  closeSidebar() {
-    if (this.isMobile) {
-      this.isSidebarOpen = false;
-    }
+  onSidebarToggle(): void {
+    // This method can be called from child components if needed
+    this.showSidebar = !this.showSidebar;
   }
 }

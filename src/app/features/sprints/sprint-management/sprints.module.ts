@@ -1,20 +1,30 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
-
 import { SharedModule } from '../../shared/shared.module';
-import { DashboardComponent } from './dashboard.component';
+
+import { Component } from '@angular/core';
+
+@Component({
+  template: `
+    <div class="container">
+      <h1>Sprints</h1>
+      <p>Sprints feature coming soon...</p>
+    </div>
+  `
+})
+export class SprintsPlaceholderComponent {}
 
 const routes = [
   {
     path: '',
-    component: DashboardComponent
+    component: SprintsPlaceholderComponent
   }
 ];
 
 @NgModule({
   declarations: [
-    DashboardComponent
+    SprintsPlaceholderComponent
   ],
   imports: [
     CommonModule,
@@ -22,4 +32,4 @@ const routes = [
     RouterModule.forChild(routes)
   ]
 })
-export class DashboardModule { }
+export class SprintsModule { }

@@ -1,165 +1,290 @@
-// src/app/core/services/task.service.ts
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
+import { Observable, throwError, BehaviorSubject } from 'rxjs';
+import { map, catchError, tap } from 'rxjs/operators';
 
-// Import from your models directory instead of defining here
-import { Task } from '../models/task.model';
-import { User } from '../models/user.model';
-import { Comment } from '../models/comment.model';
-
-// Keep only the API-specific interfaces here
-export interface CreateTaskRequest {
-  title: string;
-  description: string;
-  priority: 'LOW' | 'MEDIUM' | 'HIGH';
-  due_date: string;
-  assigneeId: number;
-}
-
-export interface UpdateTaskRequest {
-  title?: string;
-  description?: string;
-  status?: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
-  priority?: 'LOW' | 'MEDIUM' | 'HIGH';
-  due_date?: string;
-}
+import { API_ENDPOINTS } from '../constants/api.constants';
+import { 
+  Task, 
+  CreateTaskRequest, 
+  UpdateTaskRequest, 
+  AssignTaskRequest,
+  TaskComment,
+  CreateCommentRequest,
+  UpdateCommentRequest,
+  TimeLog,
+  CreateTimeLogRequest,
+  UpdateTimeLogRequest,
+  ApiResponse,
+  PaginatedResponse
+} from '../models';
 
 export interface TaskFilters {
-  status?: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
-  assignee?: number;
-  created_by?: number;
-  priority?: 'LOW' | 'MEDIUM' | 'HIGH';
-}
-
-// API response interface (what actually comes from the backend)
-interface TaskApiResponse {
-  id: number;
-  title: string;
-  description: string;
-  status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
-  priority: 'LOW' | 'MEDIUM' | 'HIGH';
-  assigned_to: User;
-  created_by: User;
-  due_date: string;
-  created_at: string;
-  updated_at: string;
-  comments_count: number;
-  comments?: Comment[];
+  status?: string;
+  priority?: string;
+  task_type?: string;
+  assigned_to_id?: number;
+  project_id?: number;
+  sprint_id?: number;
+  created_by_id?: number;
+  due_date_from?: string;
+  due_date_to?: string;
+  search?: string;
+  page?: number;
+  per_page?: number;
+  sort_by?: string;
+  sort_order?: 'asc' | 'desc';
 }
 
 @Injectable({
   providedIn: 'root'
 })
 export class TaskService {
-  private apiUrl = 'http://127.0.0.1:5000/api/tasks';
+  private tasksSubject = new BehaviorSubject<Task[]>([]);
+  private loadingSubject = new BehaviorSubject<boolean>(false);
 
-  constructor(private http: HttpClient) { }
+  public tasks$ = this.tasksSubject.asObservable();
+  public loading$ = this.loadingSubject.asObservable();
 
-  // Helper method to map API response to Task model
-  private mapApiResponseToTask(apiTask: TaskApiResponse): Task {
-    return {
-      id: apiTask.id,
-      title: apiTask.title,
-      description: apiTask.description,
-      status: apiTask.status,
-      priority: apiTask.priority,
-      assigned_to: apiTask.assigned_to,
-      assignee: apiTask.assigned_to, // camelCase alias
-      created_by: apiTask.created_by,
-      due_date: apiTask.due_date,
-      dueDate: apiTask.due_date, // camelCase alias
-      created_at: apiTask.created_at,
-      createdAt: apiTask.created_at, // camelCase alias
-      updated_at: apiTask.updated_at,
-      updatedAt: apiTask.updated_at, // camelCase alias
-      subtasks: [], // Initialize with empty array since API doesn't provide this
-      comments: apiTask.comments || []
-    };
-  }
+  constructor(private http: HttpClient) {}
 
-  // Get all tasks with optional filters
-  getAllTasks(filters?: TaskFilters): Observable<Task[]> {
-    let params = new HttpParams();
+  // Task CRUD operations
+  getTasks(filters?: TaskFilters): Observable<PaginatedResponse<Task>> {
+    this.loadingSubject.next(true);
     
+    let params = new HttpParams();
     if (filters) {
-      if (filters.status) params = params.set('status', filters.status);
-      if (filters.assignee) params = params.set('assignee', filters.assignee.toString());
-      if (filters.created_by) params = params.set('created_by', filters.created_by.toString());
-      if (filters.priority) params = params.set('priority', filters.priority);
+      Object.keys(filters).forEach(key => {
+        const value = (filters as any)[key];
+        if (value !== undefined && value !== null && value !== '') {
+          params = params.set(key, value.toString());
+        }
+      });
     }
 
-    return this.http.get<TaskApiResponse[]>(this.apiUrl, { params }).pipe(
-      map(tasks => tasks.map(task => this.mapApiResponseToTask(task)))
-    );
+    return this.http.get<PaginatedResponse<Task>>(API_ENDPOINTS.TASKS.BASE, { params })
+      .pipe(
+        tap(response => {
+          this.tasksSubject.next(response.data);
+          this.loadingSubject.next(false);
+        }),
+        catchError(this.handleError.bind(this))
+      );
   }
 
-  // Get single task by ID (includes comments)
   getTaskById(id: number): Observable<Task> {
-    return this.http.get<TaskApiResponse>(`${this.apiUrl}/${id}`).pipe(
-      map(task => this.mapApiResponseToTask(task))
-    );
+    return this.http.get<ApiResponse<Task>>(API_ENDPOINTS.TASKS.BY_ID(id))
+      .pipe(
+        map(response => response.data!),
+        catchError(this.handleError.bind(this))
+      );
   }
 
-  // Create new task
-  createTask(task: CreateTaskRequest): Observable<Task> {
-    return this.http.post<TaskApiResponse>(this.apiUrl, task).pipe(
-      map(task => this.mapApiResponseToTask(task))
-    );
+  createTask(taskData: CreateTaskRequest): Observable<Task> {
+    this.loadingSubject.next(true);
+    
+    return this.http.post<ApiResponse<Task>>(API_ENDPOINTS.TASKS.BASE, taskData)
+      .pipe(
+        map(response => response.data!),
+        tap(task => {
+          const currentTasks = this.tasksSubject.value;
+          this.tasksSubject.next([task, ...currentTasks]);
+          this.loadingSubject.next(false);
+        }),
+        catchError(this.handleError.bind(this))
+      );
   }
 
-  // Update existing task
-  updateTask(id: number, task: UpdateTaskRequest): Observable<Task> {
-    return this.http.put<TaskApiResponse>(`${this.apiUrl}/${id}`, task).pipe(
-      map(task => this.mapApiResponseToTask(task))
-    );
+  updateTask(id: number, taskData: UpdateTaskRequest): Observable<Task> {
+    this.loadingSubject.next(true);
+    
+    return this.http.put<ApiResponse<Task>>(API_ENDPOINTS.TASKS.BY_ID(id), taskData)
+      .pipe(
+        map(response => response.data!),
+        tap(updatedTask => {
+          const currentTasks = this.tasksSubject.value;
+          const index = currentTasks.findIndex(task => task.id === id);
+          if (index !== -1) {
+            currentTasks[index] = updatedTask;
+            this.tasksSubject.next([...currentTasks]);
+          }
+          this.loadingSubject.next(false);
+        }),
+        catchError(this.handleError.bind(this))
+      );
   }
 
-  // Delete task
-  deleteTask(id: number): Observable<{ message: string }> {
-    return this.http.delete<{ message: string }>(`${this.apiUrl}/${id}`);
+  deleteTask(id: number): Observable<ApiResponse> {
+    this.loadingSubject.next(true);
+    
+    return this.http.delete<ApiResponse>(API_ENDPOINTS.TASKS.BY_ID(id))
+      .pipe(
+        tap(() => {
+          const currentTasks = this.tasksSubject.value;
+          const filteredTasks = currentTasks.filter(task => task.id !== id);
+          this.tasksSubject.next(filteredTasks);
+          this.loadingSubject.next(false);
+        }),
+        catchError(this.handleError.bind(this))
+      );
   }
 
-  // Assign task to user
-  assignTask(taskId: number, userId: number): Observable<Task> {
-    return this.http.post<TaskApiResponse>(`${this.apiUrl}/${taskId}/assign`, { user_id: userId }).pipe(
-      map(task => this.mapApiResponseToTask(task))
-    );
+  assignTask(id: number, assignData: AssignTaskRequest): Observable<Task> {
+    return this.http.post<ApiResponse<Task>>(API_ENDPOINTS.TASKS.ASSIGN(id), assignData)
+      .pipe(
+        map(response => response.data!),
+        tap(updatedTask => {
+          const currentTasks = this.tasksSubject.value;
+          const index = currentTasks.findIndex(task => task.id === id);
+          if (index !== -1) {
+            currentTasks[index] = updatedTask;
+            this.tasksSubject.next([...currentTasks]);
+          }
+        }),
+        catchError(this.handleError.bind(this))
+      );
   }
 
-  // Get tasks by status (helper method)
-  getTasksByStatus(status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED'): Observable<Task[]> {
-    return this.getAllTasks({ status });
+  getOverdueTasks(): Observable<Task[]> {
+    return this.http.get<ApiResponse<Task[]>>(API_ENDPOINTS.TASKS.OVERDUE)
+      .pipe(
+        map(response => response.data!),
+        catchError(this.handleError.bind(this))
+      );
   }
 
-  // Get tasks by user (helper method)
-  getTasksByUser(userId: number): Observable<Task[]> {
-    return this.getAllTasks({ assignee: userId });
+  // Task Comments
+  getTaskComments(taskId: number): Observable<TaskComment[]> {
+    return this.http.get<ApiResponse<TaskComment[]>>(API_ENDPOINTS.TASKS.COMMENTS(taskId))
+      .pipe(
+        map(response => response.data!),
+        catchError(this.handleError.bind(this))
+      );
   }
 
-  // Add comment to task
-  addComment(taskId: number, commentPayload: { text: string }): Observable<Comment> {
-    return this.http.post<Comment>(`${this.apiUrl}/${taskId}/comments`, commentPayload);
+  createTaskComment(taskId: number, commentData: CreateCommentRequest): Observable<TaskComment> {
+    return this.http.post<ApiResponse<TaskComment>>(API_ENDPOINTS.TASKS.COMMENTS(taskId), commentData)
+      .pipe(
+        map(response => response.data!),
+        catchError(this.handleError.bind(this))
+      );
   }
 
-  // Get all comments for a task
-  getTaskComments(taskId: number): Observable<Comment[]> {
-    return this.http.get<Comment[]>(`${this.apiUrl}/${taskId}/comments`);
+  updateTaskComment(commentId: number, commentData: UpdateCommentRequest): Observable<TaskComment> {
+    return this.http.put<ApiResponse<TaskComment>>(API_ENDPOINTS.TASKS.COMMENT_BY_ID(commentId), commentData)
+      .pipe(
+        map(response => response.data!),
+        catchError(this.handleError.bind(this))
+      );
   }
 
-  // Update comment
-  updateComment(commentId: number, commentPayload: { comment: string }): Observable<Comment> {
-    return this.http.put<Comment>(`${this.apiUrl}/comments/${commentId}`, commentPayload);
+  deleteTaskComment(commentId: number): Observable<ApiResponse> {
+    return this.http.delete<ApiResponse>(API_ENDPOINTS.TASKS.COMMENT_BY_ID(commentId))
+      .pipe(
+        catchError(this.handleError.bind(this))
+      );
   }
 
-  // Delete comment
-  deleteComment(commentId: number): Observable<{ message: string }> {
-    return this.http.delete<{ message: string }>(`${this.apiUrl}/comments/${commentId}`);
+  // Time Logs
+  getTaskTimeLogs(taskId: number): Observable<TimeLog[]> {
+    return this.http.get<ApiResponse<TimeLog[]>>(API_ENDPOINTS.TASKS.TIME_LOG(taskId))
+      .pipe(
+        map(response => response.data!),
+        catchError(this.handleError.bind(this))
+      );
   }
 
-  // For dashboard - get recent activities (if needed)
-  getRecentActivities(): Observable<Task[]> {
-    return this.getAllTasks();
+  createTimeLog(taskId: number, timeLogData: CreateTimeLogRequest): Observable<TimeLog> {
+    return this.http.post<ApiResponse<TimeLog>>(API_ENDPOINTS.TASKS.TIME_LOG(taskId), timeLogData)
+      .pipe(
+        map(response => response.data!),
+        catchError(this.handleError.bind(this))
+      );
+  }
+
+  updateTimeLog(taskId: number, timeLogId: number, timeLogData: UpdateTimeLogRequest): Observable<TimeLog> {
+    return this.http.put<ApiResponse<TimeLog>>(`${API_ENDPOINTS.TASKS.TIME_LOG(taskId)}/${timeLogId}`, timeLogData)
+      .pipe(
+        map(response => response.data!),
+        catchError(this.handleError.bind(this))
+      );
+  }
+
+  deleteTimeLog(taskId: number, timeLogId: number): Observable<ApiResponse> {
+    return this.http.delete<ApiResponse>(`${API_ENDPOINTS.TASKS.TIME_LOG(taskId)}/${timeLogId}`)
+      .pipe(
+        catchError(this.handleError.bind(this))
+      );
+  }
+
+  // Utility methods
+  getMyTasks(): Observable<Task[]> {
+    return this.getTasks({ assigned_to_id: this.getCurrentUserId() })
+      .pipe(
+        map(response => response.data)
+      );
+  }
+
+  getTasksByStatus(status: string): Observable<Task[]> {
+    return this.getTasks({ status })
+      .pipe(
+        map(response => response.data)
+      );
+  }
+
+  getTasksByProject(projectId: number): Observable<Task[]> {
+    return this.getTasks({ project_id: projectId })
+      .pipe(
+        map(response => response.data)
+      );
+  }
+
+  getTasksBySprint(sprintId: number): Observable<Task[]> {
+    return this.getTasks({ sprint_id: sprintId })
+      .pipe(
+        map(response => response.data)
+      );
+  }
+
+  searchTasks(query: string): Observable<Task[]> {
+    return this.getTasks({ search: query })
+      .pipe(
+        map(response => response.data)
+      );
+  }
+
+  private getCurrentUserId(): number {
+    // Get from auth service or local storage
+    const userStr = localStorage.getItem('user-info');
+    if (userStr) {
+      try {
+        const user = JSON.parse(userStr);
+        return user.id;
+      } catch {
+        return 0;
+      }
+    }
+    return 0;
+  }
+
+  private handleError(error: HttpErrorResponse): Observable<never> {
+    this.loadingSubject.next(false);
+    
+    let errorMessage = 'An error occurred';
+    
+    if (error.error instanceof ErrorEvent) {
+      errorMessage = error.error.message;
+    } else {
+      if (error.error?.message) {
+        errorMessage = error.error.message;
+      } else if (error.error?.errors && error.error.errors.length > 0) {
+        errorMessage = error.error.errors[0];
+      } else {
+        errorMessage = `Error ${error.status}: ${error.message}`;
+      }
+    }
+    
+    console.error('Task Service Error:', error);
+    return throwError(() => new Error(errorMessage));
   }
 }

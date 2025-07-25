@@ -1,33 +1,52 @@
-// src/app/shared/components/loading/loading.component.ts
-import { Component, Input, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, Input } from '@angular/core';
 
 @Component({
   selector: 'app-loading',
-  standalone: true,
-  imports: [CommonModule],
-  templateUrl: './loading.component.html',
-  styleUrls: ['./loading.component.scss']
+  template: `
+    <div class="loading-container" [class.overlay]="overlay">
+      <div class="loading-content">
+        <mat-spinner [diameter]="size" [color]="color"></mat-spinner>
+        <p *ngIf="message" class="loading-message">{{ message }}</p>
+      </div>
+    </div>
+  `,
+  styles: [`
+    .loading-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 2rem;
+
+      &.overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(255, 255, 255, 0.8);
+        backdrop-filter: blur(2px);
+        z-index: 9999;
+      }
+    }
+
+    .loading-content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .loading-message {
+      margin: 0;
+      color: #666;
+      font-size: 0.9rem;
+      text-align: center;
+    }
+  `]
 })
-export class LoadingComponent implements OnInit {
-  @Input() showOverlay = false;
-  @Input() size: 'small' | 'medium' | 'large' = 'medium';
-  @Input() message = 'Loading...';
-  @Input() showMessage = true;
-  @Input() showProgress = false;
-  @Input() progress = 0;
-  @Input() details: string | null = null;
-  
-  particles: any[] = [];
-
-  ngOnInit(): void {
-    this.generateParticles();
-  }
-
-  private generateParticles(): void {
-    this.particles = Array.from({ length: 6 }, (_, i) => ({
-      id: i,
-      delay: i * 0.1
-    }));
-  }
+export class LoadingComponent {
+  @Input() message: string = '';
+  @Input() size: number = 50;
+  @Input() color: 'primary' | 'accent' | 'warn' = 'primary';
+  @Input() overlay: boolean = false;
 }

@@ -1,77 +1,253 @@
-// src/app/core/services/project.service.ts
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
-import { catchError } from 'rxjs/operators';
-import { User } from '../models/user.model';
-import { Project } from '../models/project.model';
-import { ErrorHandlerService } from './error-handler.service';
+import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
+import { Observable, throwError, BehaviorSubject } from 'rxjs';
+import { map, catchError, tap } from 'rxjs/operators';
+
 import { API_ENDPOINTS } from '../constants/api.constants';
+import { 
+  Project, 
+  CreateProjectRequest, 
+  UpdateProjectRequest,
+  ProjectMember,
+  AddProjectMemberRequest,
+  ApiResponse,
+  PaginatedResponse
+} from '../models';
 
-export interface CreateProjectRequest {
-  name: string;
-  description: string;
-  start_date: string;
-  end_date?: string;
-  status: 'ACTIVE' | 'COMPLETED' | 'ARCHIVED';
-}
-
-export interface UpdateProjectRequest {
-  name?: string;
-  description?: string;
-  start_date?: string;
-  end_date?: string;
-  status?: 'ACTIVE' | 'COMPLETED' | 'ARCHIVED';
+export interface ProjectFilters {
+  status?: string;
+  created_by_id?: number;
+  project_manager_id?: number;
+  team_member_id?: number;
+  start_date_from?: string;
+  start_date_to?: string;
+  end_date_from?: string;
+  end_date_to?: string;
+  search?: string;
+  page?: number;
+  per_page?: number;
+  sort_by?: string;
+  sort_order?: 'asc' | 'desc';
 }
 
 @Injectable({
   providedIn: 'root'
 })
 export class ProjectService {
-  constructor(
-    private http: HttpClient,
-    private errorHandler: ErrorHandlerService
-  ) {}
+  private projectsSubject = new BehaviorSubject<Project[]>([]);
+  private loadingSubject = new BehaviorSubject<boolean>(false);
 
-  getProjects(): Observable<Project[]> {
-    return this.http.get<Project[]>(API_ENDPOINTS.PROJECTS.BASE)
-      .pipe(
-        catchError(this.errorHandler.handleError.bind(this.errorHandler))
-      );
-  }
+  public projects$ = this.projectsSubject.asObservable();
+  public loading$ = this.loadingSubject.asObservable();
 
-  getRecentProjects(): Observable<Project[]> {
-    return this.http.get<Project[]>(`${API_ENDPOINTS.PROJECTS.BASE}/recent`)
+  constructor(private http: HttpClient) {}
+
+  // Project CRUD operations
+  getProjects(filters?: ProjectFilters): Observable<PaginatedResponse<Project>> {
+    this.loadingSubject.next(true);
+    
+    let params = new HttpParams();
+    if (filters) {
+      Object.keys(filters).forEach(key => {
+        const value = (filters as any)[key];
+        if (value !== undefined && value !== null && value !== '') {
+          params = params.set(key, value.toString());
+        }
+      });
+    }
+
+    return this.http.get<PaginatedResponse<Project>>(API_ENDPOINTS.PROJECTS.BASE, { params })
       .pipe(
-        catchError(this.errorHandler.handleError.bind(this.errorHandler))
+        tap(response => {
+          this.projectsSubject.next(response.data);
+          this.loadingSubject.next(false);
+        }),
+        catchError(this.handleError.bind(this))
       );
   }
 
   getProjectById(id: number): Observable<Project> {
-    return this.http.get<Project>(API_ENDPOINTS.PROJECTS.BY_ID(id))
+    return this.http.get<ApiResponse<Project>>(API_ENDPOINTS.PROJECTS.BY_ID(id))
       .pipe(
-        catchError(this.errorHandler.handleError.bind(this.errorHandler))
+        map(response => response.data!),
+        catchError(this.handleError.bind(this))
       );
   }
 
-  createProject(project: CreateProjectRequest): Observable<Project> {
-    return this.http.post<Project>(API_ENDPOINTS.PROJECTS.BASE, project)
+  createProject(projectData: CreateProjectRequest): Observable<Project> {
+    this.loadingSubject.next(true);
+    
+    return this.http.post<ApiResponse<Project>>(API_ENDPOINTS.PROJECTS.BASE, projectData)
       .pipe(
-        catchError(this.errorHandler.handleError.bind(this.errorHandler))
+        map(response => response.data!),
+        tap(project => {
+          const currentProjects = this.projectsSubject.value;
+          this.projectsSubject.next([project, ...currentProjects]);
+          this.loadingSubject.next(false);
+        }),
+        catchError(this.handleError.bind(this))
       );
   }
 
-  updateProject(id: number, project: UpdateProjectRequest): Observable<Project> {
-    return this.http.put<Project>(API_ENDPOINTS.PROJECTS.BY_ID(id), project)
+  updateProject(id: number, projectData: UpdateProjectRequest): Observable<Project> {
+    this.loadingSubject.next(true);
+    
+    return this.http.put<ApiResponse<Project>>(API_ENDPOINTS.PROJECTS.BY_ID(id), projectData)
       .pipe(
-        catchError(this.errorHandler.handleError.bind(this.errorHandler))
+        map(response => response.data!),
+        tap(updatedProject => {
+          const currentProjects = this.projectsSubject.value;
+          const index = currentProjects.findIndex(project => project.id === id);
+          if (index !== -1) {
+            currentProjects[index] = updatedProject;
+            this.projectsSubject.next([...currentProjects]);
+          }
+          this.loadingSubject.next(false);
+        }),
+        catchError(this.handleError.bind(this))
       );
   }
 
-  deleteProject(id: number): Observable<void> {
-    return this.http.delete<void>(API_ENDPOINTS.PROJECTS.BY_ID(id))
+  deleteProject(id: number): Observable<ApiResponse> {
+    this.loadingSubject.next(true);
+    
+    return this.http.delete<ApiResponse>(API_ENDPOINTS.PROJECTS.BY_ID(id))
       .pipe(
-        catchError(this.errorHandler.handleError.bind(this.errorHandler))
+        tap(() => {
+          const currentProjects = this.projectsSubject.value;
+          const filteredProjects = currentProjects.filter(project => project.id !== id);
+          this.projectsSubject.next(filteredProjects);
+          this.loadingSubject.next(false);
+        }),
+        catchError(this.handleError.bind(this))
       );
+  }
+
+  getRecentProjects(): Observable<Project[]> {
+    return this.http.get<ApiResponse<Project[]>>(API_ENDPOINTS.PROJECTS.RECENT)
+      .pipe(
+        map(response => response.data!),
+        catchError(this.handleError.bind(this))
+      );
+  }
+
+  // Project Members
+  getProjectMembers(projectId: number): Observable<ProjectMember[]> {
+    return this.http.get<ApiResponse<ProjectMember[]>>(`${API_ENDPOINTS.PROJECTS.BY_ID(projectId)}/members`)
+      .pipe(
+        map(response => response.data!),
+        catchError(this.handleError.bind(this))
+      );
+  }
+
+  addProjectMember(projectId: number, memberData: AddProjectMemberRequest): Observable<ProjectMember> {
+    return this.http.post<ApiResponse<ProjectMember>>(`${API_ENDPOINTS.PROJECTS.BY_ID(projectId)}/members`, memberData)
+      .pipe(
+        map(response => response.data!),
+        catchError(this.handleError.bind(this))
+      );
+  }
+
+  removeProjectMember(projectId: number, userId: number): Observable<ApiResponse> {
+    return this.http.delete<ApiResponse>(`${API_ENDPOINTS.PROJECTS.BY_ID(projectId)}/members/${userId}`)
+      .pipe(
+        catchError(this.handleError.bind(this))
+      );
+  }
+
+  updateProjectMemberRole(projectId: number, userId: number, role: string): Observable<ProjectMember> {
+    return this.http.put<ApiResponse<ProjectMember>>(`${API_ENDPOINTS.PROJECTS.BY_ID(projectId)}/members/${userId}`, { role })
+      .pipe(
+        map(response => response.data!),
+        catchError(this.handleError.bind(this))
+      );
+  }
+
+  // Utility methods
+  getMyProjects(): Observable<Project[]> {
+    const userId = this.getCurrentUserId();
+    return this.getProjects({ team_member_id: userId })
+      .pipe(
+        map(response => response.data)
+      );
+  }
+
+  getProjectsByManager(managerId: number): Observable<Project[]> {
+    return this.getProjects({ project_manager_id: managerId })
+      .pipe(
+        map(response => response.data)
+      );
+  }
+
+  getActiveProjects(): Observable<Project[]> {
+    return this.getProjects({ status: 'ACTIVE' })
+      .pipe(
+        map(response => response.data)
+      );
+  }
+
+  getProjectsByStatus(status: string): Observable<Project[]> {
+    return this.getProjects({ status })
+      .pipe(
+        map(response => response.data)
+      );
+  }
+
+  searchProjects(query: string): Observable<Project[]> {
+    return this.getProjects({ search: query })
+      .pipe(
+        map(response => response.data)
+      );
+  }
+
+  // Project Statistics
+  getProjectStats(projectId: number): Observable<any> {
+    return this.http.get<ApiResponse<any>>(`${API_ENDPOINTS.PROJECTS.BY_ID(projectId)}/stats`)
+      .pipe(
+        map(response => response.data!),
+        catchError(this.handleError.bind(this))
+      );
+  }
+
+  getProjectProgress(projectId: number): Observable<any> {
+    return this.http.get<ApiResponse<any>>(`${API_ENDPOINTS.PROJECTS.BY_ID(projectId)}/progress`)
+      .pipe(
+        map(response => response.data!),
+        catchError(this.handleError.bind(this))
+      );
+  }
+
+  private getCurrentUserId(): number {
+    const userStr = localStorage.getItem('user-info');
+    if (userStr) {
+      try {
+        const user = JSON.parse(userStr);
+        return user.id;
+      } catch {
+        return 0;
+      }
+    }
+    return 0;
+  }
+
+  private handleError(error: HttpErrorResponse): Observable<never> {
+    this.loadingSubject.next(false);
+    
+    let errorMessage = 'An error occurred';
+    
+    if (error.error instanceof ErrorEvent) {
+      errorMessage = error.error.message;
+    } else {
+      if (error.error?.message) {
+        errorMessage = error.error.message;
+      } else if (error.error?.errors && error.error.errors.length > 0) {
+        errorMessage = error.error.errors[0];
+      } else {
+        errorMessage = `Error ${error.status}: ${error.message}`;
+      }
+    }
+    
+    console.error('Project Service Error:', error);
+    return throwError(() => new Error(errorMessage));
   }
 }

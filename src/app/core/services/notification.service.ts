@@ -1,79 +1,139 @@
-// src/app/core/services/notification.service.ts
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable } from 'rxjs';
-// import { environment } from '../../../environments/environment';
+import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
+import { Observable, throwError, BehaviorSubject, interval } from 'rxjs';
+import { map, catchError, tap, switchMap, startWith } from 'rxjs/operators';
 
-// Updated interfaces to match API
-export interface User {
-  id: number;
-  name: string;
-  email: string;
-  role: 'ADMIN' | 'MANAGER' | 'EMPLOYEE';
-}
+import { API_ENDPOINTS, APP_CONFIG } from '../constants/api.constants';
+import { 
+  Notification, 
+  CreateNotificationRequest,
+  NotificationSummary,
+  ApiResponse,
+  PaginatedResponse
+} from '../models';
 
-export interface TaskSummary {
-  id: number;
-  title: string;
-}
-
-export interface AppNotification {
-  id: number;
-  user_id: number;
-  task_id: number;
-  message: string;
-  read: boolean;
-  created_at: string;
-  updated_at: string;
-  user: User;
-  task: TaskSummary;
-  // For backward compatibility with existing frontend code
-  createdAt?: Date;
-  type?: 'info' | 'warning' | 'success' | 'error';
-  link?: string;
+export interface NotificationFilters {
+  type?: string;
+  is_read?: boolean;
+  user_id?: number;
+  related_task_id?: number;
+  related_project_id?: number;
+  related_sprint_id?: number;
+  date_from?: string;
+  date_to?: string;
+  page?: number;
+  per_page?: number;
+  sort_by?: string;
+  sort_order?: 'asc' | 'desc';
 }
 
 @Injectable({
   providedIn: 'root'
 })
 export class NotificationService {
-  // private apiUrl = `${environment.apiUrl}/api/notifications`;
-  private apiUrl = 'http://127.0.0.1:5000/api/notifications';
+  private notificationsSubject = new BehaviorSubject<Notification[]>([]);
+  private unreadCountSubject = new BehaviorSubject<number>(0);
+  private loadingSubject = new BehaviorSubject<boolean>(false);
 
-  constructor(private http: HttpClient) { }
+  public notifications$ = this.notificationsSubject.asObservable();
+  public unreadCount$ = this.unreadCountSubject.asObservable();
+  public loading$ = this.loadingSubject.asObservable();
 
-  // Get user notifications
-  getNotifications(unreadOnly?: boolean): Observable<AppNotification[]> {
+  // Auto-refresh notifications every 30 seconds
+  public autoRefresh$ = interval(APP_CONFIG.NOTIFICATION_CHECK_INTERVAL)
+    .pipe(
+      startWith(0),
+      switchMap(() => this.getNotifications())
+    );
+
+  constructor(private http: HttpClient) {
+    // Initialize notifications on service creation
+    this.initializeNotifications();
+  }
+
+  private initializeNotifications(): void {
+    this.getNotifications().subscribe();
+    this.getNotificationSummary().subscribe();
+  }
+
+  startPolling(): void {
+    // Start auto-refresh
+    this.autoRefresh$.subscribe();
+  }
+
+  getUnreadCount(): Observable<number> {
+    return this.unreadCount$;
+  }
+
+  getNotifications(filters?: NotificationFilters): Observable<PaginatedResponse<Notification>> {
+    this.loadingSubject.next(true);
+    
     let params = new HttpParams();
-    if (unreadOnly) {
-      params = params.set('unread_only', 'true');
+    if (filters) {
+      Object.keys(filters).forEach(key => {
+        const value = (filters as any)[key];
+        if (value !== undefined && value !== null && value !== '') {
+          params = params.set(key, value.toString());
+        }
+      });
+    }
+
+    return this.http.get<PaginatedResponse<Notification>>(API_ENDPOINTS.NOTIFICATIONS.BASE, { params })
+      .pipe(
+        tap(response => {
+          this.notificationsSubject.next(response.data);
+          this.loadingSubject.next(false);
+        }),
+        catchError(this.handleError.bind(this))
+      );
+  }
+
+  getNotificationSummary(): Observable<NotificationSummary> {
+    return this.http.get<ApiResponse<NotificationSummary>>(`${API_ENDPOINTS.NOTIFICATIONS.BASE}/summary`)
+      .pipe(
+        map(response => response.data!),
+        tap(summary => {
+          this.unreadCountSubject.next(summary.unread_count);
+        }),
+        catchError(this.handleError.bind(this))
+      );
+  }
+
+  markAllAsRead(): Observable<ApiResponse> {
+    return this.http.post<ApiResponse>(API_ENDPOINTS.NOTIFICATIONS.READ_ALL, {})
+      .pipe(
+        tap(() => {
+          const currentNotifications = this.notificationsSubject.value;
+          const updatedNotifications = currentNotifications.map(notif => ({
+            ...notif,
+            is_read: true,
+            read_at: new Date().toISOString()
+          }));
+          this.notificationsSubject.next(updatedNotifications);
+          this.unreadCountSubject.next(0);
+        }),
+        catchError(this.handleError.bind(this))
+      );
+  }
+
+  private handleError(error: HttpErrorResponse): Observable<never> {
+    this.loadingSubject.next(false);
+    
+    let errorMessage = 'An error occurred';
+    
+    if (error.error instanceof ErrorEvent) {
+      errorMessage = error.error.message;
+    } else {
+      if (error.error?.message) {
+        errorMessage = error.error.message;
+      } else if (error.error?.errors && error.error.errors.length > 0) {
+        errorMessage = error.error.errors[0];
+      } else {
+        errorMessage = `Error ${error.status}: ${error.message}`;
+      }
     }
     
-    return this.http.get<AppNotification[]>(this.apiUrl, { params });
-  }
-
-  // Get count of unread notifications
-  getUnreadCount(): Observable<number> {
-    return new Observable(observer => {
-      this.getNotifications(true).subscribe(
-        notifications => observer.next(notifications.length),
-        error => observer.error(error)
-      );
-    });
-  }
-
-  // Mark specific notification as read
-  markAsRead(id: string | number): Observable<AppNotification> {
-    return this.http.post<AppNotification>(`${this.apiUrl}/${id}/read`, {});
-  }
-
-  // Mark all notifications as read
-  markAllAsRead(): Observable<{ message: string; updated_count: number }> {
-    return this.http.post<{ message: string; updated_count: number }>(`${this.apiUrl}/read-all`, {});
-  }
-
-  // Delete specific notification
-  deleteNotification(id: string | number): Observable<{ message: string }> {
-    return this.http.delete<{ message: string }>(`${this.apiUrl}/${id}`);
+    console.error('Notification Service Error:', error);
+    return throwError(() => new Error(errorMessage));
   }
 }

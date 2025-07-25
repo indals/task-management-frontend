@@ -1,27 +1,42 @@
-<!-- app.component.html -->
-<app-header (toggleSidebar)="toggleSidebar()"></app-header>
-
-<div class="app-container" 
-     [class.sidebar-collapsed]="!isMobile && isSidebarCollapsed"
-     [class.sidebar-open]="isMobile && isSidebarOpen">
-  
-  <!-- Sidebar Component -->
-  <app-sidebar 
-    [collapsed]="!isMobile && isSidebarCollapsed"
-    [mobile]="isMobile"
-    [open]="isMobile && isSidebarOpen"
-    (toggleSidebar)="toggleSidebar()"
-    (closeSidebar)="closeSidebar()">
-  </app-sidebar>
-
-  <!-- Mobile Overlay -->
-  <div class="sidebar-overlay" 
-       [class.open]="isMobile && isSidebarOpen"
-       (click)="closeSidebar()">
+<!-- Global Loading Spinner -->
+<div class="global-loading" *ngIf="isLoading">
+  <div class="loading-backdrop">
+    <mat-spinner diameter="50"></mat-spinner>
+    <p>Loading...</p>
   </div>
+</div>
 
+<!-- Main App Layout -->
+<div class="app-container" [class.with-sidebar]="showSidebar">
+  
+  <!-- Sidebar -->
+  <app-sidebar *ngIf="showSidebar"></app-sidebar>
+  
   <!-- Main Content Area -->
-  <main class="content-area">
-    <router-outlet></router-outlet>
-  </main>
+  <div class="main-content" [class.with-sidebar]="showSidebar">
+    
+    <!-- Header (only show when authenticated and not on auth pages) -->
+    <app-header *ngIf="showSidebar"></app-header>
+    
+    <!-- Router Outlet -->
+    <div class="content-wrapper" [class.with-header]="showSidebar">
+      <router-outlet></router-outlet>
+    </div>
+    
+  </div>
+  
+</div>
+
+<!-- Global Notifications (Snackbar will appear here) -->
+<!-- PWA Update Available Notification -->
+<div class="pwa-update" *ngIf="false">
+  <mat-card>
+    <mat-card-content>
+      <div class="update-content">
+        <mat-icon>system_update</mat-icon>
+        <span>A new version is available!</span>
+        <button mat-button color="primary">Update</button>
+      </div>
+    </mat-card-content>
+  </mat-card>
 </div>

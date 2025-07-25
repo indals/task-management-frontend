@@ -1,10 +1,10 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
-import { Router } from '@angular/router';
-import { Subscription } from 'rxjs';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
+
 import { AuthService } from '../../../core/services/auth.service';
 import { NotificationService } from '../../../core/services/notification.service';
-import { User } from '../../../core/models/user.model';
-import { LayoutService } from '../../../core/services/layout.service';
+import { User } from '../../../core/models';
 
 @Component({
   selector: 'app-header',
@@ -12,85 +12,100 @@ import { LayoutService } from '../../../core/services/layout.service';
   styleUrls: ['./header.component.scss']
 })
 export class HeaderComponent implements OnInit, OnDestroy {
-  currentUser: User | null = null;
-  notificationCount = 0;
-  isDropdownOpen = false;
-  isMobile = false;
-  sidebarCollapsed = false;
+  private destroy$ = new Subject<void>();
   
-  private subscriptions: Subscription[] = [];
+  currentUser: User | null = null;
+  unreadNotificationCount = 0;
+  showNotificationPanel = false;
+  searchQuery = '';
 
   constructor(
     private authService: AuthService,
-    private notificationService: NotificationService,
-    private layoutService: LayoutService,
-    private router: Router
+    private notificationService: NotificationService
   ) {}
 
   ngOnInit(): void {
-    // Subscribe to current user
-// Line 34 को replace करें:
-  this.subscriptions.push(
-    this.authService.currentUser$.subscribe(user => {
-      if (user) {
-        this.currentUser = {
-          ...user,
-          name: user.name || user.username || 'User'
-        };
-      } else {
-        this.currentUser = null;
-      }
-    })
-  );
-
-    // Get notification count and subscribe to updates
-    this.subscriptions.push(
-      this.notificationService.getUnreadCount().subscribe(count => {
-        this.notificationCount = count;
-      })
-    );
-    
-    // Subscribe to sidebar state
-    this.subscriptions.push(
-      this.layoutService.sidebarCollapsed$.subscribe((collapsed: boolean) => {
-        this.sidebarCollapsed = collapsed;
-      })
-    );
-    
-    // Subscribe to mobile state
-    this.subscriptions.push(
-      this.layoutService.isMobile$.subscribe((mobile: boolean) => {
-        this.isMobile = mobile;
-      })
-    );
+    this.setupSubscriptions();
   }
 
   ngOnDestroy(): void {
-    // Unsubscribe to prevent memory leaks
-    this.subscriptions.forEach(sub => sub.unsubscribe());
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
-  toggleDropdown(): void {
-    this.isDropdownOpen = !this.isDropdownOpen;
+  private setupSubscriptions(): void {
+    // Current user
+    this.authService.currentUser$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(user => {
+        this.currentUser = user;
+      });
+
+    // Notification count
+    this.notificationService.unreadCount$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(count => {
+        this.unreadNotificationCount = count;
+      });
   }
 
-  logout(): void {
+  onSearch(): void {
+    if (this.searchQuery.trim()) {
+      // Navigate to search results or perform search
+      console.log('Searching for:', this.searchQuery);
+      // this.router.navigate(['/search'], { queryParams: { q: this.searchQuery } });
+    }
+  }
+
+  onNotificationClick(): void {
+    this.showNotificationPanel = !this.showNotificationPanel;
+  }
+
+  onProfileClick(): void {
+    // Navigate to profile or show profile menu
+    console.log('Profile clicked');
+    // this.router.navigate(['/profile']);
+  }
+
+  onSettingsClick(): void {
+    // Navigate to settings
+    console.log('Settings clicked');
+    // this.router.navigate(['/settings']);
+  }
+
+  onLogout(): void {
     this.authService.logout();
-    this.router.navigate(['/auth/login']);
-    this.isDropdownOpen = false;
   }
 
-  navigateToProfile(): void {
-    this.router.navigate(['/auth/profile']);
-    this.isDropdownOpen = false;
-  }
-  
-  navigateToSettings(): void {
-    this.router.navigate(['/settings']);
-    this.isDropdownOpen = false;
+  getUserInitials(): string {
+    if (!this.currentUser?.name) return 'U';
+    
+    const names = this.currentUser.name.split(' ');
+    if (names.length >= 2) {
+      return (names[0][0] + names[1][0]).toUpperCase();
+    }
+    return names[0][0].toUpperCase();
   }
 
-  navigateToNotifications(): void {
-    this.router.navigate(['/notifications']);
+  getGreeting(): string {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good morning';
+    if (hour < 18) return 'Good afternoon';
+    return 'Good evening';
+  }
+
+  markAllNotificationsAsRead(): void {
+    this.notificationService.markAllAsRead().subscribe({
+      next: () => {
+        console.log('All notifications marked as read');
+      },
+      error: (error) => {
+        console.error('Error marking notifications as read:', error);
+      }
+    });
+  }
+
+  closeNotificationPanel(): void {
+    this.showNotificationPanel = false;
   }
 }

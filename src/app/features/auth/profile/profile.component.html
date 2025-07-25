@@ -1,109 +1,317 @@
-<!-- profile.component.html -->
 <div class="profile-container">
-  <div class="row">
-    <div class="col-md-8 offset-md-2">
-      <h2>Profile Settings</h2>
-      
-      <div class="alert alert-success" *ngIf="successMessage">
-        {{ successMessage }}
+  <div class="profile-header">
+    <div class="profile-info">
+      <div class="profile-avatar">
+        <img 
+          *ngIf="currentUser?.avatar_url; else avatarFallback" 
+          [src]="currentUser.avatar_url" 
+          [alt]="currentUser.name">
+        <ng-template #avatarFallback>
+          <div class="avatar-initials">{{ getUserInitials() }}</div>
+        </ng-template>
       </div>
-      
-      <div class="alert alert-danger" *ngIf="errorMessage">
-        {{ errorMessage }}
-      </div>
-      
-      <div class="card mb-4">
-        <div class="card-header">
-          <h3>Personal Information</h3>
-        </div>
-        <div class="card-body">
-          <form [formGroup]="profileForm" (ngSubmit)="updateProfile()">
-            <div class="form-group">
-              <label for="name">Full Name</label>
-              <input 
-                type="text" 
-                id="name" 
-                formControlName="name" 
-                class="form-control" 
-                [ngClass]="{'is-invalid': profileForm.get('name')?.invalid && profileForm.get('name')?.touched}"
-              >
-              <div class="invalid-feedback" *ngIf="profileForm.get('name')?.errors?.['required'] && profileForm.get('name')?.touched">
-                Name is required
-              </div>
-            </div>
-
-            <div class="form-group">
-              <label for="email">Email</label>
-              <input 
-                type="email" 
-                id="email" 
-                formControlName="email" 
-                class="form-control" 
-                [ngClass]="{'is-invalid': profileForm.get('email')?.invalid && profileForm.get('email')?.touched}"
-              >
-              <div class="invalid-feedback" *ngIf="profileForm.get('email')?.errors?.['required'] && profileForm.get('email')?.touched">
-                Email is required
-              </div>
-              <div class="invalid-feedback" *ngIf="profileForm.get('email')?.errors?.['email'] && profileForm.get('email')?.touched">
-                Please enter a valid email
-              </div>
-            </div>
-
-            <div class="form-group">
-              <label>Role</label>
-              <input type="text" class="form-control" [value]="currentUser?.role" disabled>
-            </div>
-
-            <button type="submit" class="btn btn-primary" [disabled]="profileForm.invalid || isSubmitting">
-              {{ isSubmitting ? 'Updating...' : 'Update Profile' }}
-            </button>
-          </form>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="card-header">
-          <h3>Change Password</h3>
-        </div>
-        <div class="card-body">
-          <form [formGroup]="passwordForm" (ngSubmit)="changePassword()">
-            <div class="form-group">
-              <label for="currentPassword">Current Password</label>
-              <input 
-                type="password" 
-                id="currentPassword" 
-                formControlName="currentPassword" 
-                class="form-control"
-                [ngClass]="{'is-invalid': passwordForm.get('currentPassword')?.invalid && passwordForm.get('currentPassword')?.touched}"
-              >
-              <div class="invalid-feedback" *ngIf="passwordForm.get('currentPassword')?.errors?.['required'] && passwordForm.get('currentPassword')?.touched">
-                Current password is required
-              </div>
-            </div>
-
-            <div class="form-group">
-              <label for="newPassword">New Password</label>
-              <input 
-                type="password" 
-                id="newPassword" 
-                formControlName="newPassword" 
-                class="form-control"
-                [ngClass]="{'is-invalid': passwordForm.get('newPassword')?.invalid && passwordForm.get('newPassword')?.touched}"
-              >
-              <div class="invalid-feedback" *ngIf="passwordForm.get('newPassword')?.errors?.['required'] && passwordForm.get('newPassword')?.touched">
-                New password is required
-              </div>
-              <div class="invalid-feedback" *ngIf="passwordForm.get('newPassword')?.errors?.['minlength'] && passwordForm.get('newPassword')?.touched">
-                New password must be at least 8 characters
-              </div>
-            </div>
-
-            <button type="submit" class="btn btn-primary" [disabled]="passwordForm.invalid || isChangingPassword">
-              {{ isChangingPassword ? 'Changing password...' : 'Change Password' }}
-            </button>
-          </form>
-        </div>
+      <div class="profile-details">
+        <h1>{{ currentUser?.name }}</h1>
+        <p class="profile-email">{{ currentUser?.email }}</p>
+        <p class="profile-role">{{ getUserRoleLabel() }}</p>
       </div>
     </div>
+  </div>
+
+  <div class="profile-content">
+    <mat-tab-group (selectedTabChange)="onTabChange($event.index)" [selectedIndex]="selectedTabIndex">
+      
+      <!-- Profile Information Tab -->
+      <mat-tab label="Profile Information">
+        <div class="tab-content">
+          <form [formGroup]="profileForm" (ngSubmit)="onProfileSubmit()" class="profile-form">
+            
+            <!-- Success/Error Messages -->
+            <div class="success-alert" *ngIf="profileSuccess">
+              <mat-icon>check_circle</mat-icon>
+              <span>{{ profileSuccess }}</span>
+            </div>
+            
+            <div class="error-alert" *ngIf="profileError">
+              <mat-icon>error</mat-icon>
+              <span>{{ profileError }}</span>
+            </div>
+
+            <!-- Basic Information Section -->
+            <div class="form-section">
+              <h3>Basic Information</h3>
+              
+              <div class="form-row">
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>Full Name</mat-label>
+                  <input matInput formControlName="name" placeholder="Enter your full name">
+                  <mat-icon matSuffix>person</mat-icon>
+                  <mat-error *ngIf="isFieldInvalid(profileForm, 'name')">
+                    {{ getFieldError(profileForm, 'name') }}
+                  </mat-error>
+                </mat-form-field>
+              </div>
+
+              <div class="form-row">
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>Email Address</mat-label>
+                  <input matInput type="email" formControlName="email" placeholder="Enter your email">
+                  <mat-icon matSuffix>email</mat-icon>
+                  <mat-error *ngIf="isFieldInvalid(profileForm, 'email')">
+                    {{ getFieldError(profileForm, 'email') }}
+                  </mat-error>
+                </mat-form-field>
+              </div>
+
+              <div class="form-row">
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>Bio</mat-label>
+                  <textarea 
+                    matInput 
+                    formControlName="bio" 
+                    placeholder="Tell us about yourself"
+                    rows="3"
+                    maxlength="500"></textarea>
+                  <mat-hint align="end">{{ profileForm.get('bio')?.value?.length || 0 }}/500</mat-hint>
+                  <mat-error *ngIf="isFieldInvalid(profileForm, 'bio')">
+                    {{ getFieldError(profileForm, 'bio') }}
+                  </mat-error>
+                </mat-form-field>
+              </div>
+
+              <div class="form-row">
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>Skills</mat-label>
+                  <input 
+                    matInput 
+                    formControlName="skills" 
+                    placeholder="JavaScript, Python, React (comma separated)">
+                  <mat-icon matSuffix>code</mat-icon>
+                  <mat-hint>Separate skills with commas</mat-hint>
+                </mat-form-field>
+              </div>
+            </div>
+
+            <!-- Contact Information Section -->
+            <div class="form-section">
+              <h3>Contact Information</h3>
+              
+              <div class="form-row">
+                <mat-form-field appearance="outline" class="half-width">
+                  <mat-label>Phone</mat-label>
+                  <input matInput formControlName="phone" placeholder="+1 (555) 123-4567">
+                  <mat-icon matSuffix>phone</mat-icon>
+                  <mat-error *ngIf="isFieldInvalid(profileForm, 'phone')">
+                    {{ getFieldError(profileForm, 'phone') }}
+                  </mat-error>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline" class="half-width">
+                  <mat-label>GitHub Username</mat-label>
+                  <input matInput formControlName="github_username" placeholder="your-username">
+                  <mat-icon matSuffix>code</mat-icon>
+                  <mat-error *ngIf="isFieldInvalid(profileForm, 'github_username')">
+                    {{ getFieldError(profileForm, 'github_username') }}
+                  </mat-error>
+                </mat-form-field>
+              </div>
+
+              <div class="form-row">
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>LinkedIn URL</mat-label>
+                  <input 
+                    matInput 
+                    formControlName="linkedin_url" 
+                    placeholder="https://linkedin.com/in/your-profile">
+                  <mat-icon matSuffix>link</mat-icon>
+                  <mat-error *ngIf="isFieldInvalid(profileForm, 'linkedin_url')">
+                    {{ getFieldError(profileForm, 'linkedin_url') }}
+                  </mat-error>
+                </mat-form-field>
+              </div>
+            </div>
+
+            <!-- Work Preferences Section -->
+            <div class="form-section">
+              <h3>Work Preferences</h3>
+              
+              <div class="form-row">
+                <mat-form-field appearance="outline" class="two-thirds-width">
+                  <mat-label>Timezone</mat-label>
+                  <mat-select formControlName="timezone">
+                    <mat-option *ngFor="let tz of getTimezoneOptions()" [value]="tz.value">
+                      {{ tz.label }}
+                    </mat-option>
+                  </mat-select>
+                  <mat-icon matSuffix>schedule</mat-icon>
+                  <mat-error *ngIf="isFieldInvalid(profileForm, 'timezone')">
+                    {{ getFieldError(profileForm, 'timezone') }}
+                  </mat-error>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline" class="one-third-width">
+                  <mat-label>Daily Work Hours</mat-label>
+                  <input 
+                    matInput 
+                    type="number" 
+                    formControlName="daily_work_hours"
+                    min="1"
+                    max="24">
+                  <mat-icon matSuffix>access_time</mat-icon>
+                  <mat-error *ngIf="isFieldInvalid(profileForm, 'daily_work_hours')">
+                    {{ getFieldError(profileForm, 'daily_work_hours') }}
+                  </mat-error>
+                </mat-form-field>
+              </div>
+
+              <div class="form-row">
+                <mat-form-field appearance="outline" class="half-width">
+                  <mat-label>Hourly Rate (Optional)</mat-label>
+                  <input 
+                    matInput 
+                    type="number" 
+                    formControlName="hourly_rate"
+                    min="0"
+                    step="0.01">
+                  <span matTextPrefix>$ </span>
+                  <mat-icon matSuffix>attach_money</mat-icon>
+                  <mat-hint>Used for time tracking calculations</mat-hint>
+                  <mat-error *ngIf="isFieldInvalid(profileForm, 'hourly_rate')">
+                    {{ getFieldError(profileForm, 'hourly_rate') }}
+                  </mat-error>
+                </mat-form-field>
+              </div>
+            </div>
+
+            <!-- Submit Button -->
+            <div class="form-actions">
+              <button 
+                mat-raised-button 
+                color="primary" 
+                type="submit"
+                [disabled]="isProfileLoading || profileForm.invalid">
+                <mat-spinner diameter="20" *ngIf="isProfileLoading"></mat-spinner>
+                <span *ngIf="!isProfileLoading">Update Profile</span>
+                <span *ngIf="isProfileLoading">Updating...</span>
+              </button>
+            </div>
+
+          </form>
+        </div>
+      </mat-tab>
+
+      <!-- Change Password Tab -->
+      <mat-tab label="Change Password">
+        <div class="tab-content">
+          <form [formGroup]="passwordForm" (ngSubmit)="onPasswordSubmit()" class="password-form">
+            
+            <!-- Success/Error Messages -->
+            <div class="success-alert" *ngIf="passwordSuccess">
+              <mat-icon>check_circle</mat-icon>
+              <span>{{ passwordSuccess }}</span>
+            </div>
+            
+            <div class="error-alert" *ngIf="passwordError">
+              <mat-icon>error</mat-icon>
+              <span>{{ passwordError }}</span>
+            </div>
+
+            <div class="form-section">
+              <h3>Password Security</h3>
+              <p class="section-description">
+                Choose a strong password to keep your account secure.
+              </p>
+
+              <div class="form-row">
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>Current Password</mat-label>
+                  <input 
+                    matInput 
+                    [type]="hideCurrentPassword ? 'password' : 'text'" 
+                    formControlName="current_password"
+                    placeholder="Enter your current password">
+                  <button 
+                    mat-icon-button 
+                    matSuffix 
+                    type="button"
+                    (click)="toggleCurrentPasswordVisibility()">
+                    <mat-icon>{{ hideCurrentPassword ? 'visibility_off' : 'visibility' }}</mat-icon>
+                  </button>
+                  <mat-error *ngIf="isFieldInvalid(passwordForm, 'current_password')">
+                    {{ getFieldError(passwordForm, 'current_password') }}
+                  </mat-error>
+                </mat-form-field>
+              </div>
+
+              <div class="form-row">
+                <mat-form-field appearance="outline" class="half-width">
+                  <mat-label>New Password</mat-label>
+                  <input 
+                    matInput 
+                    [type]="hideNewPassword ? 'password' : 'text'" 
+                    formControlName="new_password"
+                    placeholder="Enter new password">
+                  <button 
+                    mat-icon-button 
+                    matSuffix 
+                    type="button"
+                    (click)="toggleNewPasswordVisibility()">
+                    <mat-icon>{{ hideNewPassword ? 'visibility_off' : 'visibility' }}</mat-icon>
+                  </button>
+                  <mat-error *ngIf="isFieldInvalid(passwordForm, 'new_password')">
+                    {{ getFieldError(passwordForm, 'new_password') }}
+                  </mat-error>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline" class="half-width">
+                  <mat-label>Confirm New Password</mat-label>
+                  <input 
+                    matInput 
+                    [type]="hideConfirmPassword ? 'password' : 'text'" 
+                    formControlName="confirm_password"
+                    placeholder="Confirm new password">
+                  <button 
+                    mat-icon-button 
+                    matSuffix 
+                    type="button"
+                    (click)="toggleConfirmPasswordVisibility()">
+                    <mat-icon>{{ hideConfirmPassword ? 'visibility_off' : 'visibility' }}</mat-icon>
+                  </button>
+                  <mat-error *ngIf="isFieldInvalid(passwordForm, 'confirm_password')">
+                    {{ getFieldError(passwordForm, 'confirm_password') }}
+                  </mat-error>
+                </mat-form-field>
+              </div>
+
+              <!-- Password Requirements -->
+              <div class="password-requirements">
+                <h4>Password Requirements:</h4>
+                <ul>
+                  <li>At least 8 characters long</li>
+                  <li>Include uppercase and lowercase letters</li>
+                  <li>Include at least one number</li>
+                  <li>Include at least one special character</li>
+                </ul>
+              </div>
+            </div>
+
+            <!-- Submit Button -->
+            <div class="form-actions">
+              <button 
+                mat-raised-button 
+                color="primary" 
+                type="submit"
+                [disabled]="isPasswordLoading || passwordForm.invalid">
+                <mat-spinner diameter="20" *ngIf="isPasswordLoading"></mat-spinner>
+                <span *ngIf="!isPasswordLoading">Change Password</span>
+                <span *ngIf="isPasswordLoading">Changing Password...</span>
+              </button>
+            </div>
+
+          </form>
+        </div>
+      </mat-tab>
+
+    </mat-tab-group>
   </div>
 </div>

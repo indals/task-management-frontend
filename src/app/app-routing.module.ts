@@ -1,11 +1,12 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
-import { authGuard } from './core/guards/auth.guard';
+import { PreloadAllModules } from '@angular/router';
+import { AuthGuard } from './core/guards/auth.guard';
 
-export const routes: Routes = [
+const routes: Routes = [
   { 
     path: '', 
-    redirectTo: '/dashboard', // Changed from '/login' to '/dashboard'
+    redirectTo: '/dashboard', 
     pathMatch: 'full' 
   },
   {
@@ -13,59 +14,80 @@ export const routes: Routes = [
     loadChildren: () => import('./features/auth/auth.module').then(m => m.AuthModule)
   },
   {
-    path: 'login',
-    loadComponent: () => import('./features/auth/login/login.component').then(c => c.LoginComponent)
-  },
-  {
-    path: 'register',
-    loadComponent: () => import('./features/auth/register/register.component').then(c => c.RegisterComponent)
-  },
-  {
-    path: 'profile',
-    loadComponent: () => import('./features/auth/profile/profile.component').then(c => c.ProfileComponent),
-    canActivate: [authGuard]
-  },
-  {
     path: 'dashboard',
     loadChildren: () => import('./features/dashboard/dashboard.module').then(m => m.DashboardModule),
-    canActivate: [authGuard]
+    canActivate: [AuthGuard]
   },
   {
     path: 'tasks',
     loadChildren: () => import('./features/tasks/tasks.module').then(m => m.TasksModule),
-    canActivate: [authGuard]
+    canActivate: [AuthGuard]
   },
   {
     path: 'projects',
-    loadComponent: () => import('./features/projects/projects.component').then(c => c.ProjectsComponent),
-    canActivate: [authGuard]
+    loadChildren: () => import('./features/projects/projects.module').then(m => m.ProjectsModule),
+    canActivate: [AuthGuard],
+    data: { permissions: ['view_all_projects', 'view_team_projects'] }
+  },
+  {
+    path: 'sprints',
+    loadChildren: () => import('./features/sprints/sprints.module').then(m => m.SprintsModule),
+    canActivate: [AuthGuard],
+    data: { permissions: ['manage_sprints', 'view_sprints'] }
+  },
+  {
+    path: 'team',
+    loadChildren: () => import('./features/team/team.module').then(m => m.TeamModule),
+    canActivate: [AuthGuard],
+    data: { permissions: ['manage_team', 'view_team_tasks'] }
+  },
+  {
+    path: 'time-tracking',
+    loadChildren: () => import('./features/time-tracking/time-tracking.module').then(m => m.TimeTrackingModule),
+    canActivate: [AuthGuard]
+  },
+  {
+    path: 'analytics',
+    loadChildren: () => import('./features/analytics/analytics.module').then(m => m.AnalyticsModule),
+    canActivate: [AuthGuard],
+    data: { permissions: ['view_analytics'] }
   },
   {
     path: 'calendar',
     loadComponent: () => import('./features/calendar/calendar.component').then(c => c.CalendarComponent),
-    canActivate: [authGuard]
-  },
-  {
-    path: 'reports',
-    loadComponent: () => import('./features/reports/reports.component').then(c => c.ReportsComponent),
-    canActivate: [authGuard]
+    canActivate: [AuthGuard]
   },
   {
     path: 'notifications',
     loadChildren: () => import('./features/notifications/notifications.module').then(m => m.NotificationsModule),
-    canActivate: [authGuard]
+    canActivate: [AuthGuard]
+  },
+  {
+    path: 'settings',
+    loadChildren: () => import('./features/settings/settings.module').then(m => m.SettingsModule),
+    canActivate: [AuthGuard]
+  },
+  {
+    path: 'profile',
+    loadComponent: () => import('./features/auth/profile/profile.component').then(c => c.ProfileComponent),
+    canActivate: [AuthGuard]
+  },
+  {
+    path: 'access-denied',
+    loadComponent: () => import('./shared/components/access-denied/access-denied.component').then(c => c.AccessDeniedComponent)
   },
   { 
     path: '**', 
-    redirectTo: '/dashboard' // Changed from '/login' to '/dashboard'
+    redirectTo: '/dashboard' 
   }
 ];
 
 @NgModule({
   imports: [RouterModule.forRoot(routes, {
-    enableTracing: false,
+    enableTracing: false, // Set to true for debugging
+    preloadingStrategy: PreloadAllModules,
     scrollPositionRestoration: 'top',
-    preloadingStrategy: undefined // Changed from 'optional' to undefined
+    onSameUrlNavigation: 'reload'
   })],
   exports: [RouterModule]
 })

@@ -1,151 +1,224 @@
-/* login.component.scss */
-
 .login-container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 1rem;
+}
+
+.login-card-wrapper {
+  width: 100%;
+  max-width: 400px;
+}
+
+.login-card {
+  padding: 2rem;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+  background: white;
+}
+
+.login-header {
+  text-align: center;
+  margin-bottom: 2rem;
+
+  .logo {
     display: flex;
-    justify-content: center;
     align-items: center;
-    min-height: 100vh;
-    background-color: #f8f9fa;
-    padding: 20px;
-  }
-  
-  .card {
-    width: 100%;
-    max-width: 450px;
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    background-color: #ffffff;
-    overflow: hidden;
-  }
-  
-  .card-header {
-    background-color: #f1f1f1;
-    padding: 20px;
-    border-bottom: 1px solid #e9ecef;
-  }
-  
-  .card-header h2 {
-    margin: 0;
-    color: #333;
-    font-weight: 600;
-    font-size: 1.5rem;
-  }
-  
-  .card-body {
-    padding: 25px;
-  }
-  
-  .form-group {
-    margin-bottom: 20px;
-  }
-  
-  .form-group label {
-    display: block;
-    margin-bottom: 8px;
-    font-weight: 500;
-    color: #495057;
-  }
-  
-  .form-control {
-    width: 100%;
-    padding: 12px 15px;
-    font-size: 1rem;
-    border: 1px solid #ced4da;
-    border-radius: 4px;
-    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
-  }
-  
-  .form-control:focus {
-    border-color: #80bdff;
-    outline: 0;
-    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
-  }
-  
-  .form-control.is-invalid {
-    border-color: #dc3545;
-  }
-  
-  .invalid-feedback {
-    display: block;
-    width: 100%;
-    margin-top: 0.25rem;
-    font-size: 0.875em;
-    color: #dc3545;
-  }
-  
-  .form-actions {
-    margin-top: 30px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-  
-  .btn {
-    display: inline-block;
-    font-weight: 500;
-    text-align: center;
-    white-space: nowrap;
-    vertical-align: middle;
-    user-select: none;
-    border: 1px solid transparent;
-    padding: 0.75rem 1rem;
-    font-size: 1rem;
-    line-height: 1.5;
-    border-radius: 4px;
-    transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out, border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
-    cursor: pointer;
-  }
-  
-  .btn-primary {
-    color: #fff;
-    background-color: #007bff;
-    border-color: #007bff;
-  }
-  
-  .btn-primary:hover {
-    background-color: #0069d9;
-    border-color: #0062cc;
-  }
-  
-  .btn-primary:disabled {
-    opacity: 0.65;
-    cursor: not-allowed;
-  }
-  
-  .btn-link {
-    font-weight: 400;
-    color: #007bff;
-    text-decoration: none;
-    background-color: transparent;
-    border: none;
-    text-align: center;
-  }
-  
-  .btn-link:hover {
-    color: #0056b3;
-    text-decoration: underline;
-  }
-  
-  .alert {
-    position: relative;
-    padding: 0.75rem 1.25rem;
+    justify-content: center;
+    gap: 0.5rem;
     margin-bottom: 1rem;
-    border: 1px solid transparent;
-    border-radius: 0.25rem;
-  }
-  
-  .alert-danger {
-    color: #721c24;
-    background-color: #f8d7da;
-    border-color: #f5c6cb;
-  }
-  
-  @media (max-width: 576px) {
-    .card {
+
+    .logo-icon {
+      font-size: 2rem;
+      width: 2rem;
+      height: 2rem;
+      color: #667eea;
+    }
+
+    h1 {
       margin: 0;
-    }
-    
-    .form-actions {
-      flex-direction: column;
+      font-size: 1.8rem;
+      font-weight: 600;
+      background: linear-gradient(45deg, #667eea, #764ba2);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
     }
   }
+
+  h2 {
+    margin: 0 0 0.5rem;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #333;
+  }
+
+  p {
+    margin: 0;
+    color: #666;
+    font-size: 0.95rem;
+  }
+}
+
+.login-form {
+  .full-width {
+    width: 100%;
+    margin-bottom: 1rem;
+  }
+
+  .error-alert {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 1rem;
+    background: #ffebee;
+    border: 1px solid #ffcdd2;
+    border-radius: 8px;
+    color: #c62828;
+    margin-bottom: 1.5rem;
+    font-size: 0.9rem;
+
+    mat-icon {
+      font-size: 1.2rem;
+      width: 1.2rem;
+      height: 1.2rem;
+    }
+  }
+
+  .forgot-password {
+    text-align: right;
+    margin-bottom: 1.5rem;
+
+    button {
+      font-size: 0.9rem;
+      color: #667eea;
+    }
+  }
+
+  .login-button {
+    height: 48px;
+    font-size: 1rem;
+    font-weight: 500;
+    border-radius: 8px;
+    background: linear-gradient(45deg, #667eea, #764ba2);
+    margin-bottom: 1.5rem;
+
+    &:disabled {
+      background: #e0e0e0;
+      color: #999;
+    }
+
+    mat-spinner {
+      margin-right: 0.5rem;
+    }
+  }
+
+  .divider {
+    position: relative;
+    text-align: center;
+    margin: 1.5rem 0;
+
+    &::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: #e0e0e0;
+    }
+
+    span {
+      background: white;
+      padding: 0 1rem;
+      color: #666;
+      font-size: 0.9rem;
+    }
+  }
+
+  .register-link {
+    text-align: center;
+
+    p {
+      margin: 0 0 0.5rem;
+      color: #666;
+      font-size: 0.9rem;
+    }
+
+    button {
+      font-weight: 500;
+      color: #667eea;
+    }
+  }
+}
+
+// Form field customizations
+::ng-deep {
+  .mat-mdc-form-field {
+    .mat-mdc-text-field-wrapper {
+      border-radius: 8px;
+    }
+
+    .mat-mdc-form-field-focus-overlay {
+      border-radius: 8px;
+    }
+  }
+}
+
+// Responsive design
+@media (max-width: 480px) {
+  .login-container {
+    padding: 0.5rem;
+  }
+
+  .login-card {
+    padding: 1.5rem;
+  }
+
+  .login-header {
+    .logo h1 {
+      font-size: 1.5rem;
+    }
+
+    h2 {
+      font-size: 1.3rem;
+    }
+  }
+}
+
+// Loading state
+.login-button {
+  position: relative;
+  overflow: hidden;
+
+  &[disabled] {
+    pointer-events: none;
+  }
+}
+
+// Accessibility improvements
+.login-form {
+  mat-form-field {
+    .mat-mdc-form-field-error {
+      font-size: 0.8rem;
+    }
+  }
+}
+
+// Animation for error alert
+.error-alert {
+  animation: slideInDown 0.3s ease-out;
+}
+
+@keyframes slideInDown {
+  from {
+    transform: translateY(-10px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}

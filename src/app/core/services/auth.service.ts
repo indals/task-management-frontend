@@ -1,143 +1,241 @@
-// src/app/core/services/auth.service.ts
-// Update with your actual API URL
-// src/app/core/services/auth.service.ts
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { BehaviorSubject, Observable } from 'rxjs';
-import { map, tap, catchError } from 'rxjs/operators';
-import { JwtHelperService } from '@auth0/angular-jwt';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { BehaviorSubject, Observable, throwError } from 'rxjs';
+import { map, catchError, tap } from 'rxjs/operators';
+import { Router } from '@angular/router';
 
-import { User, UserListItem } from '../models';
+import { API_ENDPOINTS, STORAGE_KEYS } from '../constants/api.constants';
 import { 
   LoginRequest, 
   RegisterRequest, 
   AuthResponse, 
-  ChangePasswordRequest 
-} from '../interfaces/api.interfaces';
-import { API_ENDPOINTS, STORAGE_KEYS } from '../constants/api.constants';
-import { ErrorHandlerService } from './error-handler.service';
-
-// Export types for external use
-export type { User, UserListItem } from '../models';
+  RefreshTokenRequest,
+  ChangePasswordRequest,
+  ProfileUpdateRequest,
+  User,
+  AuthUser,
+  ApiResponse
+} from '../models';
 
 @Injectable({
   providedIn: 'root'
 })
 export class AuthService {
   private currentUserSubject = new BehaviorSubject<User | null>(null);
+  private isAuthenticatedSubject = new BehaviorSubject<boolean>(false);
+  private loadingSubject = new BehaviorSubject<boolean>(false);
+
   public currentUser$ = this.currentUserSubject.asObservable();
-  private jwtHelper = new JwtHelperService();
+  public isAuthenticated$ = this.isAuthenticatedSubject.asObservable();
+  public loading$ = this.loadingSubject.asObservable();
+  redirectUrl: string = '/dashboard';
 
   constructor(
     private http: HttpClient,
-    private errorHandler: ErrorHandlerService
+    private router: Router
   ) {
-    this.initializeAuthState();
+    this.initializeAuth();
   }
 
-  private initializeAuthState(): void {
-    const token = localStorage.getItem(STORAGE_KEYS.TOKEN);
-    const user = localStorage.getItem(STORAGE_KEYS.USER);
+  private initializeAuth(): void {
+    const token = this.getToken();
+    const user = this.getStoredUser();
     
-    if (token && user && !this.jwtHelper.isTokenExpired(token)) {
-      this.currentUserSubject.next(JSON.parse(user));
+    if (token && user) {
+      this.currentUserSubject.next(user);
+      this.isAuthenticatedSubject.next(true);
     }
   }
 
-  register(registerData: RegisterRequest): Observable<{ message: string; user: User }> {
-    return this.http.post<{ message: string; user: User }>(
-      API_ENDPOINTS.AUTH.REGISTER, 
-      registerData
-    ).pipe(
-      catchError(this.errorHandler.handleError.bind(this.errorHandler))
-    );
+  login(credentials: LoginRequest): Observable<AuthResponse> {
+    this.loadingSubject.next(true);
+    
+    return this.http.post<ApiResponse<AuthResponse>>(API_ENDPOINTS.AUTH.LOGIN, credentials)
+      .pipe(
+        map(response => response.data!),
+        tap(authResponse => {
+          this.handleAuthSuccess(authResponse);
+        }),
+        catchError(this.handleError.bind(this)),
+        tap(() => this.loadingSubject.next(false))
+      );
   }
 
-  login(loginData: LoginRequest): Observable<AuthResponse> {
-    return this.http.post<AuthResponse>(API_ENDPOINTS.AUTH.LOGIN, loginData)
+  register(userData: RegisterRequest): Observable<User> {
+    this.loadingSubject.next(true);
+    
+    return this.http.post<ApiResponse<User>>(API_ENDPOINTS.AUTH.REGISTER, userData)
       .pipe(
-        tap(response => this.setAuthData(response)),
-        catchError(this.errorHandler.handleError.bind(this.errorHandler))
+        map(response => response.data!),
+        catchError(this.handleError.bind(this)),
+        tap(() => this.loadingSubject.next(false))
+      );
+  }
+
+  refreshToken(): Observable<AuthResponse> {
+    const refreshToken = this.getRefreshToken();
+    if (!refreshToken) {
+      return throwError(() => new Error('No refresh token available'));
+    }
+
+    const request: RefreshTokenRequest = { refresh_token: refreshToken };
+    
+    return this.http.post<ApiResponse<AuthResponse>>(API_ENDPOINTS.AUTH.REFRESH, request)
+      .pipe(
+        map(response => response.data!),
+        tap(authResponse => {
+          this.handleAuthSuccess(authResponse);
+        }),
+        catchError(error => {
+          this.logout();
+          return throwError(() => error);
+        })
       );
   }
 
   logout(): void {
-    this.clearAuthData();
+    this.loadingSubject.next(true);
+    
+    // Clear local storage
+    localStorage.removeItem(STORAGE_KEYS.TOKEN);
+    localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
+    localStorage.removeItem(STORAGE_KEYS.USER);
+    
+    // Update subjects
+    this.currentUserSubject.next(null);
+    this.isAuthenticatedSubject.next(false);
+    this.loadingSubject.next(false);
+    
+    // Redirect to login
+    this.router.navigate(['/auth/login']);
   }
 
-  getProfile(): Observable<User> {
-    return this.http.get<User>(API_ENDPOINTS.AUTH.ME)
+  getCurrentUser(): Observable<User> {
+    return this.http.get<ApiResponse<User>>(API_ENDPOINTS.AUTH.ME)
       .pipe(
-        catchError(this.errorHandler.handleError.bind(this.errorHandler))
+        map(response => response.data!),
+        tap(user => {
+          this.currentUserSubject.next(user);
+          this.storeUser(user);
+        }),
+        catchError(this.handleError.bind(this))
       );
   }
 
-  updateProfile(userData: { name?: string; email?: string; password?: string }): Observable<{ message: string; user: User }> {
-    return this.http.put<{ message: string; user: User }>(
-      API_ENDPOINTS.AUTH.PROFILE, 
-      userData
-    ).pipe(
-      tap(response => this.updateStoredUser(response.user)),
-      catchError(this.errorHandler.handleError.bind(this.errorHandler))
-    );
-  }
-
-  changePassword(currentPassword: string, newPassword: string): Observable<{ message: string }> {
-    const request: ChangePasswordRequest = {
-      current_password: currentPassword,
-      new_password: newPassword
-    };
+  updateProfile(profileData: ProfileUpdateRequest): Observable<User> {
+    this.loadingSubject.next(true);
     
-    return this.http.post<{ message: string }>(
-      API_ENDPOINTS.AUTH.CHANGE_PASSWORD, 
-      request
-    ).pipe(
-      catchError(this.errorHandler.handleError.bind(this.errorHandler))
-    );
+    return this.http.put<ApiResponse<User>>(API_ENDPOINTS.AUTH.PROFILE, profileData)
+      .pipe(
+        map(response => response.data!),
+        tap(user => {
+          this.currentUserSubject.next(user);
+          this.storeUser(user);
+        }),
+        catchError(this.handleError.bind(this)),
+        tap(() => this.loadingSubject.next(false))
+      );
   }
 
-  isLoggedIn(): boolean {
-    const token = localStorage.getItem(STORAGE_KEYS.TOKEN);
-    return token !== null && !this.jwtHelper.isTokenExpired(token);
+  changePassword(passwordData: ChangePasswordRequest): Observable<ApiResponse> {
+    this.loadingSubject.next(true);
+    
+    return this.http.post<ApiResponse>(API_ENDPOINTS.AUTH.CHANGE_PASSWORD, passwordData)
+      .pipe(
+        catchError(this.handleError.bind(this)),
+        tap(() => this.loadingSubject.next(false))
+      );
   }
 
+  getUsers(): Observable<User[]> {
+    return this.http.get<ApiResponse<User[]>>(API_ENDPOINTS.AUTH.USERS)
+      .pipe(
+        map(response => response.data!),
+        catchError(this.handleError.bind(this))
+      );
+  }
+
+  ping(): Observable<ApiResponse> {
+    return this.http.get<ApiResponse>(API_ENDPOINTS.AUTH.PING)
+      .pipe(
+        catchError(this.handleError.bind(this))
+      );
+  }
+
+  // Utility methods
   getToken(): string | null {
     return localStorage.getItem(STORAGE_KEYS.TOKEN);
   }
 
-  getCurrentUser(): User | null {
+  getRefreshToken(): string | null {
+    return localStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN);
+  }
+
+  getStoredUser(): User | null {
+    const userStr = localStorage.getItem(STORAGE_KEYS.USER);
+    if (userStr) {
+      try {
+        return JSON.parse(userStr);
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  }
+
+  isLoggedIn(): boolean {
+    return this.isAuthenticatedSubject.value;
+  }
+
+  getCurrentUserValue(): User | null {
     return this.currentUserSubject.value;
   }
 
-  getUsers(): Observable<UserListItem[]> {
-    return this.http.get<UserListItem[]>(API_ENDPOINTS.AUTH.USERS)
-      .pipe(
-        catchError(this.errorHandler.handleError.bind(this.errorHandler))
-      );
+  hasRole(role: string): boolean {
+    const user = this.getCurrentUserValue();
+    return user?.role === role;
   }
 
-  ping(): Observable<{ message: string }> {
-    return this.http.get<{ message: string }>(API_ENDPOINTS.AUTH.PING)
-      .pipe(
-        catchError(this.errorHandler.handleError.bind(this.errorHandler))
-      );
+  hasAnyRole(roles: string[]): boolean {
+    const user = this.getCurrentUserValue();
+    return user ? roles.includes(user.role) : false;
   }
 
-  // Private helper methods
-  private setAuthData(response: AuthResponse): void {
-    localStorage.setItem(STORAGE_KEYS.TOKEN, response.access_token);
-    localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(response.user));
-    this.currentUserSubject.next(response.user);
+  private handleAuthSuccess(authResponse: AuthResponse): void {
+    // Store tokens
+    localStorage.setItem(STORAGE_KEYS.TOKEN, authResponse.access_token);
+    localStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, authResponse.refresh_token);
+    
+    // Store user
+    this.storeUser(authResponse.user);
+    
+    // Update subjects
+    this.currentUserSubject.next(authResponse.user);
+    this.isAuthenticatedSubject.next(true);
   }
 
-  private clearAuthData(): void {
-    localStorage.removeItem(STORAGE_KEYS.TOKEN);
-    localStorage.removeItem(STORAGE_KEYS.USER);
-    this.currentUserSubject.next(null);
-  }
-
-  private updateStoredUser(user: User): void {
+  private storeUser(user: User): void {
     localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
-    this.currentUserSubject.next(user);
+  }
+
+  private handleError(error: HttpErrorResponse): Observable<never> {
+    let errorMessage = 'An error occurred';
+    
+    if (error.error instanceof ErrorEvent) {
+      // Client-side error
+      errorMessage = error.error.message;
+    } else {
+      // Server-side error
+      if (error.error?.message) {
+        errorMessage = error.error.message;
+      } else if (error.error?.errors && error.error.errors.length > 0) {
+        errorMessage = error.error.errors[0];
+      } else {
+        errorMessage = `Error ${error.status}: ${error.message}`;
+      }
+    }
+    
+    console.error('Auth Service Error:', error);
+    return throwError(() => new Error(errorMessage));
   }
 }

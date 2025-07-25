@@ -1,24 +1,56 @@
-// src/app/core/models/user.model.ts
 export interface User {
   id: number;
   name: string;
-  username?: string; // Added username for backward compatibility
   email: string;
-  role?: 'ADMIN' | 'MANAGER' | 'EMPLOYEE' | 'admin' | 'user' | 'guest' | string;
-  avatar?: string;
-  first_name?: string;
-  last_name?: string;
-  createdAt?: Date;
-  updatedAt?: Date;
-  created_at?: string;
-  updated_at?: string;
+  role: 'ADMIN' | 'PROJECT_MANAGER' | 'TEAM_LEAD' | 'SENIOR_DEVELOPER' | 'DEVELOPER' | 'QA_ENGINEER' | 'DEVOPS_ENGINEER' | 'UI_UX_DESIGNER' | 'BUSINESS_ANALYST' | 'PRODUCT_OWNER' | 'SCRUM_MASTER';
+  avatar_url?: string;
+  bio?: string;
+  skills?: string[];
+  github_username?: string;
+  linkedin_url?: string;
+  phone?: string;
+  timezone: string;
+  daily_work_hours: number;
+  hourly_rate?: number;
+  is_active: boolean;
+  last_login?: string;
+  created_at: string;
+  updated_at: string;
 }
 
-export interface UserListItem {
-  id: number;
+export interface CreateUserRequest {
   name: string;
-  username?: string;
   email: string;
-  first_name?: string;
-  last_name?: string;
+  password: string;
+  role: string;
+  avatar_url?: string;
+  bio?: string;
+  skills?: string[];
+  github_username?: string;
+  linkedin_url?: string;
+  phone?: string;
+  timezone: string;
+  daily_work_hours: number;
+  hourly_rate?: number;
+}
+
+export interface UpdateUserRequest {
+  name?: string;
+  email?: string;
+  role?: string;
+  avatar_url?: string;
+  bio?: string;
+  skills?: string[];
+  github_username?: string;
+  linkedin_url?: string;
+  phone?: string;
+  timezone?: string;
+  daily_work_hours?: number;
+  hourly_rate?: number;
+  is_active?: boolean;
+}
+
+export interface ChangePasswordRequest {
+  current_password: string;
+  new_password: string;
 }

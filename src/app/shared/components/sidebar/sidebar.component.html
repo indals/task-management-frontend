@@ -1,59 +1,145 @@
-<div class="sidebar-overlay" [class.open]="mobile && open" (click)="onClose()"></div>
-
-<aside class="app-sidebar" [class.collapsed]="collapsed" [class.mobile]="mobile" [class.open]="mobile && open">
+<div class="sidebar" [class.collapsed]="isCollapsed">
+  <!-- Sidebar Header -->
   <div class="sidebar-header">
-    <div class="logo-container">
-      <i class="material-icons app-logo">assignment</i>
-      <h2 class="app-title" *ngIf="!collapsed">Task Manager</h2>
+    <div class="logo" [class.collapsed]="isCollapsed">
+      <mat-icon class="logo-icon">task_alt</mat-icon>
+      <span class="logo-text" *ngIf="!isCollapsed">TaskFlow</span>
     </div>
-    <button class="collapse-btn" (click)="onToggle()">
-      <i class="material-icons">{{ collapsed ? 'chevron_right' : 'chevron_left' }}</i>
+    <button 
+      mat-icon-button 
+      class="toggle-btn"
+      (click)="toggleSidebar()"
+      matTooltip="Toggle Sidebar">
+      <mat-icon>{{ isCollapsed ? 'chevron_right' : 'chevron_left' }}</mat-icon>
     </button>
   </div>
 
-  <div class="nav-container">
+  <!-- User Profile Section -->
+  <div class="user-profile" *ngIf="currentUser && !isCollapsed">
+    <div class="user-avatar">
+      <img 
+        *ngIf="currentUser.avatar_url; else avatarFallback" 
+        [src]="currentUser.avatar_url" 
+        [alt]="currentUser.name">
+      <ng-template #avatarFallback>
+        <div class="avatar-initials">{{ getUserInitials() }}</div>
+      </ng-template>
+    </div>
+    <div class="user-info">
+      <div class="user-name">{{ currentUser.name }}</div>
+      <div class="user-role">{{ getUserRole() }}</div>
+    </div>
+  </div>
+
+  <!-- Collapsed User Avatar -->
+  <div class="user-profile-collapsed" *ngIf="currentUser && isCollapsed">
+    <div class="user-avatar-small">
+      <img 
+        *ngIf="currentUser.avatar_url; else avatarFallbackSmall" 
+        [src]="currentUser.avatar_url" 
+        [alt]="currentUser.name"
+        [matTooltip]="currentUser.name">
+      <ng-template #avatarFallbackSmall>
+        <div class="avatar-initials-small" [matTooltip]="currentUser.name">
+          {{ getUserInitials() }}
+        </div>
+      </ng-template>
+    </div>
+  </div>
+
+  <!-- Navigation Menu -->
+  <nav class="sidebar-nav">
     <ul class="nav-list">
-      <div class="nav-category" *ngIf="!collapsed">Main Navigation</div>
-      
-      <li *ngFor="let item of menuItems" 
+      <li *ngFor="let item of menuItems" class="nav-item">
+        <!-- Main Menu Item -->
+        <a 
+          class="nav-link"
           [class.active]="item.active"
-          class="nav-item"
-          (click)="navigate(item.route)">
-        <i class="material-icons nav-icon">{{item.icon}}</i>
-        <span class="nav-title" *ngIf="!collapsed">{{ item.label }}</span>
-        <span class="tooltip" *ngIf="collapsed">{{ item.label }}</span>
-      </li>
-      
-      <div class="nav-category" *ngIf="!collapsed && currentUser">Recent Projects</div>
-      
-      <ng-container *ngIf="currentUser && !collapsed">
-        <li *ngFor="let project of recentProjects" 
-            class="nav-item sub-item"
-            (click)="navigate('/projects/' + project.id)">
-          <i class="material-icons nav-icon">folder</i>
-          <span class="nav-title">{{ project.name }}</span>
-        </li>
-        
-        <li class="nav-item sub-item" (click)="navigate('/projects')">
-          <i class="material-icons nav-icon">add</i>
-          <span class="nav-title">View All Projects</span>
-        </li>
-      </ng-container>
-    </ul>
-  </div>
+          [class.has-children]="item.children && item.children.length > 0"
+          (click)="onMenuItemClick(item)"
+          [matTooltip]="isCollapsed ? item.label : ''"
+          matTooltipPosition="right">
+          
+          <mat-icon class="nav-icon">{{ item.icon }}</mat-icon>
+          
+          <span class="nav-label" *ngIf="!isCollapsed">{{ item.label }}</span>
+          
+          <!-- Badge for notifications -->
+          <span 
+            class="nav-badge" 
+            *ngIf="shouldShowBadge(item) && !isCollapsed"
+            [class.high-count]="unreadNotificationCount > 10">
+            {{ getNotificationBadgeText() }}
+          </span>
 
-  <div class="sidebar-footer" *ngIf="!collapsed && currentUser">
-    <div class="user-profile">
-      <div class="user-avatar">
-        <i class="material-icons">person</i>
-      </div>
-      <div class="user-info">
-        <div class="user-name">{{ getUserDisplayName() }}</div>
-        <div class="user-email">{{ currentUser.email }}</div>
-      </div>
+          <span 
+            class="nav-badge-dot" 
+            *ngIf="shouldShowBadge(item) && isCollapsed">
+          </span>
+          
+          <!-- Expand/Collapse Arrow -->
+          <mat-icon 
+            class="nav-arrow" 
+            *ngIf="item.children && item.children.length > 0 && !isCollapsed">
+            {{ item.active ? 'expand_less' : 'expand_more' }}
+          </mat-icon>
+        </a>
+
+        <!-- Sub Menu Items -->
+        <ul 
+          class="sub-nav-list" 
+          *ngIf="item.children && item.children.length > 0 && item.active && !isCollapsed"
+          [@slideInOut]>
+          <li *ngFor="let child of item.children" class="sub-nav-item">
+            <a 
+              class="sub-nav-link"
+              [class.active]="child.active"
+              (click)="onChildMenuClick(item, child)">
+              <mat-icon class="sub-nav-icon">{{ child.icon }}</mat-icon>
+              <span class="sub-nav-label">{{ child.label }}</span>
+            </a>
+          </li>
+        </ul>
+      </li>
+    </ul>
+  </nav>
+
+  <!-- Sidebar Footer -->
+  <div class="sidebar-footer">
+    <!-- Quick Actions -->
+    <div class="quick-actions" *ngIf="!isCollapsed">
+      <button 
+        mat-mini-fab 
+        color="primary" 
+        matTooltip="Create Task"
+        routerLink="/tasks/create">
+        <mat-icon>add</mat-icon>
+      </button>
+      <button 
+        mat-mini-fab 
+        color="accent" 
+        matTooltip="Quick Search"
+        (click)="openQuickSearch()">
+        <mat-icon>search</mat-icon>
+      </button>
     </div>
-    <button class="logout-btn" (click)="logout()" title="Logout">
-      <i class="material-icons">logout</i>
+
+    <!-- Logout Button -->
+    <button 
+      mat-button 
+      class="logout-btn"
+      (click)="onLogout()"
+      [matTooltip]="isCollapsed ? 'Logout' : ''"
+      matTooltipPosition="right">
+      <mat-icon>logout</mat-icon>
+      <span *ngIf="!isCollapsed">Logout</span>
     </button>
   </div>
-</aside>
+</div>
+
+<!-- Overlay for mobile -->
+<div 
+  class="sidebar-overlay" 
+  *ngIf="!isCollapsed && isMobile()"
+  (click)="toggleSidebar()">
+</div>

@@ -1,85 +1,186 @@
-<!-- register.component.html -->
 <div class="register-container">
-    <div class="card">
-      <div class="card-header">
-        <h2>Create an Account</h2>
+  <div class="register-card-wrapper">
+    <mat-card class="register-card">
+      
+      <!-- Header -->
+      <div class="register-header">
+        <div class="logo">
+          <mat-icon class="logo-icon">task_alt</mat-icon>
+          <h1>TaskFlow</h1>
+        </div>
+        <h2>Create Account</h2>
+        <p>Join our task management platform</p>
       </div>
-      <div class="card-body">
-        <form [formGroup]="registerForm" (ngSubmit)="onSubmit()">
-          <div class="alert alert-danger" *ngIf="errorMessage">
-            {{ errorMessage }}
-          </div>
-  
-          <div class="form-group">
-            <label for="name">Full Name</label>
+
+      <!-- Register Form -->
+      <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" class="register-form">
+        
+        <!-- Error Alert -->
+        <div class="error-alert" *ngIf="error">
+          <mat-icon>error</mat-icon>
+          <span>{{ error }}</span>
+        </div>
+
+        <!-- Name Field -->
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Full Name</mat-label>
+          <input 
+            matInput 
+            type="text" 
+            formControlName="name"
+            placeholder="Enter your full name"
+            autocomplete="name">
+          <mat-icon matSuffix>person</mat-icon>
+          <mat-error *ngIf="isFieldInvalid('name')">
+            {{ getFieldError('name') }}
+          </mat-error>
+        </mat-form-field>
+
+        <!-- Email Field -->
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Email Address</mat-label>
+          <input 
+            matInput 
+            type="email" 
+            formControlName="email"
+            placeholder="Enter your email"
+            autocomplete="email">
+          <mat-icon matSuffix>email</mat-icon>
+          <mat-error *ngIf="isFieldInvalid('email')">
+            {{ getFieldError('email') }}
+          </mat-error>
+        </mat-form-field>
+
+        <!-- Role Field -->
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Role</mat-label>
+          <mat-select formControlName="role">
+            <mat-option *ngFor="let role of roleOptions" [value]="role.value">
+              {{ role.label }}
+            </mat-option>
+          </mat-select>
+          <mat-icon matSuffix>work</mat-icon>
+          <mat-error *ngIf="isFieldInvalid('role')">
+            {{ getFieldError('role') }}
+          </mat-error>
+        </mat-form-field>
+
+        <!-- Password Fields Row -->
+        <div class="password-row">
+          <mat-form-field appearance="outline" class="half-width">
+            <mat-label>Password</mat-label>
             <input 
-              type="text" 
-              id="name" 
-              formControlName="name" 
-              class="form-control" 
-              [ngClass]="{'is-invalid': registerForm.get('name')?.invalid && registerForm.get('name')?.touched}"
-            >
-            <div class="invalid-feedback" *ngIf="registerForm.get('name')?.errors?.['required'] && registerForm.get('name')?.touched">
-              Name is required
-            </div>
-          </div>
-  
-          <div class="form-group">
-            <label for="email">Email</label>
-            <input 
-              type="email" 
-              id="email" 
-              formControlName="email" 
-              class="form-control" 
-              [ngClass]="{'is-invalid': registerForm.get('email')?.invalid && registerForm.get('email')?.touched}"
-            >
-            <div class="invalid-feedback" *ngIf="registerForm.get('email')?.errors?.['required'] && registerForm.get('email')?.touched">
-              Email is required
-            </div>
-            <div class="invalid-feedback" *ngIf="registerForm.get('email')?.errors?.['email'] && registerForm.get('email')?.touched">
-              Please enter a valid email
-            </div>
-          </div>
-  
-          <div class="form-group">
-            <label for="password">Password</label>
-            <input 
-              type="password" 
-              id="password" 
-              formControlName="password" 
-              class="form-control"
-              [ngClass]="{'is-invalid': registerForm.get('password')?.invalid && registerForm.get('password')?.touched}"
-            >
-            <div class="invalid-feedback" *ngIf="registerForm.get('password')?.errors?.['required'] && registerForm.get('password')?.touched">
-              Password is required
-            </div>
-            <div class="invalid-feedback" *ngIf="registerForm.get('password')?.errors?.['minlength'] && registerForm.get('password')?.touched">
-              Password must be at least 8 characters
-            </div>
-          </div>
-  
-          <div class="form-group">
-            <label for="role">Role</label>
-            <select 
-              id="role" 
-              formControlName="role" 
-              class="form-control"
-              [ngClass]="{'is-invalid': registerForm.get('role')?.invalid && registerForm.get('role')?.touched}"
-            >
-              <option *ngFor="let role of userRoles" [value]="role">{{ role }}</option>
-            </select>
-            <div class="invalid-feedback" *ngIf="registerForm.get('role')?.errors?.['required'] && registerForm.get('role')?.touched">
-              Role is required
-            </div>
-          </div>
-  
-          <div class="form-actions">
-            <button type="submit" class="btn btn-primary" [disabled]="registerForm.invalid || isSubmitting">
-              {{ isSubmitting ? 'Creating account...' : 'Register' }}
+              matInput 
+              [type]="hidePassword ? 'password' : 'text'" 
+              formControlName="password"
+              placeholder="Enter password"
+              autocomplete="new-password">
+            <button 
+              mat-icon-button 
+              matSuffix 
+              type="button"
+              (click)="togglePasswordVisibility()">
+              <mat-icon>{{ hidePassword ? 'visibility_off' : 'visibility' }}</mat-icon>
             </button>
-            <a routerLink="/login" class="btn btn-link">Already have an account? Login</a>
+            <mat-error *ngIf="isFieldInvalid('password')">
+              {{ getFieldError('password') }}
+            </mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="half-width">
+            <mat-label>Confirm Password</mat-label>
+            <input 
+              matInput 
+              [type]="hideConfirmPassword ? 'password' : 'text'" 
+              formControlName="confirmPassword"
+              placeholder="Confirm password"
+              autocomplete="new-password">
+            <button 
+              mat-icon-button 
+              matSuffix 
+              type="button"
+              (click)="toggleConfirmPasswordVisibility()">
+              <mat-icon>{{ hideConfirmPassword ? 'visibility_off' : 'visibility' }}</mat-icon>
+            </button>
+            <mat-error *ngIf="isFieldInvalid('confirmPassword')">
+              {{ getFieldError('confirmPassword') }}
+            </mat-error>
+          </mat-form-field>
+        </div>
+
+        <!-- Work Details Row -->
+        <div class="work-details-row">
+          <mat-form-field appearance="outline" class="timezone-field">
+            <mat-label>Timezone</mat-label>
+            <mat-select formControlName="timezone">
+              <mat-option *ngFor="let tz of getTimezoneOptions()" [value]="tz.value">
+                {{ tz.label }}
+              </mat-option>
+            </mat-select>
+            <mat-icon matSuffix>schedule</mat-icon>
+            <mat-error *ngIf="isFieldInvalid('timezone')">
+              {{ getFieldError('timezone') }}
+            </mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="hours-field">
+            <mat-label>Daily Work Hours</mat-label>
+            <input 
+              matInput 
+              type="number" 
+              formControlName="daily_work_hours"
+              min="1"
+              max="24"
+              placeholder="8">
+            <mat-icon matSuffix>access_time</mat-icon>
+            <mat-error *ngIf="isFieldInvalid('daily_work_hours')">
+              {{ getFieldError('daily_work_hours') }}
+            </mat-error>
+          </mat-form-field>
+        </div>
+
+        <!-- Terms and Conditions -->
+        <div class="terms-section">
+          <mat-checkbox formControlName="agreedToTerms" class="terms-checkbox">
+            I agree to the 
+            <a href="#" target="_blank">Terms of Service</a> and 
+            <a href="#" target="_blank">Privacy Policy</a>
+          </mat-checkbox>
+          <div class="terms-error" *ngIf="isFieldInvalid('agreedToTerms')">
+            {{ getFieldError('agreedToTerms') }}
           </div>
-        </form>
-      </div>
-    </div>
+        </div>
+
+        <!-- Submit Button -->
+        <button 
+          mat-raised-button 
+          color="primary" 
+          type="submit"
+          class="register-button full-width"
+          [disabled]="isLoading || registerForm.invalid">
+          <mat-spinner diameter="20" *ngIf="isLoading"></mat-spinner>
+          <span *ngIf="!isLoading">Create Account</span>
+          <span *ngIf="isLoading">Creating Account...</span>
+        </button>
+
+        <!-- Divider -->
+        <div class="divider">
+          <span>or</span>
+        </div>
+
+        <!-- Login Link -->
+        <div class="login-link">
+          <p>Already have an account?</p>
+          <button 
+            type="button" 
+            mat-button 
+            color="accent" 
+            (click)="onLoginClick()">
+            Sign In
+          </button>
+        </div>
+
+      </form>
+    </mat-card>
   </div>
+</div>
