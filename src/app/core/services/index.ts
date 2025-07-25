@@ -1,8 +1,10 @@
-// Barrel file for all core services
-export { AuthService } from './auth.service';
-export { TaskService } from './task.service';
-export { ProjectService } from './project.service';
-export { NotificationService } from './notification.service';
-export { AnalyticsService } from './analytics.service';
-export { LayoutService } from './layout.service';
-export { ErrorHandlerService } from './error-handler.service';
+// Core Services Barrel Export
+export * from './auth.service';
+export * from './task.service';
+export * from './project.service';
+export * from './user.service';
+export * from './dashboard.service';
+export * from './notification.service';
+export * from './analytics.service';
+export * from './layout.service';
+export * from './error-handler.service';
