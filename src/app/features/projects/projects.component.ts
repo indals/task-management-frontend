@@ -3,6 +3,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { LoadingComponent } from '../../shared/components/loading/loading.component';
 
 interface Project {
   id: string;
@@ -26,7 +27,7 @@ interface Project {
 @Component({
   selector: 'app-projects',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, LoadingComponent],
   templateUrl: './projects.component.html',
   styleUrls: ['./projects.component.css']
 })
@@ -140,21 +141,16 @@ export class ProjectsComponent implements OnInit {
   }
 
   createProject() {
-    // Navigate to create project page or open modal
     console.log('Create new project');
-    // this.router.navigate(['/projects/create']);
   }
 
   viewProject(project: Project) {
-    // Navigate to project details
     console.log('View project:', project);
-    // this.router.navigate(['/projects', project.id]);
   }
 
   editProject(event: Event, project: Project) {
     event.stopPropagation();
     console.log('Edit project:', project);
-    // Open edit modal or navigate to edit page
   }
 
   deleteProject(event: Event, project: Project) {
@@ -169,7 +165,6 @@ export class ProjectsComponent implements OnInit {
   toggleProjectMenu(event: Event) {
     event.stopPropagation();
     console.log('Toggle project menu');
-    // Implement dropdown menu
   }
 
   getInitials(name: string): string {

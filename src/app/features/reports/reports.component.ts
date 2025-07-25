@@ -77,6 +77,7 @@ export class ReportsComponent implements OnInit {
     this.analyticsService.getTaskCompletionRate(this.selectedPeriod).subscribe({
       next: (data) => {
         this.taskCompletionData = data;
+        console.log('Task Completion Data:', this.taskCompletionData);
         this.updateReportData();
       },
       error: (err) => {
