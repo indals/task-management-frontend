@@ -1,9 +1,12 @@
 // src/app/core/services/task.service.ts
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpParams, HttpErrorResponse } from '@angular/common/http';
-import { Observable, throwError } from 'rxjs';
-import { map, catchError } from 'rxjs/operators';
+import { HttpClient, HttpParams } from '@angular/common/http';
+import { Observable, BehaviorSubject, throwError } from 'rxjs';
+import { map, catchError, tap } from 'rxjs/operators';
 
+import { API_ENDPOINTS } from '../constants/api.constants';
+import { ErrorHandlerService } from './error-handler.service';
+import { AuthService } from './auth.service';
 import { 
   Task, 
   CreateTaskRequest, 
@@ -11,147 +14,209 @@ import {
   TaskFilters, 
   BulkTaskUpdate,
   TaskStats,
-  Subtask,
-  CreateSubtaskRequest,
-  UpdateSubtaskRequest,
-  TaskAttachment,
-  TaskActivity,
-  TaskTemplate
+  TaskComment,
+  CreateCommentRequest,
+  UpdateCommentRequest,
+  TaskTimeLog,
+  CreateTimeLogRequest,
+  TaskAssignmentRequest,
+  TaskStatusUpdateRequest,
+  TaskResponse,
+  TaskListResponse,
+  TaskStatsResponse,
+  TaskCommentsResponse,
+  TaskTimeLogsResponse,
+  TaskActivitiesResponse
 } from '../models/task.model';
-import { Comment } from '../models/comment.model';
 import { ApiResponse, PaginatedResponse } from '../interfaces/api.interfaces';
-import { API_ENDPOINTS } from '../constants/api.constants';
-import { ErrorHandlerService } from './error-handler.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class TaskService {
+  private tasksSubject = new BehaviorSubject<Task[]>([]);
+  private loadingSubject = new BehaviorSubject<boolean>(false);
+  private selectedTaskSubject = new BehaviorSubject<Task | null>(null);
+
+  public tasks$ = this.tasksSubject.asObservable();
+  public loading$ = this.loadingSubject.asObservable();
+  public selectedTask$ = this.selectedTaskSubject.asObservable();
+
   constructor(
     private http: HttpClient,
-    private errorHandler: ErrorHandlerService
+    private errorHandler: ErrorHandlerService,
+    private authService: AuthService
   ) {}
 
   // Task CRUD Operations
   getAllTasks(filters?: TaskFilters): Observable<PaginatedResponse<Task>> {
-    let params = new HttpParams();
+    this.loadingSubject.next(true);
     
+    let params = new HttpParams();
     if (filters) {
-      if (filters.status?.length) {
-        filters.status.forEach(status => params = params.append('status', status));
-      }
-      if (filters.priority?.length) {
-        filters.priority.forEach(priority => params = params.append('priority', priority));
-      }
-      if (filters.assignee_id?.length) {
-        filters.assignee_id.forEach(id => params = params.append('assignee_id', id.toString()));
-      }
-      if (filters.created_by_id?.length) {
-        filters.created_by_id.forEach(id => params = params.append('created_by_id', id.toString()));
-      }
-      if (filters.project_id?.length) {
-        filters.project_id.forEach(id => params = params.append('project_id', id.toString()));
-      }
-      if (filters.category_id?.length) {
-        filters.category_id.forEach(id => params = params.append('category_id', id.toString()));
-      }
-      if (filters.tags?.length) {
-        filters.tags.forEach(tag => params = params.append('tags', tag));
-      }
-      if (filters.due_date_from) params = params.set('due_date_from', filters.due_date_from);
-      if (filters.due_date_to) params = params.set('due_date_to', filters.due_date_to);
-      if (filters.created_date_from) params = params.set('created_date_from', filters.created_date_from);
-      if (filters.created_date_to) params = params.set('created_date_to', filters.created_date_to);
-      if (filters.search) params = params.set('search', filters.search);
-      if (filters.is_archived !== undefined) params = params.set('is_archived', filters.is_archived.toString());
-      if (filters.is_overdue !== undefined) params = params.set('is_overdue', filters.is_overdue.toString());
-      if (filters.has_no_assignee !== undefined) params = params.set('has_no_assignee', filters.has_no_assignee.toString());
-      if (filters.page) params = params.set('page', filters.page.toString());
-      if (filters.limit) params = params.set('limit', filters.limit.toString());
-      if (filters.sort_by) params = params.set('sort_by', filters.sort_by);
-      if (filters.sort_order) params = params.set('sort_order', filters.sort_order);
+      Object.keys(filters).forEach(key => {
+        const value = (filters as any)[key];
+        if (value !== undefined && value !== null) {
+          if (Array.isArray(value)) {
+            value.forEach(v => params = params.append(key, v.toString()));
+          } else {
+            params = params.set(key, value.toString());
+          }
+        }
+      });
     }
 
     return this.http.get<PaginatedResponse<Task>>(API_ENDPOINTS.TASKS.BASE, { params })
-      .pipe(catchError(this.errorHandler.handleError.bind(this.errorHandler)));
-  }
-
-  getTaskById(id: number): Observable<Task> {
-    return this.http.get<ApiResponse<Task>>(API_ENDPOINTS.TASKS.BY_ID(id))
       .pipe(
-        map(response => response.data),
-        catchError(this.errorHandler.handleError.bind(this.errorHandler))
+        tap(response => {
+          this.tasksSubject.next(response.data);
+          this.loadingSubject.next(false);
+        }),
+        catchError(error => {
+          this.loadingSubject.next(false);
+          return this.errorHandler.handleError(error);
+        })
       );
   }
 
-  createTask(task: CreateTaskRequest): Observable<Task> {
-    return this.http.post<ApiResponse<Task>>(API_ENDPOINTS.TASKS.BASE, task)
+  getTaskById(id: number, includeDetails: boolean = true): Observable<Task> {
+    let params = new HttpParams();
+    if (includeDetails) {
+      params = params.set('include_details', 'true');
+    }
+
+    return this.http.get<TaskResponse>(API_ENDPOINTS.TASKS.BY_ID(id), { params })
       .pipe(
         map(response => response.data),
-        catchError(this.errorHandler.handleError.bind(this.errorHandler))
+        tap(task => this.selectedTaskSubject.next(task)),
+        catchError(this.errorHandler.handleError)
       );
   }
 
-  updateTask(id: number, task: UpdateTaskRequest): Observable<Task> {
-    return this.http.put<ApiResponse<Task>>(API_ENDPOINTS.TASKS.BY_ID(id), task)
+  createTask(taskData: CreateTaskRequest): Observable<Task> {
+    this.loadingSubject.next(true);
+    
+    return this.http.post<TaskResponse>(API_ENDPOINTS.TASKS.BASE, taskData)
       .pipe(
         map(response => response.data),
-        catchError(this.errorHandler.handleError.bind(this.errorHandler))
+        tap(newTask => {
+          const currentTasks = this.tasksSubject.value;
+          this.tasksSubject.next([newTask, ...currentTasks]);
+          this.loadingSubject.next(false);
+        }),
+        catchError(error => {
+          this.loadingSubject.next(false);
+          return this.errorHandler.handleError(error);
+        })
       );
   }
 
-  deleteTask(id: number): Observable<{ message: string }> {
-    return this.http.delete<{ message: string }>(API_ENDPOINTS.TASKS.BY_ID(id))
-      .pipe(catchError(this.errorHandler.handleError.bind(this.errorHandler)));
-  }
-
-  // Task Assignment
-  assignTask(taskId: number, userId: number): Observable<Task> {
-    return this.http.post<ApiResponse<Task>>(API_ENDPOINTS.TASKS.ASSIGN(taskId), { user_id: userId })
+  updateTask(id: number, updates: UpdateTaskRequest): Observable<Task> {
+    return this.http.put<TaskResponse>(API_ENDPOINTS.TASKS.BY_ID(id), updates)
       .pipe(
         map(response => response.data),
-        catchError(this.errorHandler.handleError.bind(this.errorHandler))
+        tap(updatedTask => {
+          const currentTasks = this.tasksSubject.value;
+          const index = currentTasks.findIndex(task => task.id === id);
+          if (index !== -1) {
+            currentTasks[index] = updatedTask;
+            this.tasksSubject.next([...currentTasks]);
+          }
+          this.selectedTaskSubject.next(updatedTask);
+        }),
+        catchError(this.errorHandler.handleError)
+      );
+  }
+
+  deleteTask(id: number): Observable<void> {
+    return this.http.delete<ApiResponse<null>>(API_ENDPOINTS.TASKS.BY_ID(id))
+      .pipe(
+        map(() => void 0),
+        tap(() => {
+          const currentTasks = this.tasksSubject.value;
+          const filteredTasks = currentTasks.filter(task => task.id !== id);
+          this.tasksSubject.next(filteredTasks);
+          
+          if (this.selectedTaskSubject.value?.id === id) {
+            this.selectedTaskSubject.next(null);
+          }
+        }),
+        catchError(this.errorHandler.handleError)
+      );
+  }
+
+  // Task Assignment & Status Management
+  assignTask(taskId: number, assigneeId: number): Observable<Task> {
+    const request: TaskAssignmentRequest = { assignee_id: assigneeId };
+    
+    return this.http.post<TaskResponse>(API_ENDPOINTS.TASKS.ASSIGN(taskId), request)
+      .pipe(
+        map(response => response.data),
+        tap(updatedTask => this.updateTaskInState(updatedTask)),
+        catchError(this.errorHandler.handleError)
       );
   }
 
   unassignTask(taskId: number): Observable<Task> {
-    return this.http.post<ApiResponse<Task>>(API_ENDPOINTS.TASKS.UNASSIGN(taskId), {})
+    return this.http.delete<TaskResponse>(API_ENDPOINTS.TASKS.UNASSIGN(taskId))
       .pipe(
         map(response => response.data),
-        catchError(this.errorHandler.handleError.bind(this.errorHandler))
+        tap(updatedTask => this.updateTaskInState(updatedTask)),
+        catchError(this.errorHandler.handleError)
       );
   }
 
-  // Task Status Management
-  updateTaskStatus(taskId: number, status: string): Observable<Task> {
-    return this.http.patch<ApiResponse<Task>>(API_ENDPOINTS.TASKS.STATUS(taskId), { status })
+  updateTaskStatus(taskId: number, status: string, comment?: string): Observable<Task> {
+    const request: TaskStatusUpdateRequest = { status: status as any, comment };
+    
+    return this.http.put<TaskResponse>(API_ENDPOINTS.TASKS.STATUS(taskId), request)
       .pipe(
         map(response => response.data),
-        catchError(this.errorHandler.handleError.bind(this.errorHandler))
+        tap(updatedTask => this.updateTaskInState(updatedTask)),
+        catchError(this.errorHandler.handleError)
       );
   }
 
   // Bulk Operations
-  bulkUpdateTasks(bulkUpdate: BulkTaskUpdate): Observable<{ message: string; updated_count: number }> {
-    return this.http.patch<{ message: string; updated_count: number }>(
-      API_ENDPOINTS.TASKS.BULK_UPDATE, 
-      bulkUpdate
-    ).pipe(catchError(this.errorHandler.handleError.bind(this.errorHandler)));
+  bulkUpdateTasks(updates: BulkTaskUpdate): Observable<Task[]> {
+    this.loadingSubject.next(true);
+    
+    return this.http.put<ApiResponse<Task[]>>(API_ENDPOINTS.TASKS.BULK_UPDATE, updates)
+      .pipe(
+        map(response => response.data),
+        tap(updatedTasks => {
+          updatedTasks.forEach(task => this.updateTaskInState(task));
+          this.loadingSubject.next(false);
+        }),
+        catchError(error => {
+          this.loadingSubject.next(false);
+          return this.errorHandler.handleError(error);
+        })
+      );
   }
 
-  bulkDeleteTasks(taskIds: number[]): Observable<{ message: string; deleted_count: number }> {
-    return this.http.delete<{ message: string; deleted_count: number }>(
-      API_ENDPOINTS.TASKS.BULK_DELETE,
-      { body: { task_ids: taskIds } }
-    ).pipe(catchError(this.errorHandler.handleError.bind(this.errorHandler)));
+  bulkDeleteTasks(taskIds: number[]): Observable<void> {
+    return this.http.delete<ApiResponse<null>>(API_ENDPOINTS.TASKS.BULK_DELETE, {
+      body: { task_ids: taskIds }
+    })
+      .pipe(
+        map(() => void 0),
+        tap(() => {
+          const currentTasks = this.tasksSubject.value;
+          const filteredTasks = currentTasks.filter(task => !taskIds.includes(task.id));
+          this.tasksSubject.next(filteredTasks);
+        }),
+        catchError(this.errorHandler.handleError)
+      );
   }
 
-  // Search and Export
-  searchTasks(query: string, filters?: Partial<TaskFilters>): Observable<Task[]> {
+  // Search & Filtering
+  searchTasks(query: string, filters?: Partial<TaskFilters>): Observable<PaginatedResponse<Task>> {
     let params = new HttpParams().set('q', query);
     
     if (filters) {
-      Object.entries(filters).forEach(([key, value]) => {
+      Object.keys(filters).forEach(key => {
+        const value = (filters as any)[key];
         if (value !== undefined && value !== null) {
           if (Array.isArray(value)) {
             value.forEach(v => params = params.append(key, v.toString()));
@@ -162,138 +227,141 @@ export class TaskService {
       });
     }
 
-    return this.http.get<ApiResponse<Task[]>>(API_ENDPOINTS.TASKS.SEARCH, { params })
+    return this.http.get<PaginatedResponse<Task>>(API_ENDPOINTS.TASKS.SEARCH, { params })
       .pipe(
-        map(response => response.data),
-        catchError(this.errorHandler.handleError.bind(this.errorHandler))
+        catchError(this.errorHandler.handleError)
       );
   }
 
-  exportTasks(filters?: TaskFilters, format: 'csv' | 'xlsx' | 'pdf' = 'csv'): Observable<Blob> {
-    let params = new HttpParams().set('format', format);
+  // Task Comments
+  getTaskComments(taskId: number, page: number = 1, pageSize: number = 20): Observable<PaginatedResponse<TaskComment>> {
+    const params = new HttpParams()
+      .set('page', page.toString())
+      .set('page_size', pageSize.toString());
+
+    return this.http.get<TaskCommentsResponse>(API_ENDPOINTS.TASKS.COMMENTS(taskId), { params })
+      .pipe(
+        catchError(this.errorHandler.handleError)
+      );
+  }
+
+  addComment(taskId: number, content: string): Observable<TaskComment> {
+    const request: CreateCommentRequest = { content };
     
-    if (filters) {
-      // Add filter parameters similar to getAllTasks
-      Object.entries(filters).forEach(([key, value]) => {
-        if (value !== undefined && value !== null) {
-          if (Array.isArray(value)) {
-            value.forEach(v => params = params.append(key, v.toString()));
-          } else {
-            params = params.set(key, value.toString());
-          }
-        }
-      });
-    }
-
-    return this.http.get(API_ENDPOINTS.TASKS.EXPORT, { 
-      params, 
-      responseType: 'blob' 
-    }).pipe(catchError(this.errorHandler.handleError.bind(this.errorHandler)));
-  }
-
-  // Subtask Operations
-  createSubtask(taskId: number, subtask: CreateSubtaskRequest): Observable<Subtask> {
-    return this.http.post<ApiResponse<Subtask>>(
-      `${API_ENDPOINTS.TASKS.BY_ID(taskId)}/subtasks`, 
-      subtask
-    ).pipe(
-      map(response => response.data),
-      catchError(this.errorHandler.handleError.bind(this.errorHandler))
-    );
-  }
-
-  updateSubtask(taskId: number, subtaskId: number, subtask: UpdateSubtaskRequest): Observable<Subtask> {
-    return this.http.put<ApiResponse<Subtask>>(
-      `${API_ENDPOINTS.TASKS.BY_ID(taskId)}/subtasks/${subtaskId}`, 
-      subtask
-    ).pipe(
-      map(response => response.data),
-      catchError(this.errorHandler.handleError.bind(this.errorHandler))
-    );
-  }
-
-  deleteSubtask(taskId: number, subtaskId: number): Observable<{ message: string }> {
-    return this.http.delete<{ message: string }>(
-      `${API_ENDPOINTS.TASKS.BY_ID(taskId)}/subtasks/${subtaskId}`
-    ).pipe(catchError(this.errorHandler.handleError.bind(this.errorHandler)));
-  }
-
-  // Comment Operations
-  getTaskComments(taskId: number): Observable<Comment[]> {
-    return this.http.get<ApiResponse<Comment[]>>(API_ENDPOINTS.TASKS.COMMENTS(taskId))
+    return this.http.post<ApiResponse<TaskComment>>(API_ENDPOINTS.TASKS.COMMENTS(taskId), request)
       .pipe(
         map(response => response.data),
-        catchError(this.errorHandler.handleError.bind(this.errorHandler))
+        catchError(this.errorHandler.handleError)
       );
   }
 
-  addComment(taskId: number, content: string): Observable<Comment> {
-    return this.http.post<ApiResponse<Comment>>(
-      API_ENDPOINTS.TASKS.COMMENTS(taskId), 
-      { content }
-    ).pipe(
-      map(response => response.data),
-      catchError(this.errorHandler.handleError.bind(this.errorHandler))
-    );
-  }
-
-  updateComment(taskId: number, commentId: number, content: string): Observable<Comment> {
-    return this.http.put<ApiResponse<Comment>>(
+  updateComment(taskId: number, commentId: number, content: string): Observable<TaskComment> {
+    const request: UpdateCommentRequest = { content };
+    
+    return this.http.put<ApiResponse<TaskComment>>(
       API_ENDPOINTS.TASKS.COMMENT_BY_ID(taskId, commentId), 
-      { content }
-    ).pipe(
-      map(response => response.data),
-      catchError(this.errorHandler.handleError.bind(this.errorHandler))
-    );
-  }
-
-  deleteComment(taskId: number, commentId: number): Observable<{ message: string }> {
-    return this.http.delete<{ message: string }>(
-      API_ENDPOINTS.TASKS.COMMENT_BY_ID(taskId, commentId)
-    ).pipe(catchError(this.errorHandler.handleError.bind(this.errorHandler)));
-  }
-
-  // Attachment Operations
-  getTaskAttachments(taskId: number): Observable<TaskAttachment[]> {
-    return this.http.get<ApiResponse<TaskAttachment[]>>(API_ENDPOINTS.ATTACHMENTS.TASK_ATTACHMENTS(taskId))
+      request
+    )
       .pipe(
         map(response => response.data),
-        catchError(this.errorHandler.handleError.bind(this.errorHandler))
+        catchError(this.errorHandler.handleError)
       );
   }
 
-  uploadAttachment(taskId: number, file: File): Observable<TaskAttachment> {
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('task_id', taskId.toString());
-
-    return this.http.post<ApiResponse<TaskAttachment>>(API_ENDPOINTS.ATTACHMENTS.UPLOAD, formData)
+  deleteComment(taskId: number, commentId: number): Observable<void> {
+    return this.http.delete<ApiResponse<null>>(API_ENDPOINTS.TASKS.COMMENT_BY_ID(taskId, commentId))
       .pipe(
-        map(response => response.data),
-        catchError(this.errorHandler.handleError.bind(this.errorHandler))
+        map(() => void 0),
+        catchError(this.errorHandler.handleError)
       );
   }
 
-  deleteAttachment(attachmentId: number): Observable<{ message: string }> {
-    return this.http.delete<{ message: string }>(API_ENDPOINTS.ATTACHMENTS.BY_ID(attachmentId))
-      .pipe(catchError(this.errorHandler.handleError.bind(this.errorHandler)));
-  }
-
-  // Task Activity/History
-  getTaskActivity(taskId: number): Observable<TaskActivity[]> {
-    return this.http.get<ApiResponse<TaskActivity[]>>(`${API_ENDPOINTS.TASKS.BY_ID(taskId)}/activity`)
+  // Time Tracking
+  getTaskTimeLogs(taskId: number): Observable<TaskTimeLogsResponse['data']> {
+    return this.http.get<TaskTimeLogsResponse>(API_ENDPOINTS.TASKS.TIME_LOGS(taskId))
       .pipe(
         map(response => response.data),
-        catchError(this.errorHandler.handleError.bind(this.errorHandler))
+        catchError(this.errorHandler.handleError)
       );
   }
 
-  // Task Statistics
+  logTime(taskId: number, timeLog: CreateTimeLogRequest): Observable<TaskTimeLog> {
+    return this.http.post<ApiResponse<TaskTimeLog>>(API_ENDPOINTS.TASKS.TIME_LOGS(taskId), timeLog)
+      .pipe(
+        map(response => response.data),
+        catchError(this.errorHandler.handleError)
+      );
+  }
+
+  // Task Statistics & Analytics
   getTaskStats(filters?: Partial<TaskFilters>): Observable<TaskStats> {
     let params = new HttpParams();
     
     if (filters) {
-      Object.entries(filters).forEach(([key, value]) => {
+      Object.keys(filters).forEach(key => {
+        const value = (filters as any)[key];
+        if (value !== undefined && value !== null) {
+          params = params.set(key, value.toString());
+        }
+      });
+    }
+
+    return this.http.get<TaskStatsResponse>(API_ENDPOINTS.TASKS.STATS, { params })
+      .pipe(
+        map(response => response.data),
+        catchError(this.errorHandler.handleError)
+      );
+  }
+
+  // Specialized Task Queries
+  getMyTasks(filters?: Partial<TaskFilters>): Observable<PaginatedResponse<Task>> {
+    let params = new HttpParams();
+    
+    if (filters) {
+      Object.keys(filters).forEach(key => {
+        const value = (filters as any)[key];
+        if (value !== undefined && value !== null) {
+          params = params.set(key, value.toString());
+        }
+      });
+    }
+
+    return this.http.get<PaginatedResponse<Task>>(API_ENDPOINTS.TASKS.MY_TASKS, { params })
+      .pipe(
+        catchError(this.errorHandler.handleError)
+      );
+  }
+
+  getOverdueTasks(): Observable<PaginatedResponse<Task>> {
+    return this.http.get<PaginatedResponse<Task>>(API_ENDPOINTS.TASKS.OVERDUE)
+      .pipe(
+        catchError(this.errorHandler.handleError)
+      );
+  }
+
+  getTasksByStatus(status: string, filters?: Partial<TaskFilters>): Observable<PaginatedResponse<Task>> {
+    const taskFilters: TaskFilters = {
+      ...filters,
+      status: [status as any]
+    };
+    return this.getAllTasks(taskFilters);
+  }
+
+  getTasksByPriority(priority: string, filters?: Partial<TaskFilters>): Observable<PaginatedResponse<Task>> {
+    const taskFilters: TaskFilters = {
+      ...filters,
+      priority: [priority as any]
+    };
+    return this.getAllTasks(taskFilters);
+  }
+
+  // Export & Reporting
+  exportTasks(format: 'csv' | 'xlsx' | 'pdf', filters?: TaskFilters): Observable<Blob> {
+    let params = new HttpParams().set('format', format);
+    
+    if (filters) {
+      Object.keys(filters).forEach(key => {
+        const value = (filters as any)[key];
         if (value !== undefined && value !== null) {
           if (Array.isArray(value)) {
             value.forEach(v => params = params.append(key, v.toString()));
@@ -304,52 +372,46 @@ export class TaskService {
       });
     }
 
-    return this.http.get<ApiResponse<TaskStats>>(`${API_ENDPOINTS.TASKS.BASE}/stats`, { params })
+    return this.http.get(API_ENDPOINTS.TASKS.EXPORT, {
+      params,
+      responseType: 'blob'
+    })
       .pipe(
-        map(response => response.data),
-        catchError(this.errorHandler.handleError.bind(this.errorHandler))
+        catchError(this.errorHandler.handleError)
       );
   }
 
-  // Task Templates
-  getTaskTemplates(): Observable<TaskTemplate[]> {
-    return this.http.get<ApiResponse<TaskTemplate[]>>(`${API_ENDPOINTS.TASKS.BASE}/templates`)
-      .pipe(
-        map(response => response.data),
-        catchError(this.errorHandler.handleError.bind(this.errorHandler))
-      );
+  // Utility Methods
+  private updateTaskInState(updatedTask: Task): void {
+    const currentTasks = this.tasksSubject.value;
+    const index = currentTasks.findIndex(task => task.id === updatedTask.id);
+    
+    if (index !== -1) {
+      currentTasks[index] = updatedTask;
+      this.tasksSubject.next([...currentTasks]);
+    }
+    
+    if (this.selectedTaskSubject.value?.id === updatedTask.id) {
+      this.selectedTaskSubject.next(updatedTask);
+    }
   }
 
-  createTaskFromTemplate(templateId: number, overrides?: Partial<CreateTaskRequest>): Observable<Task> {
-    return this.http.post<ApiResponse<Task>>(
-      `${API_ENDPOINTS.TASKS.BASE}/templates/${templateId}/create`, 
-      overrides || {}
-    ).pipe(
-      map(response => response.data),
-      catchError(this.errorHandler.handleError.bind(this.errorHandler))
-    );
+  getCurrentUserId(): number {
+    const user = this.authService.getCurrentUser();
+    return user?.id || 0;
   }
 
-  // Helper methods for common operations
-  getMyTasks(filters?: Partial<TaskFilters>): Observable<PaginatedResponse<Task>> {
-    return this.getAllTasks({ ...filters, assignee_id: [this.getCurrentUserId()] });
+  // State Management
+  setSelectedTask(task: Task | null): void {
+    this.selectedTaskSubject.next(task);
   }
 
-  getOverdueTasks(filters?: Partial<TaskFilters>): Observable<PaginatedResponse<Task>> {
-    return this.getAllTasks({ ...filters, is_overdue: true });
+  clearTasks(): void {
+    this.tasksSubject.next([]);
+    this.selectedTaskSubject.next(null);
   }
 
-  getTasksByStatus(status: string, filters?: Partial<TaskFilters>): Observable<PaginatedResponse<Task>> {
-    return this.getAllTasks({ ...filters, status: [status as any] });
-  }
-
-  getTasksByPriority(priority: string, filters?: Partial<TaskFilters>): Observable<PaginatedResponse<Task>> {
-    return this.getAllTasks({ ...filters, priority: [priority as any] });
-  }
-
-  private getCurrentUserId(): number {
-    // This should get the current user ID from auth service
-    // For now, return 0 as placeholder
-    return 0;
+  refreshTasks(filters?: TaskFilters): Observable<PaginatedResponse<Task>> {
+    return this.getAllTasks(filters);
   }
 }

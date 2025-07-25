@@ -1,106 +1,122 @@
 // src/app/core/models/task.model.ts
-import { User } from "./user.model";
-import { Comment } from "./comment.model";
+import { User } from './user.model';
+import { ApiResponse, PaginatedResponse } from '../interfaces/api.interfaces';
 
 export interface Task {
   id: number;
   title: string;
-  description: string;
+  description?: string;
   status: TaskStatus;
   priority: TaskPriority;
-  assigned_to: User | null;
-  assignee?: User | null; // alias for backward compatibility
-  created_by: User;
+  type: TaskType;
   project_id?: number;
-  category_id?: number;
-  due_date: string | null;
-  dueDate?: string | null; // alias for backward compatibility
-  start_date?: string | null;
-  completed_date?: string | null;
+  sprint_id?: number;
+  assignee_id?: number;
+  reporter_id: number;
+  story_points?: number;
   estimated_hours?: number;
   actual_hours?: number;
-  progress?: number; // 0-100 percentage
-  tags?: string[];
+  start_date?: string;
+  due_date?: string;
+  completed_date?: string;
+  tags: string[];
+  dependencies: number[];
+  is_blocked: boolean;
+  blocked_reason?: string;
+  
+  // Relationships
+  assignee?: User;
+  reporter?: User;
+  project?: {
+    id: number;
+    name: string;
+  };
+  sprint?: {
+    id: number;
+    name: string;
+  };
+  
+  // Metadata
   created_at: string;
-  createdAt?: string; // alias for backward compatibility
   updated_at: string;
-  updatedAt?: string; // alias for backward compatibility
-  subtasks: Subtask[];
-  comments?: Comment[];
-  attachments?: TaskAttachment[];
-  dependencies?: TaskDependency[];
-  watchers?: User[];
-  is_archived?: boolean;
-  is_template?: boolean;
-  template_id?: number;
+  
+  // Computed fields
+  comments_count?: number;
+  attachments_count?: number;
+  time_logged?: number;
+  completion_percentage?: number;
 }
 
-export interface Subtask {
+export interface TaskComment {
   id: number;
-  title: string;
-  description?: string;
-  completed: boolean;
-  taskId: number;
-  assignee_id?: number;
-  assignee?: User;
-  due_date?: string;
+  task_id: number;
+  user_id: number;
+  content: string;
+  user: {
+    id: number;
+    name: string;
+    avatar_url?: string;
+  };
   created_at: string;
   updated_at: string;
-  order?: number;
+}
+
+export interface TaskTimeLog {
+  id: number;
+  task_id: number;
+  user_id: number;
+  hours: number;
+  description: string;
+  work_date: string;
+  user: {
+    id: number;
+    name: string;
+  };
+  created_at: string;
 }
 
 export interface TaskAttachment {
   id: number;
+  task_id: number;
   filename: string;
   original_filename: string;
   file_size: number;
-  file_type: string;
-  url: string;
-  uploaded_by: User;
+  content_type: string;
+  uploaded_by: number;
   uploaded_at: string;
-  task_id: number;
-}
-
-export interface TaskDependency {
-  id: number;
-  task_id: number;
-  depends_on_task_id: number;
-  dependency_type: 'BLOCKS' | 'BLOCKED_BY' | 'RELATES_TO';
-  created_at: string;
-  depends_on_task?: Task;
 }
 
 export interface TaskActivity {
   id: number;
   task_id: number;
-  user: User;
+  user_id: number;
   action: TaskActivityAction;
-  description: string;
+  field_changed?: string;
   old_value?: string;
   new_value?: string;
+  user: {
+    id: number;
+    name: string;
+  };
   created_at: string;
 }
 
+// Request/Response Interfaces
 export interface CreateTaskRequest {
   title: string;
-  description: string;
-  priority: TaskPriority;
-  due_date?: string;
-  start_date?: string;
-  assignee_id?: number;
-  project_id?: number;
-  category_id?: number;
-  estimated_hours?: number;
-  tags?: string[];
-  subtasks?: CreateSubtaskRequest[];
-  template_id?: number;
-}
-
-export interface CreateSubtaskRequest {
-  title: string;
   description?: string;
+  status?: TaskStatus;
+  priority: TaskPriority;
+  type: TaskType;
+  project_id?: number;
+  sprint_id?: number;
   assignee_id?: number;
+  story_points?: number;
+  estimated_hours?: number;
+  start_date?: string;
   due_date?: string;
+  tags?: string[];
+  dependencies?: number[];
 }
 
 export interface UpdateTaskRequest {
@@ -108,48 +124,36 @@ export interface UpdateTaskRequest {
   description?: string;
   status?: TaskStatus;
   priority?: TaskPriority;
-  assigned_to?: number;
-  assignee_id?: number; // alias
-  project_id?: number;
-  category_id?: number;
-  due_date?: string;
-  start_date?: string;
-  estimated_hours?: number;
-  actual_hours?: number;
-  progress?: number;
-  tags?: string[];
-  is_archived?: boolean;
-}
-
-export interface UpdateSubtaskRequest {
-  title?: string;
-  description?: string;
-  completed?: boolean;
+  type?: TaskType;
   assignee_id?: number;
+  story_points?: number;
+  estimated_hours?: number;
+  start_date?: string;
   due_date?: string;
-  order?: number;
+  tags?: string[];
+  dependencies?: number[];
+  is_blocked?: boolean;
+  blocked_reason?: string;
 }
 
 export interface TaskFilters {
   status?: TaskStatus[];
   priority?: TaskPriority[];
+  type?: TaskType[];
   assignee_id?: number[];
-  created_by_id?: number[];
   project_id?: number[];
-  category_id?: number[];
+  sprint_id?: number[];
   due_date_from?: string;
   due_date_to?: string;
-  created_date_from?: string;
-  created_date_to?: string;
+  is_overdue?: boolean;
+  has_dependencies?: boolean;
+  is_blocked?: boolean;
   tags?: string[];
   search?: string;
-  is_archived?: boolean;
-  is_overdue?: boolean;
-  has_no_assignee?: boolean;
-  page?: number;
-  limit?: number;
   sort_by?: TaskSortField;
-  sort_order?: 'ASC' | 'DESC';
+  sort_order?: 'asc' | 'desc';
+  page?: number;
+  page_size?: number;
 }
 
 export interface BulkTaskUpdate {
@@ -158,28 +162,76 @@ export interface BulkTaskUpdate {
     status?: TaskStatus;
     priority?: TaskPriority;
     assignee_id?: number;
-    project_id?: number;
-    category_id?: number;
-    due_date?: string;
+    sprint_id?: number;
     tags?: string[];
-    is_archived?: boolean;
   };
 }
 
 export interface TaskStats {
   total_tasks: number;
   completed_tasks: number;
+  in_progress_tasks: number;
   overdue_tasks: number;
-  tasks_by_status: Record<TaskStatus, number>;
-  tasks_by_priority: Record<TaskPriority, number>;
+  blocked_tasks: number;
   completion_rate: number;
   average_completion_time: number;
+  status_distribution: Record<TaskStatus, number>;
+  priority_distribution: Record<TaskPriority, number>;
+  type_distribution: Record<TaskType, number>;
+}
+
+export interface CreateCommentRequest {
+  content: string;
+}
+
+export interface UpdateCommentRequest {
+  content: string;
+}
+
+export interface CreateTimeLogRequest {
+  hours: number;
+  description: string;
+  work_date: string;
+}
+
+export interface TaskAssignmentRequest {
+  assignee_id: number;
+}
+
+export interface TaskStatusUpdateRequest {
+  status: TaskStatus;
+  comment?: string;
 }
 
 // Enums and Types
-export type TaskStatus = 'TODO' | 'IN_PROGRESS' | 'REVIEW' | 'DONE' | 'CANCELLED';
+export type TaskStatus = 
+  | 'BACKLOG'
+  | 'TODO'
+  | 'IN_PROGRESS'
+  | 'IN_REVIEW'
+  | 'TESTING'
+  | 'BLOCKED'
+  | 'DONE'
+  | 'CANCELLED'
+  | 'DEPLOYED';
 
-export type TaskPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
+export type TaskPriority = 
+  | 'CRITICAL'
+  | 'HIGH'
+  | 'MEDIUM'
+  | 'LOW';
+
+export type TaskType = 
+  | 'FEATURE'
+  | 'BUG'
+  | 'ENHANCEMENT'
+  | 'REFACTOR'
+  | 'DOCUMENTATION'
+  | 'TESTING'
+  | 'DEPLOYMENT'
+  | 'RESEARCH'
+  | 'MAINTENANCE'
+  | 'SECURITY';
 
 export type TaskActivityAction = 
   | 'CREATED'
@@ -188,14 +240,10 @@ export type TaskActivityAction =
   | 'ASSIGNED'
   | 'UNASSIGNED'
   | 'COMMENTED'
-  | 'ATTACHMENT_ADDED'
-  | 'ATTACHMENT_REMOVED'
-  | 'SUBTASK_ADDED'
-  | 'SUBTASK_COMPLETED'
-  | 'DUE_DATE_CHANGED'
-  | 'PRIORITY_CHANGED'
-  | 'ARCHIVED'
-  | 'RESTORED';
+  | 'BLOCKED'
+  | 'UNBLOCKED'
+  | 'DEPENDENCY_ADDED'
+  | 'DEPENDENCY_REMOVED';
 
 export type TaskSortField = 
   | 'title'
@@ -204,21 +252,55 @@ export type TaskSortField =
   | 'due_date'
   | 'created_at'
   | 'updated_at'
-  | 'assignee'
-  | 'progress';
+  | 'story_points'
+  | 'assignee';
 
-// Task template for creating recurring tasks
-export interface TaskTemplate {
-  id: number;
-  name: string;
-  title: string;
-  description: string;
-  priority: TaskPriority;
-  estimated_hours?: number;
-  tags?: string[];
-  subtasks?: CreateSubtaskRequest[];
-  created_by: User;
-  created_at: string;
-  updated_at: string;
-  is_active: boolean;
-}
+// Response Types
+export type TaskResponse = ApiResponse<Task>;
+export type TaskListResponse = PaginatedResponse<Task>;
+export type TaskStatsResponse = ApiResponse<TaskStats>;
+export type TaskCommentsResponse = PaginatedResponse<TaskComment>;
+export type TaskTimeLogsResponse = ApiResponse<{
+  task: Task;
+  time_logs: TaskTimeLog[];
+  total_hours: number;
+  contributors: Array<{
+    user_id: number;
+    name: string;
+    hours: number;
+  }>;
+}>;
+export type TaskActivitiesResponse = PaginatedResponse<TaskActivity>;
+
+// Priority and Status Display Configurations
+export const TASK_PRIORITY_CONFIG = {
+  CRITICAL: { label: 'Critical', color: '#ff4757', icon: 'warning' },
+  HIGH: { label: 'High', color: '#ff6b35', icon: 'arrow-up' },
+  MEDIUM: { label: 'Medium', color: '#ffa502', icon: 'minus' },
+  LOW: { label: 'Low', color: '#26de81', icon: 'arrow-down' }
+};
+
+export const TASK_STATUS_CONFIG = {
+  BACKLOG: { label: 'Backlog', color: '#6c757d', icon: 'archive' },
+  TODO: { label: 'To Do', color: '#007bff', icon: 'circle' },
+  IN_PROGRESS: { label: 'In Progress', color: '#ffc107', icon: 'play-circle' },
+  IN_REVIEW: { label: 'In Review', color: '#17a2b8', icon: 'eye' },
+  TESTING: { label: 'Testing', color: '#fd7e14', icon: 'bug' },
+  BLOCKED: { label: 'Blocked', color: '#dc3545', icon: 'ban' },
+  DONE: { label: 'Done', color: '#28a745', icon: 'check-circle' },
+  CANCELLED: { label: 'Cancelled', color: '#6c757d', icon: 'times-circle' },
+  DEPLOYED: { label: 'Deployed', color: '#20c997', icon: 'rocket' }
+};
+
+export const TASK_TYPE_CONFIG = {
+  FEATURE: { label: 'Feature', color: '#007bff', icon: 'star' },
+  BUG: { label: 'Bug', color: '#dc3545', icon: 'bug' },
+  ENHANCEMENT: { label: 'Enhancement', color: '#28a745', icon: 'plus-circle' },
+  REFACTOR: { label: 'Refactor', color: '#6f42c1', icon: 'code' },
+  DOCUMENTATION: { label: 'Documentation', color: '#17a2b8', icon: 'file-text' },
+  TESTING: { label: 'Testing', color: '#fd7e14', icon: 'check-square' },
+  DEPLOYMENT: { label: 'Deployment', color: '#20c997', icon: 'upload' },
+  RESEARCH: { label: 'Research', color: '#e83e8c', icon: 'search' },
+  MAINTENANCE: { label: 'Maintenance', color: '#6c757d', icon: 'wrench' },
+  SECURITY: { label: 'Security', color: '#343a40', icon: 'shield' }
+};
