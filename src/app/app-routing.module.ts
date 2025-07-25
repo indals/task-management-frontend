@@ -5,14 +5,13 @@ import { authGuard } from './core/guards/auth.guard';
 export const routes: Routes = [
   { 
     path: '', 
-    redirectTo: '/login', 
+    redirectTo: '/dashboard', // Changed from '/login' to '/dashboard'
     pathMatch: 'full' 
   },
   {
     path: 'auth',
     loadChildren: () => import('./features/auth/auth.module').then(m => m.AuthModule)
   },
-  // Keep login/register at root level for backward compatibility
   {
     path: 'login',
     loadComponent: () => import('./features/auth/login/login.component').then(c => c.LoginComponent)
@@ -58,7 +57,7 @@ export const routes: Routes = [
   },
   { 
     path: '**', 
-    redirectTo: '/login' 
+    redirectTo: '/dashboard' // Changed from '/login' to '/dashboard'
   }
 ];
 
@@ -66,7 +65,7 @@ export const routes: Routes = [
   imports: [RouterModule.forRoot(routes, {
     enableTracing: false,
     scrollPositionRestoration: 'top',
-    preloadingStrategy: 'optional' // Optimize bundle loading
+    preloadingStrategy: undefined // Changed from 'optional' to undefined
   })],
   exports: [RouterModule]
 })

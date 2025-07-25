@@ -9,7 +9,7 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import {
   HeaderComponent,
   SidebarComponent,
-  LoadingComponent,
+  // LoadingComponent,
   ConfirmationDialogComponent
 } from './components';
 
@@ -32,7 +32,7 @@ const ANGULAR_MODULES = [
 const SHARED_COMPONENTS = [
   HeaderComponent,
   SidebarComponent,
-  LoadingComponent,
+  // LoadingComponent,
   StatusColorPipe,
   ClickOutsideDirective
 ];

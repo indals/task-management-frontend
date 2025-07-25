@@ -1,0 +1,598 @@
+<!-- src/app/features/projects/project-management/project-management.component.html -->
+<div class="project-management-container">
+  <!-- Header Section -->
+  <div class="page-header">
+    <div class="header-content">
+      <div class="header-left">
+        <h1 class="page-title">
+          <i class="material-icons">folder</i>
+          Project Management
+        </h1>
+        <p class="page-subtitle">Manage and track your projects efficiently</p>
+      </div>
+      <div class="header-actions">
+        <button class="btn btn-secondary" (click)="refreshProjects()" [disabled]="isLoading">
+          <i class="material-icons" [class.spinning]="isLoading">refresh</i>
+          Refresh
+        </button>
+        <button class="btn btn-primary" (click)="createProject()">
+          <i class="material-icons">add</i>
+          New Project
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Error Alert -->
+  <div class="alert alert-error" *ngIf="errorMessage">
+    <i class="material-icons">error</i>
+    <span>{{ errorMessage }}</span>
+    <button class="alert-close" (click)="errorMessage = null">
+      <i class="material-icons">close</i>
+    </button>
+  </div>
+
+  <!-- Filters and Search -->
+  <div class="filters-section" *ngIf="!isLoading">
+    <div class="search-container">
+      <div class="search-input-wrapper">
+        <i class="material-icons search-icon">search</i>
+        <input 
+          type="text" 
+          class="search-input"
+          placeholder="Search projects..." 
+          [value]="searchTerm"
+          (input)="onSearchChange($any($event.target).value)"
+        >
+      </div>
+    </div>
+
+    <div class="filter-controls">
+      <div class="filter-group">
+        <select class="filter-select" [value]="statusFilter" (change)="onStatusFilterChange($any($event.target).value)">
+          <option *ngFor="let option of statusOptions" [value]="option.value">
+            {{ option.label }}
+          </option>
+        </select>
+
+        <select class="filter-select" [value]="ownerFilter" (change)="onOwnerFilterChange($any($event.target).value)">
+          <option value="all">All Owners</option>
+          <option *ngFor="let user of allUsers" [value]="user.id">
+            {{ user.name }}
+          </option>
+        </select>
+      </div>
+
+      <div class="view-controls">
+        <div class="sort-controls">
+          <span class="sort-label">Sort by:</span>
+          <div class="sort-buttons">
+            <button 
+              class="sort-btn" 
+              [class.active]="sortBy === 'updated_at'"
+              (click)="onSortChange('updated_at')">
+              Last Updated
+              <i class="material-icons sort-icon">
+                {{ sortBy === 'updated_at' ? (sortOrder === 'asc' ? 'arrow_upward' : 'arrow_downward') : 'sort' }}
+              </i>
+            </button>
+            <button 
+              class="sort-btn" 
+              [class.active]="sortBy === 'progress'"
+              (click)="onSortChange('progress')">
+              Progress
+              <i class="material-icons sort-icon">
+                {{ sortBy === 'progress' ? (sortOrder === 'asc' ? 'arrow_upward' : 'arrow_downward') : 'sort' }}
+              </i>
+            </button>
+            <button 
+              class="sort-btn" 
+              [class.active]="sortBy === 'end_date'"
+              (click)="onSortChange('end_date')">
+              Due Date
+              <i class="material-icons sort-icon">
+                {{ sortBy === 'end_date' ? (sortOrder === 'asc' ? 'arrow_upward' : 'arrow_downward') : 'sort' }}
+              </i>
+            </button>
+          </div>
+        </div>
+
+        <div class="view-toggle">
+          <button 
+            class="view-btn" 
+            [class.active]="viewMode === 'grid'"
+            (click)="onViewModeChange('grid')"
+            title="Grid View">
+            <i class="material-icons">grid_view</i>
+          </button>
+          <button 
+            class="view-btn" 
+            [class.active]="viewMode === 'list'"
+            (click)="onViewModeChange('list')"
+            title="List View">
+            <i class="material-icons">view_list</i>
+          </button>
+          <button 
+            class="view-btn" 
+            [class.active]="viewMode === 'kanban'"
+            (click)="onViewModeChange('kanban')"
+            title="Kanban View">
+            <i class="material-icons">view_kanban</i>
+          </button>
+        </div>
+
+        <button class="btn btn-ghost btn-sm" (click)="clearFilters()" title="Clear all filters">
+          <i class="material-icons">filter_alt_off</i>
+          Clear
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div class="loading-container" *ngIf="isLoading">
+    <app-loading 
+      [message]="'Loading projects...'" 
+      [showProgress]="false">
+    </app-loading>
+  </div>
+
+  <!-- Project Content -->
+  <div class="projects-content" *ngIf="!isLoading">
+    <!-- Grid View -->
+    <div class="projects-grid" *ngIf="viewMode === 'grid'">
+      <div 
+        class="project-card" 
+        *ngFor="let project of filteredProjects; trackBy: trackByProjectId"
+        (click)="viewProject(project)">
+        
+        <div class="card-header">
+          <div class="project-info">
+            <h3 class="project-title">{{ project.name }}</h3>
+            <p class="project-description">{{ project.description }}</p>
+          </div>
+          <div class="card-menu">
+            <button class="menu-btn" (click)="$event.stopPropagation()" title="Project actions">
+              <i class="material-icons">more_vert</i>
+            </button>
+          </div>
+        </div>
+
+        <div class="card-body">
+          <div class="project-stats">
+            <div class="stat-item">
+              <div class="stat-value">{{ project.tasksCount.total }}</div>
+              <div class="stat-label">Total Tasks</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-value">{{ project.tasksCount.completed }}</div>
+              <div class="stat-label">Completed</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-value">{{ project.teamMembers.length }}</div>
+              <div class="stat-label">Team Members</div>
+            </div>
+          </div>
+
+          <div class="progress-section">
+            <div class="progress-header">
+              <span class="progress-label">Progress</span>
+              <span class="progress-value">{{ project.progress }}%</span>
+            </div>
+            <div class="progress-bar">
+              <div 
+                class="progress-fill" 
+                [style.width.%]="project.progress"
+                [style.background-color]="getProgressColor(project.progress)">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card-footer">
+          <div class="project-status">
+            <span 
+              class="status-badge" 
+              [style.background-color]="getStatusColor(project.status)"
+              [style.color]="'white'">
+              {{ getStatusLabel(project.status) }}
+            </span>
+          </div>
+
+          <div class="project-deadline" *ngIf="project.end_date">
+            <i class="material-icons deadline-icon" [class]="getDeadlineClass(project)">schedule</i>
+            <span class="deadline-text" [class]="getDeadlineClass(project)">
+              {{ getDaysUntilDeadline(project) }}
+            </span>
+          </div>
+
+          <div class="project-team">
+            <div class="team-avatars">
+              <div 
+                class="avatar" 
+                *ngFor="let member of project.teamMembers.slice(0, 3)"
+                [title]="member.name">
+                {{ getInitials(member.name) }}
+              </div>
+              <div class="avatar more-members" *ngIf="project.teamMembers.length > 3">
+                +{{ project.teamMembers.length - 3 }}
+              </div>
+            </div>
+          </div>
+
+          <div class="card-actions">
+            <button 
+              class="action-btn edit-btn" 
+              (click)="editProject(project, $event)"
+              title="Edit project">
+              <i class="material-icons">edit</i>
+            </button>
+            <button 
+              class="action-btn delete-btn" 
+              (click)="deleteProject(project, $event)"
+              title="Delete project">
+              <i class="material-icons">delete</i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- List View -->
+    <div class="projects-list" *ngIf="viewMode === 'list'">
+      <div class="list-header">
+        <div class="col-project">Project</div>
+        <div class="col-status">Status</div>
+        <div class="col-progress">Progress</div>
+        <div class="col-team">Team</div>
+        <div class="col-deadline">Deadline</div>
+        <div class="col-actions">Actions</div>
+      </div>
+
+      <div 
+        class="list-row" 
+        *ngFor="let project of filteredProjects; trackBy: trackByProjectId"
+        (click)="viewProject(project)">
+        
+        <div class="col-project">
+          <div class="project-name-info">
+            <h4 class="project-name">{{ project.name }}</h4>
+            <p class="project-desc">{{ project.description | slice:0:80 }}{{ project.description.length > 80 ? '...' : '' }}</p>
+            <div class="project-meta">
+              <span class="tasks-info">{{ project.tasksCount.completed }}/{{ project.tasksCount.total }} tasks</span>
+              <span class="team-info">{{ project.teamMembers.length }} members</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-status">
+          <span 
+            class="status-badge" 
+            [style.background-color]="getStatusColor(project.status)"
+            [style.color]="'white'">
+            {{ getStatusLabel(project.status) }}
+          </span>
+        </div>
+
+        <div class="col-progress">
+          <div class="progress-cell">
+            <div class="progress-bar small">
+              <div 
+                class="progress-fill" 
+                [style.width.%]="project.progress"
+                [style.background-color]="getProgressColor(project.progress)">
+              </div>
+            </div>
+            <span class="progress-text">{{ project.progress }}%</span>
+          </div>
+        </div>
+
+        <div class="col-team">
+          <div class="team-avatars">
+            <div 
+              class="avatar small" 
+              *ngFor="let member of project.teamMembers.slice(0, 4)"
+              [title]="member.name">
+              {{ getInitials(member.name) }}
+            </div>
+            <div class="avatar small more-members" *ngIf="project.teamMembers.length > 4">
+              +{{ project.teamMembers.length - 4 }}
+            </div>
+          </div>
+        </div>
+
+        <div class="col-deadline">
+          <div class="deadline-info" *ngIf="project.end_date; else noDeadline">
+            <span class="deadline-text" [class]="getDeadlineClass(project)">
+              {{ formatDate(project.end_date) }}
+            </span>
+            <span class="deadline-days" [class]="getDeadlineClass(project)">
+              {{ getDaysUntilDeadline(project) }}
+            </span>
+          </div>
+          <ng-template #noDeadline>
+            <span class="no-deadline">No deadline</span>
+          </ng-template>
+        </div>
+
+        <div class="col-actions">
+          <div class="action-buttons">
+            <button 
+              class="action-btn edit-btn" 
+              (click)="editProject(project, $event)"
+              title="Edit project">
+              <i class="material-icons">edit</i>
+            </button>
+            <button 
+              class="action-btn delete-btn" 
+              (click)="deleteProject(project, $event)"
+              title="Delete project">
+              <i class="material-icons">delete</i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Kanban View -->
+    <div class="projects-kanban" *ngIf="viewMode === 'kanban'">
+      <div class="kanban-board">
+        <div 
+          class="kanban-column" 
+          *ngFor="let status of statusOptions.slice(1)"
+          [style.border-color]="getStatusColor(status.value)">
+          
+          <div class="column-header" [style.background-color]="getStatusColor(status.value)">
+            <h3 class="column-title">{{ status.label }}</h3>
+            <span class="project-count">{{ getProjectsByStatus(status.value).length }}</span>
+          </div>
+
+          <div class="column-content">
+            <div 
+              class="kanban-project" 
+              *ngFor="let project of getProjectsByStatus(status.value)"
+              (click)="viewProject(project)">
+              
+              <h4 class="project-title">{{ project.name }}</h4>
+              <p class="project-description">{{ project.description | slice:0:60 }}{{ project.description.length > 60 ? '...' : '' }}</p>
+
+              <div class="kanban-progress">
+                <div class="progress-bar mini">
+                  <div 
+                    class="progress-fill" 
+                    [style.width.%]="project.progress"
+                    [style.background-color]="getProgressColor(project.progress)">
+                  </div>
+                </div>
+                <span class="progress-text">{{ project.progress }}%</span>
+              </div>
+
+              <div class="kanban-footer">
+                <div class="project-stats-mini">
+                  <span class="stat">{{ project.tasksCount.completed }}/{{ project.tasksCount.total }} tasks</span>
+                </div>
+                
+                <div class="team-avatars mini">
+                  <div 
+                    class="avatar mini" 
+                    *ngFor="let member of project.teamMembers.slice(0, 3)"
+                    [title]="member.name">
+                    {{ getInitials(member.name) }}
+                  </div>
+                  <div class="avatar mini more-members" *ngIf="project.teamMembers.length > 3">
+                    +{{ project.teamMembers.length - 3 }}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Empty State -->
+  <div class="empty-state" *ngIf="!isLoading && filteredProjects.length === 0">
+    <div class="empty-icon">
+      <i class="material-icons">folder_open</i>
+    </div>
+    <h3 class="empty-title">
+      {{ projects.length === 0 ? 'No projects found' : 'No matching projects' }}
+    </h3>
+    <p class="empty-description">
+      {{ projects.length === 0 ? 'Create your first project to get started with project management.' : 'Try adjusting your search criteria or filters.' }}
+    </p>
+    <div class="empty-actions">
+      <button class="btn btn-primary" (click)="createProject()" *ngIf="projects.length === 0">
+        <i class="material-icons">add</i>
+        Create Your First Project
+      </button>
+      <button class="btn btn-secondary" (click)="clearFilters()" *ngIf="projects.length > 0">
+        <i class="material-icons">filter_alt_off</i>
+        Clear Filters
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Create Project Modal -->
+<div class="modal-overlay" *ngIf="showCreateModal" (click)="closeCreateModal()">
+  <div class="modal-container" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2 class="modal-title">Create New Project</h2>
+      <button class="modal-close" (click)="closeCreateModal()">
+        <i class="material-icons">close</i>
+      </button>
+    </div>
+
+    <form [formGroup]="createProjectForm" (ngSubmit)="submitCreateProject()" class="modal-form">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Project Name *</label>
+          <input 
+            type="text" 
+            class="form-input"
+            formControlName="name"
+            [class.error]="isFieldInvalid(createProjectForm, 'name')"
+            placeholder="Enter project name">
+          <div class="error-message" *ngIf="isFieldInvalid(createProjectForm, 'name')">
+            {{ getFieldError(createProjectForm, 'name') }}
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Status *</label>
+          <select 
+            class="form-input"
+            formControlName="status"
+            [class.error]="isFieldInvalid(createProjectForm, 'status')">
+            <option *ngFor="let option of statusOptions.slice(1)" [value]="option.value">
+              {{ option.label }}
+            </option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Description *</label>
+        <textarea 
+          class="form-input"
+          formControlName="description"
+          rows="3"
+          [class.error]="isFieldInvalid(createProjectForm, 'description')"
+          placeholder="Enter project description">
+        </textarea>
+        <div class="error-message" *ngIf="isFieldInvalid(createProjectForm, 'description')">
+          {{ getFieldError(createProjectForm, 'description') }}
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Start Date *</label>
+          <input 
+            type="date" 
+            class="form-input"
+            formControlName="start_date"
+            [class.error]="isFieldInvalid(createProjectForm, 'start_date')">
+          <div class="error-message" *ngIf="isFieldInvalid(createProjectForm, 'start_date')">
+            {{ getFieldError(createProjectForm, 'start_date') }}
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">End Date</label>
+          <input 
+            type="date" 
+            class="form-input"
+            formControlName="end_date">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Technology Stack</label>
+          <input 
+            type="text" 
+            class="form-input"
+            formControlName="technology_stack"
+            placeholder="React, Node.js, MongoDB (comma separated)">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Estimated Hours</label>
+          <input 
+            type="number" 
+            class="form-input"
+            formControlName="estimated_hours"
+            min="0"
+            placeholder="0">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Client Name</label>
+          <input 
+            type="text" 
+            class="form-input"
+            formControlName="client_name"
+            placeholder="Enter client name">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Client Email</label>
+          <input 
+            type="email" 
+            class="form-input"
+            formControlName="client_email"
+            placeholder="client@example.com">
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn btn-secondary" (click)="closeCreateModal()">
+          Cancel
+        </button>
+        <button type="submit" class="btn btn-primary" [disabled]="createProjectForm.invalid">
+          <i class="material-icons">add</i>
+          Create Project
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Edit Project Modal -->
+<div class="modal-overlay" *ngIf="showEditModal" (click)="closeEditModal()">
+  <div class="modal-container" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2 class="modal-title">Edit Project</h2>
+      <button class="modal-close" (click)="closeEditModal()">
+        <i class="material-icons">close</i>
+      </button>
+    </div>
+
+    <form [formGroup]="editProjectForm" (ngSubmit)="submitEditProject()" class="modal-form">
+      <!-- Same form fields as create modal but with edit form -->
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Project Name *</label>
+          <input 
+            type="text" 
+            class="form-input"
+            formControlName="name"
+            [class.error]="isFieldInvalid(editProjectForm, 'name')"
+            placeholder="Enter project name">
+          <div class="error-message" *ngIf="isFieldInvalid(editProjectForm, 'name')">
+            {{ getFieldError(editProjectForm, 'name') }}
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Status *</label>
+          <select 
+            class="form-input"
+            formControlName="status"
+            [class.error]="isFieldInvalid(editProjectForm, 'status')">
+            <option *ngFor="let option of statusOptions.slice(1)" [value]="option.value">
+              {{ option.label }}
+            </option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Rest of the form fields... -->
+      
+      <div class="modal-actions">
+        <button type="button" class="btn btn-secondary" (click)="closeEditModal()">
+          Cancel
+        </button>
+        <button type="submit" class="btn btn-primary" [disabled]="editProjectForm.invalid">
+          <i class="material-icons">save</i>
+          Update Project
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

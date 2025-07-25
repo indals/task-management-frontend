@@ -20,6 +20,30 @@
     <p>Loading tasks...</p>
   </div>
 
+  <!-- View Mode Toggle -->
+  <div class="view-controls" *ngIf="!isLoading">
+    <div class="view-toggle">
+      <button 
+        class="view-btn" 
+        [class.active]="viewMode === 'list'"
+        (click)="setViewMode('list')">
+        <i class="fas fa-list"></i> List
+      </button>
+      <button 
+        class="view-btn" 
+        [class.active]="viewMode === 'grid'"
+        (click)="setViewMode('grid')">
+        <i class="fas fa-th"></i> Grid
+      </button>
+      <button 
+        class="view-btn" 
+        [class.active]="viewMode === 'kanban'"
+        (click)="setViewMode('kanban')">
+        <i class="fas fa-columns"></i> Kanban
+      </button>
+    </div>
+  </div>
+
   <!-- Filters -->
   <div class="filters" *ngIf="!isLoading">
     <div class="search-bar">
@@ -41,11 +65,11 @@
     </div>
   </div>
 
-  <!-- Task List -->
-  <div class="task-list" *ngIf="!isLoading && filteredTasks.length > 0">
+  <!-- LIST VIEW -->
+  <div class="task-list" *ngIf="!isLoading && viewMode === 'list' && filteredTasks.length > 0">
     <div 
       class="task-item" 
-      *ngFor="let task of filteredTasks" 
+      *ngFor="let task of filteredTasks; trackBy: trackByTaskId" 
       [ngClass]="task.status ? task.status.toLowerCase().replace('_', '-') : ''"
       (click)="viewTaskDetails(task.id)"
     >
@@ -67,6 +91,10 @@
           <span class="assignee" *ngIf="task.assigned_to">
             Assigned: {{ task.assigned_to.name }}
           </span>
+          <!-- FIXED: Removed optional chaining where not needed -->
+          <span class="created-by" *ngIf="task.created_by">
+            by {{ task.created_by.name }}
+          </span>
         </div>
       </div>
       <div class="task-actions">
@@ -74,6 +102,86 @@
           Edit
         </button>
         <button class="delete-btn" (click)="deleteTask(task.id, $event)">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- GRID VIEW -->
+  <div class="task-grid" *ngIf="!isLoading && viewMode === 'grid' && filteredTasks.length > 0">
+    <div 
+      class="task-card" 
+      *ngFor="let task of filteredTasks; trackBy: trackByTaskId"
+      [ngClass]="task.status ? task.status.toLowerCase().replace('_', '-') : ''"
+      (click)="viewTaskDetails(task.id)"
+    >
+      <div class="card-header">
+        <h4>{{ task.title }}</h4>
+        <span class="priority-badge" [ngClass]="getPriorityClass(task.priority)">
+          {{ getPriorityLabel(task.priority) }}
+        </span>
+      </div>
+      <div class="card-body">
+        <p class="description" *ngIf="task.description">
+          {{ task.description | slice:0:80 }}{{ task.description.length > 80 ? '...' : '' }}
+        </p>
+        <div class="card-meta">
+          <span class="status-badge" [ngClass]="task.status ? task.status.toLowerCase().replace('_', '-') : ''">
+            {{ getStatusLabel(task.status) }}
+          </span>
+          <span class="due-date" *ngIf="task.due_date">
+            {{ task.due_date | date:'shortDate' }}
+          </span>
+        </div>
+      </div>
+      <div class="card-footer">
+        <span class="assignee" *ngIf="task.assigned_to">
+          {{ task.assigned_to.name }}
+        </span>
+        <div class="card-actions">
+          <button class="edit-btn" (click)="$event.stopPropagation(); router.navigate(['/tasks/edit', task.id])">
+            <i class="fas fa-edit"></i>
+          </button>
+          <button class="delete-btn" (click)="deleteTask(task.id, $event)">
+            <i class="fas fa-trash"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- KANBAN VIEW -->
+  <div class="kanban-board" *ngIf="!isLoading && viewMode === 'kanban' && filteredTasks.length > 0">
+    <div 
+      class="kanban-column" 
+      *ngFor="let column of statusColumns"
+      [style.border-top-color]="column.color"
+    >
+      <div class="column-header">
+        <h3>{{ column.label }}</h3>
+        <span class="task-count">{{ getTasksByStatus(column.status).length }}</span>
+      </div>
+      <div class="column-tasks">
+        <div 
+          class="kanban-task"
+          *ngFor="let task of getTasksByStatus(column.status); trackBy: trackByTaskId"
+          (click)="viewTaskDetails(task.id)"
+        >
+          <h4>{{ task.title }}</h4>
+          <p class="task-description" *ngIf="task.description">
+            {{ task.description | slice:0:60 }}{{ task.description.length > 60 ? '...' : '' }}
+          </p>
+          <div class="task-meta">
+            <span class="priority" [ngClass]="getPriorityClass(task.priority)">
+              {{ getPriorityLabel(task.priority) }}
+            </span>
+            <span class="due-date" *ngIf="task.due_date">
+              {{ task.due_date | date:'shortDate' }}
+            </span>
+          </div>
+          <div class="task-assignee" *ngIf="task.assigned_to">
+            <span>{{ task.assigned_to.name }}</span>
+          </div>
+        </div>
       </div>
     </div>
   </div>
