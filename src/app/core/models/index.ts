@@ -7,6 +7,9 @@ export * from './task.model';
 export * from './project.model';
 export * from './sprint.model';
 export * from './notification.model';
+export * from './comment.model';
+export * from './task-comment.model';
+export * from './subtask.model';
 
 // Analytics models
 export * from './analytics.model';
@@ -14,6 +17,7 @@ export * from './analytics.model';
 // System models
 export * from './enum.model';
 export * from './response.model';
+export * from './api-responses';
 
 // Re-export commonly used interfaces for convenience
 export type { 
@@ -73,3 +77,19 @@ export type {
   TaskStatusDistribution, 
   TaskPriorityDistribution 
 } from './analytics.model';
+
+export type {
+  Comment
+} from './comment.model';
+
+export type {
+  TaskComment as TaskCommentModel
+} from './task-comment.model';
+
+export type {
+  Subtask
+} from './subtask.model';
+
+export type {
+  CommentApiResponse
+} from './api-responses';
