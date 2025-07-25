@@ -162,4 +162,71 @@ export class TaskService {
   getRecentActivities(): Observable<Task[]> {
     return this.getAllTasks();
   }
+
+  // Bulk operations (missing from API integration)
+  bulkCreateTasks(tasks: CreateTaskRequest[]): Observable<Task[]> {
+    return this.http.post<TaskApiResponse[]>(`${this.apiUrl}/bulk`, { tasks }).pipe(
+      map(tasks => tasks.map(task => this.mapApiResponseToTask(task)))
+    );
+  }
+
+  bulkDeleteTasks(taskIds: number[]): Observable<{ message: string }> {
+    return this.http.delete<{ message: string }>(`${this.apiUrl}/bulk`, { 
+      body: { taskIds } 
+    });
+  }
+
+  bulkUpdateStatus(taskIds: number[], status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED'): Observable<Task[]> {
+    return this.http.put<TaskApiResponse[]>(`${this.apiUrl}/bulk/status`, { 
+      taskIds, 
+      status 
+    }).pipe(
+      map(tasks => tasks.map(task => this.mapApiResponseToTask(task)))
+    );
+  }
+
+  // Enhanced filtering with pagination
+  getTasksWithPagination(page: number = 1, limit: number = 10, filters?: TaskFilters): Observable<{tasks: Task[], total: number, page: number}> {
+    let params = new HttpParams()
+      .set('page', page.toString())
+      .set('limit', limit.toString());
+    
+    if (filters) {
+      if (filters.status) params = params.set('status', filters.status);
+      if (filters.assignee) params = params.set('assignee', filters.assignee.toString());
+      if (filters.created_by) params = params.set('created_by', filters.created_by.toString());
+      if (filters.priority) params = params.set('priority', filters.priority);
+    }
+
+    return this.http.get<{tasks: TaskApiResponse[], total: number, page: number}>(this.apiUrl, { params }).pipe(
+      map(response => ({
+        tasks: response.tasks.map(task => this.mapApiResponseToTask(task)),
+        total: response.total,
+        page: response.page
+      }))
+    );
+  }
+
+  // Search tasks
+  searchTasks(query: string): Observable<Task[]> {
+    const params = new HttpParams().set('search', query);
+    return this.http.get<TaskApiResponse[]>(`${this.apiUrl}/search`, { params }).pipe(
+      map(tasks => tasks.map(task => this.mapApiResponseToTask(task)))
+    );
+  }
+
+  // Get tasks due soon
+  getTasksDueSoon(days: number = 7): Observable<Task[]> {
+    const params = new HttpParams().set('days', days.toString());
+    return this.http.get<TaskApiResponse[]>(`${this.apiUrl}/due-soon`, { params }).pipe(
+      map(tasks => tasks.map(task => this.mapApiResponseToTask(task)))
+    );
+  }
+
+  // Get overdue tasks
+  getOverdueTasks(): Observable<Task[]> {
+    return this.http.get<TaskApiResponse[]>(`${this.apiUrl}/overdue`).pipe(
+      map(tasks => tasks.map(task => this.mapApiResponseToTask(task)))
+    );
+  }
 }
