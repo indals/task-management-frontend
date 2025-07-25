@@ -6,6 +6,8 @@ export * from './sprint.service';
 export * from './notification.service';
 export * from './analytics.service';
 export * from './enum.service';
+export * from './error-handler.service';
+export * from './layout.service';
 
 // Re-export commonly used services for convenience
 export { AuthService } from './auth.service';
@@ -15,6 +17,8 @@ export { SprintService } from './sprint.service';
 export { NotificationService } from './notification.service';
 export { AnalyticsService } from './analytics.service';
 export { EnumService } from './enum.service';
+export { ErrorHandlerService } from './error-handler.service';
+export { LayoutService } from './layout.service';
 
 // Service types for dependency injection
 export type { TaskFilters } from './task.service';
