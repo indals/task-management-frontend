@@ -37,6 +37,11 @@ export const routes: Routes = [
     canActivate: [authGuard]
   },
   {
+    path: 'teams',
+    loadChildren: () => import('./features/teams/teams.module').then(m => m.TeamsModule),
+    canActivate: [authGuard]
+  },
+  {
     path: 'projects',
     loadComponent: () => import('./features/projects/projects.component').then(c => c.ProjectsComponent),
     canActivate: [authGuard]
