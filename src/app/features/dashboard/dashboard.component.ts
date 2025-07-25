@@ -489,55 +489,66 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   initPriorityChart(): void {
-    let priorityCounts: { [key: string]: number } = {
-      'LOW': 0,
-      'MEDIUM': 0,
-      'HIGH': 0
-    };
+  let priorityCounts: { [key: string]: number } = {
+    'LOW': 0,
+    'MEDIUM': 0,
+    'HIGH': 0
+  };
 
-    if (this.priorityDistribution) {
-      // Use API data
-      Object.keys(this.priorityDistribution.priority_distribution).forEach(priority => {
-        priorityCounts[priority] = this.priorityDistribution!.priority_distribution[priority].count;
-      });
-    } else {
-      // Fallback to calculating from tasks
-      this.tasks.forEach(task => {
-        if (task.priority in priorityCounts) {
-          priorityCounts[task.priority]++;
-        }
-      });
+  // ✅ Safely check if API data is available and valid
+  if (
+    this.priorityDistribution?.priority_distribution &&
+    typeof this.priorityDistribution.priority_distribution === 'object'
+  ) {
+    Object.keys(this.priorityDistribution.priority_distribution).forEach(priority => {
+      const count = this.priorityDistribution!.priority_distribution[priority]?.count || 0;
+      priorityCounts[priority] = count;
+    });
+  } else {
+    // Fallback to calculating from tasks
+    this.tasks?.forEach(task => {
+      if (task.priority in priorityCounts) {
+        priorityCounts[task.priority]++;
+      }
+    });
+  }
+
+  // ✅ Render chart if canvas exists
+  const ctx = document.getElementById('priorityChart') as HTMLCanvasElement | null;
+  if (ctx) {
+    // Destroy previous chart if already exists to avoid duplicates
+    if (this.priorityChart) {
+      this.priorityChart.destroy();
     }
 
-    const ctx = document.getElementById('priorityChart') as HTMLCanvasElement;
-    if (ctx) {
-      this.priorityChart = new Chart(ctx, {
-        type: 'pie',
-        data: {
-          labels: ['Low', 'Medium', 'High'],
-          datasets: [{
-            data: [
-              priorityCounts[TaskPriority.LOW],
-              priorityCounts[TaskPriority.MEDIUM],
-              priorityCounts[TaskPriority.HIGH]
-            ],
-            backgroundColor: ['#e8f5e9', '#fff8e1', '#ffebee'],
-            borderColor: ['#388e3c', '#ff8f00', '#d32f2f'],
-            borderWidth: 1
-          }]
-        },
-        options: { 
-          responsive: true, 
-          maintainAspectRatio: false,
-          plugins: {
-            legend: {
-              position: 'bottom'
-            }
+    this.priorityChart = new Chart(ctx, {
+      type: 'pie',
+      data: {
+        labels: ['Low', 'Medium', 'High'],
+        datasets: [{
+          data: [
+            priorityCounts['LOW'],
+            priorityCounts['MEDIUM'],
+            priorityCounts['HIGH']
+          ],
+          backgroundColor: ['#e8f5e9', '#fff8e1', '#ffebee'],
+          borderColor: ['#388e3c', '#ff8f00', '#d32f2f'],
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'bottom'
           }
         }
-      });
-    }
+      }
+    });
   }
+}
+
 
   navigateToTask(taskId: number): void {
     this.router.navigate(['/tasks', taskId]);
