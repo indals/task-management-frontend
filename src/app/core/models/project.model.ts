@@ -16,4 +16,9 @@ export interface Project {
   createdAt?: Date;
   updatedAt?: Date;
   ownerId?: string;
+  tasks_count?: number; // For backward compatibility
+  estimated_hours?: number; // For backward compatibility
+  completed_tasks?: number; // For backward compatibility
+  pending_tasks?: number; // For backward compatibility
+  priority?: 'HIGH' | 'MEDIUM' | 'LOW'; // For backward compatibility
 }

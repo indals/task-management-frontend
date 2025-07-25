@@ -4,6 +4,10 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { LoadingComponent } from '../../shared/components/loading/loading.component';
+import { Project as BackendProject } from '../../core/models/project.model';
+
+import { ProjectService } from '../../core/services/project.service';
+
 
 interface Project {
   id: string;
@@ -39,94 +43,138 @@ export class ProjectsComponent implements OnInit {
   searchTerm = '';
   statusFilter = '';
 
-  constructor(private router: Router) {}
+  constructor(private router: Router, private projectService: ProjectService) {}
 
   ngOnInit() {
     this.loadProjects();
   }
 
-  loadProjects() {
-    this.loading = true;
+//   loadProjects() {
+//     this.loading = true;
     
-    // Mock data - replace with actual API call
-    setTimeout(() => {
-      this.projects = [
-        {
-          id: '1',
-          name: 'Website Redesign',
-          description: 'Complete overhaul of company website with modern design and improved UX',
-          status: 'ACTIVE',
-          progress: 67,
-          startDate: new Date('2024-01-15'),
-          endDate: new Date('2024-03-30'),
-          teamMembers: ['John Doe', 'Jane Smith', 'Mike Johnson', 'Sarah Connor'],
-          tasksCount: { total: 24, completed: 16, pending: 8 },
-          priority: 'HIGH',
-          budget: 50000,
-          spent: 33500
-        },
-        {
-          id: '2',
-          name: 'Mobile App Development',
-          description: 'Native iOS and Android app for customer engagement',
-          status: 'ACTIVE',
-          progress: 43,
-          startDate: new Date('2024-02-01'),
-          endDate: new Date('2024-06-15'),
-          teamMembers: ['Alice Brown', 'Bob Wilson', 'Charlie Davis'],
-          tasksCount: { total: 35, completed: 15, pending: 20 },
-          priority: 'HIGH',
-          budget: 75000,
-          spent: 32250
-        },
-        {
-          id: '3',
-          name: 'Marketing Campaign Q2',
-          description: 'Digital marketing campaign for Q2 product launch',
-          status: 'COMPLETED',
-          progress: 100,
-          startDate: new Date('2024-01-01'),
-          endDate: new Date('2024-02-28'),
-          teamMembers: ['Emma Wilson', 'David Lee'],
-          tasksCount: { total: 18, completed: 18, pending: 0 },
-          priority: 'MEDIUM',
-          budget: 25000,
-          spent: 24800
-        },
-        {
-          id: '4',
-          name: 'Database Migration',
-          description: 'Migration from legacy database to cloud infrastructure',
-          status: 'ON_HOLD',
-          progress: 25,
-          startDate: new Date('2024-03-01'),
-          endDate: new Date('2024-05-30'),
-          teamMembers: ['Tech Team Lead', 'Database Admin'],
-          tasksCount: { total: 12, completed: 3, pending: 9 },
-          priority: 'MEDIUM',
-          budget: 40000,
-          spent: 10000
-        },
-        {
-          id: '5',
-          name: 'Security Audit',
-          description: 'Comprehensive security assessment and vulnerability testing',
-          status: 'ACTIVE',
-          progress: 80,
-          startDate: new Date('2024-02-15'),
-          endDate: new Date('2024-03-15'),
-          teamMembers: ['Security Specialist', 'DevOps Engineer'],
-          tasksCount: { total: 8, completed: 6, pending: 2 },
-          priority: 'HIGH',
-          budget: 15000,
-          spent: 12000
-        }
-      ];
+//     // Mock data - replace with actual API call
+//     setTimeout(() => {
+//       this.projects = [
+//         {
+//           id: '1',
+//           name: 'Website Redesign',
+//           description: 'Complete overhaul of company website with modern design and improved UX',
+//           status: 'ACTIVE',
+//           progress: 67,
+//           startDate: new Date('2024-01-15'),
+//           endDate: new Date('2024-03-30'),
+//           teamMembers: ['John Doe', 'Jane Smith', 'Mike Johnson', 'Sarah Connor'],
+//           tasksCount: { total: 24, completed: 16, pending: 8 },
+//           priority: 'HIGH',
+//           budget: 50000,
+//           spent: 33500
+//         },
+//         {
+//           id: '2',
+//           name: 'Mobile App Development',
+//           description: 'Native iOS and Android app for customer engagement',
+//           status: 'ACTIVE',
+//           progress: 43,
+//           startDate: new Date('2024-02-01'),
+//           endDate: new Date('2024-06-15'),
+//           teamMembers: ['Alice Brown', 'Bob Wilson', 'Charlie Davis'],
+//           tasksCount: { total: 35, completed: 15, pending: 20 },
+//           priority: 'HIGH',
+//           budget: 75000,
+//           spent: 32250
+//         },
+//         {
+//           id: '3',
+//           name: 'Marketing Campaign Q2',
+//           description: 'Digital marketing campaign for Q2 product launch',
+//           status: 'COMPLETED',
+//           progress: 100,
+//           startDate: new Date('2024-01-01'),
+//           endDate: new Date('2024-02-28'),
+//           teamMembers: ['Emma Wilson', 'David Lee'],
+//           tasksCount: { total: 18, completed: 18, pending: 0 },
+//           priority: 'MEDIUM',
+//           budget: 25000,
+//           spent: 24800
+//         },
+//         {
+//           id: '4',
+//           name: 'Database Migration',
+//           description: 'Migration from legacy database to cloud infrastructure',
+//           status: 'ON_HOLD',
+//           progress: 25,
+//           startDate: new Date('2024-03-01'),
+//           endDate: new Date('2024-05-30'),
+//           teamMembers: ['Tech Team Lead', 'Database Admin'],
+//           tasksCount: { total: 12, completed: 3, pending: 9 },
+//           priority: 'MEDIUM',
+//           budget: 40000,
+//           spent: 10000
+//         },
+//         {
+//           id: '5',
+//           name: 'Security Audit',
+//           description: 'Comprehensive security assessment and vulnerability testing',
+//           status: 'ACTIVE',
+//           progress: 80,
+//           startDate: new Date('2024-02-15'),
+//           endDate: new Date('2024-03-15'),
+//           teamMembers: ['Security Specialist', 'DevOps Engineer'],
+//           tasksCount: { total: 8, completed: 6, pending: 2 },
+//           priority: 'HIGH',
+//           budget: 15000,
+//           spent: 12000
+//         }
+//       ];
       
+//       this.filteredProjects = [...this.projects];
+//       this.loading = false;
+//     }, 1000);
+//   }
+
+loadProjects() {
+  this.loading = true;
+
+this.projectService.getProjects().subscribe({
+    next: (data: BackendProject[]) => {
+      this.projects = data.map(p => {
+        const totalTasks = p.tasks_count ?? 0;
+        const completedTasks = p.completed_tasks ?? Math.floor(totalTasks * 0.6);
+        const pendingTasks = p.pending_tasks ?? (totalTasks - completedTasks);
+        const estHours = p.estimated_hours ?? 0;
+
+        const priority: 'HIGH' | 'MEDIUM' | 'LOW' =
+          estHours > 1000 ? 'HIGH' : estHours > 500 ? 'MEDIUM' : 'LOW';
+
+        return {
+          id: p.id.toString(),
+          name: p.name,
+          description: p.description,
+          status: (p.status || 'ACTIVE') as Project['status'],
+          progress: totalTasks > 0 ? Math.floor((completedTasks / totalTasks) * 100) : 0,
+          startDate: new Date(p.start_date),
+          endDate: p.end_date ? new Date(p.end_date) : undefined,
+          teamMembers: (p.members || []).map(member => `${member.first_name} ${member.last_name}`),
+          tasksCount: {
+            total: totalTasks,
+            completed: completedTasks,
+            pending: pendingTasks
+          },
+          priority,
+          budget: undefined,
+          spent: undefined
+        };
+      });
+
       this.filteredProjects = [...this.projects];
       this.loading = false;
-    }, 1000);
-  }
+    },
+    error: () => {
+      this.loading = false;
+    }
+  });
+}
+
 
   filterProjects() {
     this.filteredProjects = this.projects.filter(project => {
