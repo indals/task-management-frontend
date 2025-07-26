@@ -31,7 +31,7 @@ const routes: Routes = [
   },
   {
     path: 'sprints',
-    loadChildren: () => import('./features/sprints/sprints.module').then(m => m.SprintsModule),
+    loadChildren: () => import('./features/sprints/sprint-management/sprints.module').then(m => m.SprintsModule),
     canActivate: [AuthGuard],
     data: { permissions: ['manage_sprints', 'view_sprints'] }
   },
@@ -74,7 +74,7 @@ const routes: Routes = [
   },
   {
     path: 'access-denied',
-    loadComponent: () => import('./shared/components/access-denied/access-denied.component').then(c => c.AccessDeniedComponent)
+    loadComponent: () => import('./shared/access-denied/access-denied.component').then(c => c.AccessDeniedComponent)
   },
   { 
     path: '**', 

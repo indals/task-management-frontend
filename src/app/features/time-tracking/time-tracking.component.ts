@@ -2,9 +2,9 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Subject, interval } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
-import { AuthService } from '../../../core/services/auth.service';
-import { TaskService } from '../../../core/services/task.service';
-import { Task, User } from '../../../core/models';
+import { AuthService } from '../../core/services/auth.service';
+import { TaskService } from '../../core/services/task.service';
+import { Task, User } from '../../core/models';
 
 interface TimeEntry {
   id: number;

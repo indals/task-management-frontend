@@ -4,7 +4,7 @@ import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { SharedModule } from '../../shared/shared.module';
 
-import { AnalyticsOverviewComponent } from './analytics-overview/analytics-overview.component';
+import { AnalyticsOverviewComponent } from './analytics-overview.component';
 import { AdvancedAnalyticsComponent } from './advanced-analytics/advanced-analytics.component';
 
 const routes = [

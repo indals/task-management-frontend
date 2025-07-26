@@ -4,7 +4,7 @@ import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { SharedModule } from '../../shared/shared.module';
 
-import { TimeTrackingComponent } from './time-tracking/time-tracking.component';
+import { TimeTrackingComponent } from './time-tracking.component';
 
 const routes = [
   {

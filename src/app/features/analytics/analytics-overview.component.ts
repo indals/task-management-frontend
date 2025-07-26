@@ -1,44 +1,12 @@
-// src/app/features/analytics/analytics.module.ts
-import { NgModule } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
-import { SharedModule } from '../../shared/shared.module';
-
-import { AnalyticsOverviewComponent } from './analytics-overview/analytics-overview.component';
-import { AdvancedAnalyticsComponent } from './advanced-analytics/advanced-analytics.component';
-
-const routes = [
-  {
-    path: '',
-    component: AnalyticsOverviewComponent
-  },
-  {
-    path: 'advanced',
-    component: AdvancedAnalyticsComponent
-  }
-];
-
-@NgModule({
-  declarations: [
-    AnalyticsOverviewComponent,
-    AdvancedAnalyticsComponent
-  ],
-  imports: [
-    CommonModule,
-    SharedModule,
-    RouterModule.forChild(routes)
-  ]
-})
-export class AnalyticsModule { }
 
 // src/app/features/analytics/analytics-overview/analytics-overview.component.ts
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
-import { AnalyticsService } from '../../../core/services/analytics.service';
-import { AuthService } from '../../../core/services/auth.service';
-import { TaskService } from '../../../core/services/task.service';
-import { ProjectService } from '../../../core/services/project.service';
+import { AnalyticsService } from '../../core/services/analytics.service';
+import { AuthService } from '../../core/services/auth.service';
+import { TaskService } from '../../core/services/task.service';
+import { ProjectService } from '../../core/services/project.service';
 
 interface AnalyticsCard {
   title: string;

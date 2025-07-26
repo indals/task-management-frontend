@@ -2,8 +2,10 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
-import { AuthService } from '../../../core/services/auth.service';
+// import { AuthService } from '../../../core/services/auth.service';
 import { User } from '../../../core/models';
+import { AuthService, UserListItem } from '../../../core/services/auth.service';
+
 
 interface TeamMember {
   id: number;
@@ -450,44 +452,46 @@ export class TeamManagementComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
-  loadTeamMembers(): void {
-    this.isLoading = true;
-    this.errorMessage = null;
+// Replace the loadTeamMembers method and transformUsersToTeamMembers method in your team-management.component.ts
 
-    this.authService.getUsers()
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: (users) => {
-          this.teamMembers = this.transformUsersToTeamMembers(users);
-          this.calculateStats();
-          this.isLoading = false;
-        },
-        error: (error) => {
-          this.errorMessage = 'Failed to load team members';
-          this.isLoading = false;
-        }
-      });
-  }
+loadTeamMembers(): void {
+  this.isLoading = true;
+  this.errorMessage = null;
 
-  private transformUsersToTeamMembers(users: User[]): TeamMember[] {
-    return users.map(user => ({
-      id: user.id,
-      name: user.name || user.username || 'Unknown User',
-      email: user.email,
-      role: user.role?.replace('_', ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase()) || 'Member',
-      avatar_url: user.avatar_url,
-      department: this.getDepartmentFromRole(user.role || ''),
-      joinDate: user.created_at || new Date().toISOString(),
-      status: this.getRandomStatus(),
-      tasksCount: {
-        total: Math.floor(Math.random() * 20) + 5,
-        completed: Math.floor(Math.random() * 15) + 2,
-        inProgress: Math.floor(Math.random() * 8) + 1
+  this.authService.getUsers()
+    .pipe(takeUntil(this.destroy$))
+    .subscribe({
+      next: (users: UserListItem[]) => {
+        this.teamMembers = this.transformUsersToTeamMembers(users);
+        this.calculateStats();
+        this.isLoading = false;
       },
-      skills: this.getSkillsFromRole(user.role || ''),
-      workload: Math.floor(Math.random() * 40) + 60
-    }));
-  }
+      error: (error) => {
+        this.errorMessage = 'Failed to load team members';
+        this.isLoading = false;
+      }
+    });
+}
+
+private transformUsersToTeamMembers(users: UserListItem[]): TeamMember[] {
+  return users.map(user => ({
+    id: user.id,
+    name: user.name || user.name || 'Unknown User',
+    email: user.email,
+    role: user.role?.replace('_', ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase()) || 'Member',
+    avatar_url: user.avatar_url,
+    department: this.getDepartmentFromRole(user.role || ''),
+    joinDate: new Date().toISOString(),
+    status: this.getRandomStatus(),
+    tasksCount: {
+      total: Math.floor(Math.random() * 20) + 5,
+      completed: Math.floor(Math.random() * 15) + 2,
+      inProgress: Math.floor(Math.random() * 8) + 1
+    },
+    skills: this.getSkillsFromRole(user.role || ''),
+    workload: Math.floor(Math.random() * 40) + 60
+  }));
+}
 
   private getDepartmentFromRole(role: string): string {
     const departments: { [key: string]: string } = {

@@ -149,8 +149,7 @@ export class ProfileComponent implements OnInit, OnDestroy {
       linkedin_url: formValue.linkedin_url || undefined,
       phone: formValue.phone || undefined,
       timezone: formValue.timezone,
-      daily_work_hours: formValue.daily_work_hours,
-      hourly_rate: formValue.hourly_rate || undefined
+      hourly_rate: formValue.work_hours,
     };
 
     this.authService.updateProfile(profileData)

@@ -17,8 +17,8 @@ interface CalendarDay {
   selector: 'app-calendar',
   standalone: true,
   imports: [CommonModule, FormsModule],
-templateUrl: './calendar.component.html',
-styleUrls: ['./calendar.component.css']
+  templateUrl: './calendar.component.html',
+  styleUrls: ['./calendar.component.css']
 })
 export class CalendarComponent implements OnInit {
   currentDate = new Date();
@@ -43,7 +43,7 @@ export class CalendarComponent implements OnInit {
     this.loading = true;
     this.taskService.getAllTasks().subscribe({
       next: (tasks) => {
-        this.tasks = tasks;
+        this.tasks = Array.isArray(tasks) ? tasks : [tasks];
         this.generateCalendar();
         this.loading = false;
       },
@@ -153,7 +153,6 @@ export class CalendarComponent implements OnInit {
   }
 
   viewTaskDetails(task: Task) {
-    // Implement task details view or navigation
     console.log('View task details:', task);
   }
 }

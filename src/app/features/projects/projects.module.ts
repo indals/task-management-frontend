@@ -1,31 +1,25 @@
+// src/app/features/projects/projects.module.ts
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { SharedModule } from '../../shared/shared.module';
 
-// Placeholder component
-import { Component } from '@angular/core';
-
-@Component({
-  template: `
-    <div class="container">
-      <h1>Projects</h1>
-      <p>Projects feature coming soon...</p>
-    </div>
-  `
-})
-export class ProjectsPlaceholderComponent {}
+import { ProjectManagementComponent } from './project-management/project-management.component';
 
 const routes = [
   {
     path: '',
-    component: ProjectsPlaceholderComponent
+    component: ProjectManagementComponent
+  },
+  {
+    path: ':id',
+    component: ProjectManagementComponent // Could be project details component
   }
 ];
 
 @NgModule({
   declarations: [
-    ProjectsPlaceholderComponent
+    ProjectManagementComponent
   ],
   imports: [
     CommonModule,
