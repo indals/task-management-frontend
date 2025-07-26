@@ -56,7 +56,7 @@ export class TaskService {
     );
   }
 
-  // Task CRUD operations
+  // 🔧 IMPROVED: Handle new response format for tasks list
   getTasks(filters?: TaskFilters): Observable<PaginatedResponse<Task>> {
     this.loadingSubject.next(true);
     
@@ -70,30 +70,51 @@ export class TaskService {
       });
     }
 
-    return this.http.get<PaginatedResponse<Task>>(API_ENDPOINTS.TASKS.BASE, { params })
+    return this.http.get<ApiResponse<PaginatedResponse<Task>>>(API_ENDPOINTS.TASKS.BASE, { params })
       .pipe(
-        tap(response => {
-          this.tasksSubject.next(response.data);
+        map(response => {
+          if (response.success && response.data) {
+            return response.data;
+          } else {
+            throw new Error(response.message || 'Failed to load tasks');
+          }
+        }),
+        tap(paginatedResponse => {
+          this.tasksSubject.next(paginatedResponse.data);
           this.loadingSubject.next(false);
         }),
         catchError(this.handleError.bind(this))
       );
   }
 
+  // 🔧 IMPROVED: Handle new response format
   getTaskById(id: number): Observable<Task> {
     return this.http.get<ApiResponse<Task>>(API_ENDPOINTS.TASKS.BY_ID(id))
       .pipe(
-        map(response => response.data!),
+        map(response => {
+          if (response.success && response.data) {
+            return response.data;
+          } else {
+            throw new Error(response.message || 'Failed to load task');
+          }
+        }),
         catchError(this.handleError.bind(this))
       );
   }
 
+  // 🔧 IMPROVED: Handle new response format for create
   createTask(taskData: CreateTaskRequest): Observable<Task> {
     this.loadingSubject.next(true);
     
     return this.http.post<ApiResponse<Task>>(API_ENDPOINTS.TASKS.BASE, taskData)
       .pipe(
-        map(response => response.data!),
+        map(response => {
+          if (response.success && response.data) {
+            return response.data;
+          } else {
+            throw new Error(response.message || 'Failed to create task');
+          }
+        }),
         tap(task => {
           const currentTasks = this.tasksSubject.value;
           this.tasksSubject.next([task, ...currentTasks]);
@@ -103,12 +124,19 @@ export class TaskService {
       );
   }
 
+  // 🔧 IMPROVED: Handle new response format for update
   updateTask(id: number, taskData: UpdateTaskRequest): Observable<Task> {
     this.loadingSubject.next(true);
     
     return this.http.put<ApiResponse<Task>>(API_ENDPOINTS.TASKS.BY_ID(id), taskData)
       .pipe(
-        map(response => response.data!),
+        map(response => {
+          if (response.success && response.data) {
+            return response.data;
+          } else {
+            throw new Error(response.message || 'Failed to update task');
+          }
+        }),
         tap(updatedTask => {
           const currentTasks = this.tasksSubject.value;
           const index = currentTasks.findIndex(task => task.id === id);
@@ -122,11 +150,18 @@ export class TaskService {
       );
   }
 
+  // 🔧 IMPROVED: Handle new response format for delete
   deleteTask(id: number): Observable<ApiResponse> {
     this.loadingSubject.next(true);
     
     return this.http.delete<ApiResponse>(API_ENDPOINTS.TASKS.BY_ID(id))
       .pipe(
+        map(response => {
+          if (!response.success) {
+            throw new Error(response.message || 'Failed to delete task');
+          }
+          return response;
+        }),
         tap(() => {
           const currentTasks = this.tasksSubject.value;
           const filteredTasks = currentTasks.filter(task => task.id !== id);
@@ -137,10 +172,17 @@ export class TaskService {
       );
   }
 
+  // 🔧 IMPROVED: Handle new response format for assign
   assignTask(id: number, assignData: AssignTaskRequest): Observable<Task> {
     return this.http.post<ApiResponse<Task>>(API_ENDPOINTS.TASKS.ASSIGN(id), assignData)
       .pipe(
-        map(response => response.data!),
+        map(response => {
+          if (response.success && response.data) {
+            return response.data;
+          } else {
+            throw new Error(response.message || 'Failed to assign task');
+          }
+        }),
         tap(updatedTask => {
           const currentTasks = this.tasksSubject.value;
           const index = currentTasks.findIndex(task => task.id === id);
@@ -153,19 +195,32 @@ export class TaskService {
       );
   }
 
+  // 🔧 IMPROVED: Handle new response format for overdue tasks
   getOverdueTasks(): Observable<Task[]> {
     return this.http.get<ApiResponse<Task[]>>(API_ENDPOINTS.TASKS.OVERDUE)
       .pipe(
-        map(response => response.data!),
+        map(response => {
+          if (response.success && response.data) {
+            return response.data;
+          } else {
+            throw new Error(response.message || 'Failed to load overdue tasks');
+          }
+        }),
         catchError(this.handleError.bind(this))
       );
   }
 
-  // Task Comments - FIXED: Add proper comment methods
+  // 🔧 IMPROVED: Task Comments with new response format
   getTaskComments(taskId: number): Observable<TaskComment[]> {
     return this.http.get<ApiResponse<TaskComment[]>>(API_ENDPOINTS.TASKS.COMMENTS(taskId))
       .pipe(
-        map(response => response.data!),
+        map(response => {
+          if (response.success && response.data) {
+            return response.data;
+          } else {
+            throw new Error(response.message || 'Failed to load task comments');
+          }
+        }),
         catchError(this.handleError.bind(this))
       );
   }
@@ -173,7 +228,13 @@ export class TaskService {
   createTaskComment(taskId: number, commentData: CreateCommentRequest): Observable<TaskComment> {
     return this.http.post<ApiResponse<TaskComment>>(API_ENDPOINTS.TASKS.COMMENTS(taskId), commentData)
       .pipe(
-        map(response => response.data!),
+        map(response => {
+          if (response.success && response.data) {
+            return response.data;
+          } else {
+            throw new Error(response.message || 'Failed to create task comment');
+          }
+        }),
         catchError(this.handleError.bind(this))
       );
   }
@@ -189,7 +250,13 @@ export class TaskService {
   updateTaskComment(commentId: number, commentData: UpdateCommentRequest): Observable<TaskComment> {
     return this.http.put<ApiResponse<TaskComment>>(API_ENDPOINTS.TASKS.COMMENT_BY_ID(commentId), commentData)
       .pipe(
-        map(response => response.data!),
+        map(response => {
+          if (response.success && response.data) {
+            return response.data;
+          } else {
+            throw new Error(response.message || 'Failed to update task comment');
+          }
+        }),
         catchError(this.handleError.bind(this))
       );
   }
@@ -197,15 +264,27 @@ export class TaskService {
   deleteTaskComment(commentId: number): Observable<ApiResponse> {
     return this.http.delete<ApiResponse>(API_ENDPOINTS.TASKS.COMMENT_BY_ID(commentId))
       .pipe(
+        map(response => {
+          if (!response.success) {
+            throw new Error(response.message || 'Failed to delete task comment');
+          }
+          return response;
+        }),
         catchError(this.handleError.bind(this))
       );
   }
 
-  // Time Logs
+  // 🔧 IMPROVED: Time Logs with new response format
   getTaskTimeLogs(taskId: number): Observable<TimeLog[]> {
     return this.http.get<ApiResponse<TimeLog[]>>(API_ENDPOINTS.TASKS.TIME_LOG(taskId))
       .pipe(
-        map(response => response.data!),
+        map(response => {
+          if (response.success && response.data) {
+            return response.data;
+          } else {
+            throw new Error(response.message || 'Failed to load task time logs');
+          }
+        }),
         catchError(this.handleError.bind(this))
       );
   }
@@ -213,7 +292,13 @@ export class TaskService {
   createTimeLog(taskId: number, timeLogData: CreateTimeLogRequest): Observable<TimeLog> {
     return this.http.post<ApiResponse<TimeLog>>(API_ENDPOINTS.TASKS.TIME_LOG(taskId), timeLogData)
       .pipe(
-        map(response => response.data!),
+        map(response => {
+          if (response.success && response.data) {
+            return response.data;
+          } else {
+            throw new Error(response.message || 'Failed to create time log');
+          }
+        }),
         catchError(this.handleError.bind(this))
       );
   }
@@ -221,7 +306,13 @@ export class TaskService {
   updateTimeLog(taskId: number, timeLogId: number, timeLogData: UpdateTimeLogRequest): Observable<TimeLog> {
     return this.http.put<ApiResponse<TimeLog>>(`${API_ENDPOINTS.TASKS.TIME_LOG(taskId)}/${timeLogId}`, timeLogData)
       .pipe(
-        map(response => response.data!),
+        map(response => {
+          if (response.success && response.data) {
+            return response.data;
+          } else {
+            throw new Error(response.message || 'Failed to update time log');
+          }
+        }),
         catchError(this.handleError.bind(this))
       );
   }
@@ -229,9 +320,40 @@ export class TaskService {
   deleteTimeLog(taskId: number, timeLogId: number): Observable<ApiResponse> {
     return this.http.delete<ApiResponse>(`${API_ENDPOINTS.TASKS.TIME_LOG(taskId)}/${timeLogId}`)
       .pipe(
+        map(response => {
+          if (!response.success) {
+            throw new Error(response.message || 'Failed to delete time log');
+          }
+          return response;
+        }),
         catchError(this.handleError.bind(this))
       );
   }
+
+  // 🔧 IMPROVED: User time logs with new response format
+  // getUserTimeLogs(filters?: { start_date?: string; end_date?: string; limit?: number }): Observable<any> {
+  //   let params = new HttpParams();
+  //   if (filters) {
+  //     Object.keys(filters).forEach(key => {
+  //       const value = (filters as any)[key];
+  //       if (value !== undefined && value !== null && value !== '') {
+  //         params = params.set(key, value.toString());
+  //       }
+  //     });
+  //   }
+
+  //   return this.http.get<ApiResponse<any>>(API_ENDPOINTS.TASKS.TIME_LOGS, { params })
+  //     .pipe(
+  //       map(response => {
+  //         if (response.success && response.data) {
+  //           return response.data;
+  //         } else {
+  //           throw new Error(response.message || 'Failed to load user time logs');
+  //         }
+  //       }),
+  //       catchError(this.handleError.bind(this))
+  //     );
+  // }
 
   // Utility methods
   getMyTasks(): Observable<Task[]> {
@@ -283,15 +405,22 @@ export class TaskService {
     return 0;
   }
 
+  // 🔧 IMPROVED: Better error handling for new response format
   private handleError(error: HttpErrorResponse): Observable<never> {
     this.loadingSubject.next(false);
     
     let errorMessage = 'An error occurred';
     
     if (error.error instanceof ErrorEvent) {
+      // Client-side error
       errorMessage = error.error.message;
     } else {
-      if (error.error?.message) {
+      // Server-side error - handle new response format
+      if (error.error?.success === false) {
+        // New standardized error format
+        errorMessage = error.error.message || `Error ${error.status}`;
+      } else if (error.error?.message) {
+        // Legacy error format
         errorMessage = error.error.message;
       } else if (error.error?.errors && error.error.errors.length > 0) {
         errorMessage = error.error.errors[0];

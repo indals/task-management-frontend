@@ -32,13 +32,19 @@ export class EnumService {
     this.loadAllEnums();
   }
 
-  // Load all enums at once
+  // 🔧 IMPROVED: Better response handling for new format
   loadAllEnums(): Observable<EnumResponse> {
     this.loadingSubject.next(true);
     
     return this.http.get<ApiResponse<EnumResponse>>(API_ENDPOINTS.ENUMS.BASE)
       .pipe(
-        map(response => response.data!),
+        map(response => {
+          if (response.success && response.data) {
+            return response.data;
+          } else {
+            throw new Error(response.message || 'Failed to load enums');
+          }
+        }),
         tap(enums => {
           this.enumsSubject.next(enums);
           this.loadingSubject.next(false);
@@ -47,11 +53,17 @@ export class EnumService {
       );
   }
 
-  // Individual enum getters
+  // 🔧 IMPROVED: Individual enum getters with better response handling
   getUserRoles(): Observable<UserRoleEnum[]> {
     return this.http.get<ApiResponse<UserRoleEnum[]>>(API_ENDPOINTS.ENUMS.USER_ROLES)
       .pipe(
-        map(response => response.data!),
+        map(response => {
+          if (response.success && response.data) {
+            return response.data;
+          } else {
+            throw new Error(response.message || 'Failed to load user roles');
+          }
+        }),
         catchError(this.handleError.bind(this))
       );
   }
@@ -59,7 +71,13 @@ export class EnumService {
   getTaskStatuses(): Observable<TaskStatusEnum[]> {
     return this.http.get<ApiResponse<TaskStatusEnum[]>>(API_ENDPOINTS.ENUMS.TASK_STATUSES)
       .pipe(
-        map(response => response.data!),
+        map(response => {
+          if (response.success && response.data) {
+            return response.data;
+          } else {
+            throw new Error(response.message || 'Failed to load task statuses');
+          }
+        }),
         catchError(this.handleError.bind(this))
       );
   }
@@ -67,7 +85,13 @@ export class EnumService {
   getTaskPriorities(): Observable<TaskPriorityEnum[]> {
     return this.http.get<ApiResponse<TaskPriorityEnum[]>>(API_ENDPOINTS.ENUMS.TASK_PRIORITIES)
       .pipe(
-        map(response => response.data!),
+        map(response => {
+          if (response.success && response.data) {
+            return response.data;
+          } else {
+            throw new Error(response.message || 'Failed to load task priorities');
+          }
+        }),
         catchError(this.handleError.bind(this))
       );
   }
@@ -75,7 +99,13 @@ export class EnumService {
   getTaskTypes(): Observable<TaskTypeEnum[]> {
     return this.http.get<ApiResponse<TaskTypeEnum[]>>(API_ENDPOINTS.ENUMS.TASK_TYPES)
       .pipe(
-        map(response => response.data!),
+        map(response => {
+          if (response.success && response.data) {
+            return response.data;
+          } else {
+            throw new Error(response.message || 'Failed to load task types');
+          }
+        }),
         catchError(this.handleError.bind(this))
       );
   }
@@ -83,7 +113,13 @@ export class EnumService {
   getProjectStatuses(): Observable<ProjectStatusEnum[]> {
     return this.http.get<ApiResponse<ProjectStatusEnum[]>>(API_ENDPOINTS.ENUMS.PROJECT_STATUSES)
       .pipe(
-        map(response => response.data!),
+        map(response => {
+          if (response.success && response.data) {
+            return response.data;
+          } else {
+            throw new Error(response.message || 'Failed to load project statuses');
+          }
+        }),
         catchError(this.handleError.bind(this))
       );
   }
@@ -91,7 +127,13 @@ export class EnumService {
   getSprintStatuses(): Observable<SprintStatusEnum[]> {
     return this.http.get<ApiResponse<SprintStatusEnum[]>>(API_ENDPOINTS.ENUMS.SPRINT_STATUSES)
       .pipe(
-        map(response => response.data!),
+        map(response => {
+          if (response.success && response.data) {
+            return response.data;
+          } else {
+            throw new Error(response.message || 'Failed to load sprint statuses');
+          }
+        }),
         catchError(this.handleError.bind(this))
       );
   }
@@ -318,15 +360,22 @@ export class EnumService {
     return this.enumsSubject.value !== null;
   }
 
+  // 🔧 IMPROVED: Better error handling for new response format
   private handleError(error: HttpErrorResponse): Observable<never> {
     this.loadingSubject.next(false);
     
     let errorMessage = 'An error occurred while loading enums';
     
     if (error.error instanceof ErrorEvent) {
+      // Client-side error
       errorMessage = error.error.message;
     } else {
-      if (error.error?.message) {
+      // Server-side error - handle new response format
+      if (error.error?.success === false) {
+        // New standardized error format
+        errorMessage = error.error.message || `Error ${error.status}`;
+      } else if (error.error?.message) {
+        // Legacy error format
         errorMessage = error.error.message;
       } else if (error.error?.errors && error.error.errors.length > 0) {
         errorMessage = error.error.errors[0];

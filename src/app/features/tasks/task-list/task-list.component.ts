@@ -63,37 +63,40 @@ export class TaskListComponent implements OnInit, OnDestroy {
     return this.filteredTasks.filter(task => task.status === status);
   }
 
-  loadTasks(): void {
-    this.isLoading = true;
-    this.errorMessage = null;
-    
-    // Get current user ID for filtering tasks
-    const user = JSON.parse(localStorage.getItem('user-info') || '{}');
-    const userId = user?.id;
-  
-    if (!userId) {
-      this.errorMessage = 'User ID not found! Please log in again.';
-      this.isLoading = false;
-      return;
-    }
+loadTasks(): void {
+  this.isLoading = true;
+  this.errorMessage = null;
 
-    // FIXED: Use proper service method with correct parameters
-    this.taskService.getAllTasks({ created_by: userId })
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: (tasks) => {
-          this.tasks = Array.isArray(tasks) ? tasks : [tasks];
-          this.applyFilters();
-          this.isLoading = false;
-        },
-        error: (error) => {
-          this.errorMessage = this.getErrorMessage(error);
-          this.tasks = [];
-          this.applyFilters();
-          this.isLoading = false;
-        }
-      });
+  const userId = JSON.parse(localStorage.getItem('user-info') || '{}')?.id;
+
+  if (!userId) {
+    this.errorMessage = 'User ID not found! Please log in again.';
+    this.isLoading = false;
+    return;
   }
+
+  this.taskService.getAllTasks({ created_by: userId })
+    .pipe(takeUntil(this.destroy$))
+    .subscribe({
+      next: (tasks) => {
+        debugger
+        this.tasks = Array.isArray(tasks) ? tasks : [tasks];
+        this.applyFilters();
+      },
+      error: (error) => {
+        debugger
+        console.error('Error loading tasks:', error);
+        this.errorMessage = this.getErrorMessage(error);
+        this.tasks = [];
+        this.applyFilters();
+      },
+      complete: () => {
+        this.isLoading = false;
+        debugger
+      }
+    });
+}
+
   
   refreshTasks(): void {
     this.loadTasks();
@@ -232,7 +235,7 @@ export class TaskListComponent implements OnInit, OnDestroy {
     if (!task.due_date) return false;
     const dueDate = new Date(task.due_date);
     const now = new Date();
-    return dueDate < now && task.status !== 'COMPLETED' && task.status !== 'DONE';
+    return dueDate < now && task.status !== 'DONE';
   }
 
   // Get relative time for task creation

@@ -6,7 +6,7 @@ import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { Project } from '../../../core/models/project.model';
 import { ProjectService } from '../../../core/services/project.service';
-import { AuthService, User } from '../../../core/services/auth.service';
+import { AuthService, UserListItem } from '../../../core/services/auth.service';
 
 export interface ProjectWithStats extends Project {
   progress: number;
@@ -16,7 +16,7 @@ export interface ProjectWithStats extends Project {
     pending: number;
     in_progress: number;
   };
-  teamMembers: User[];
+  teamMembers: UserListItem[];
   isOverdue?: boolean;
   daysUntilDeadline?: number;
 }
@@ -33,8 +33,8 @@ export class ProjectManagementComponent implements OnInit, OnDestroy {
   // Data
   projects: ProjectWithStats[] = [];
   filteredProjects: ProjectWithStats[] = [];
-  currentUser: User | null = null;
-  allUsers: User[] = [];
+  currentUser: UserListItem | null = null;
+  allUsers: UserListItem[] = [];
 
   // UI State
   isLoading = false;
@@ -117,14 +117,13 @@ export class ProjectManagementComponent implements OnInit, OnDestroy {
       description: ['', [Validators.required]],
       start_date: ['', [Validators.required]],
       end_date: [''],
-      status: ['PLANNING', [Validators.required]],
-      technology_stack: [''],
-      client_name: [''],
-      client_email: ['', [Validators.email]],
-      estimated_hours: [0, [Validators.min(0)]],
-      repository_url: [''],
-      documentation_url: ['']
+      status: ['PLANNING', [Validators.required]]
     });
+  }
+
+  // Fixed: Add trackBy function
+  trackByProjectId(index: number, project: ProjectWithStats): number {
+    return project.id;
   }
 
   loadProjects(): void {
@@ -132,8 +131,10 @@ export class ProjectManagementComponent implements OnInit, OnDestroy {
     this.errorMessage = null;
 
     this.projectService.getProjects().subscribe({
-      next: (projects) => {
-        this.projects = projects.map(project => this.enrichProjectWithStats(project));
+      next: (response) => {
+        // Fixed: Handle paginated response properly
+        const projectsArray = Array.isArray(response) ? response : response.data || [];
+        this.projects = projectsArray.map((project: Project) => this.enrichProjectWithStats(project));
         this.applyFilters();
         this.isLoading = false;
       },
@@ -181,7 +182,7 @@ export class ProjectManagementComponent implements OnInit, OnDestroy {
         pending: pendingTasks,
         in_progress: inProgressTasks
       },
-      teamMembers: project.members || [],
+      teamMembers: [], // Fixed: Use empty array instead of undefined property
       isOverdue,
       daysUntilDeadline: daysUntilDeadline || undefined
     };
@@ -195,8 +196,8 @@ export class ProjectManagementComponent implements OnInit, OnDestroy {
       const searchLower = this.searchTerm.toLowerCase();
       filtered = filtered.filter(project => 
         project.name.toLowerCase().includes(searchLower) ||
-        project.description.toLowerCase().includes(searchLower) ||
-        project.client_name?.toLowerCase().includes(searchLower)
+        project.description.toLowerCase().includes(searchLower)
+        // Fixed: Removed client_name check since it doesn't exist in Project model
       );
     }
 
@@ -300,15 +301,9 @@ export class ProjectManagementComponent implements OnInit, OnDestroy {
     this.editProjectForm.patchValue({
       name: project.name,
       description: project.description,
-      start_date: this.formatDateForInput(project.start_date),
-      end_date: this.formatDateForInput(project.end_date),
-      status: project.status,
-      technology_stack: Array.isArray(project.technology_stack) ? project.technology_stack.join(', ') : '',
-      client_name: project.client_name || '',
-      client_email: project.client_email || '',
-      estimated_hours: project.estimated_hours || 0,
-      repository_url: project.repository_url || '',
-      documentation_url: project.documentation_url || ''
+      start_date: this.formatDateForInput(project.start_date || ''),
+      end_date: this.formatDateForInput(project.end_date || ''),
+      status: project.status
     });
   }
 
@@ -392,15 +387,7 @@ export class ProjectManagementComponent implements OnInit, OnDestroy {
       description: formData.description,
       start_date: formData.start_date,
       end_date: formData.end_date || null,
-      status: formData.status,
-      technology_stack: formData.technology_stack ? 
-        formData.technology_stack.split(',').map((tech: string) => tech.trim()).filter((tech: string) => tech) : 
-        [],
-      client_name: formData.client_name || null,
-      client_email: formData.client_email || null,
-      estimated_hours: parseFloat(formData.estimated_hours) || 0,
-      repository_url: formData.repository_url || null,
-      documentation_url: formData.documentation_url || null
+      status: formData.status
     };
   }
 
@@ -436,7 +423,7 @@ export class ProjectManagementComponent implements OnInit, OnDestroy {
     return '#ef4444'; // red
   }
 
-  formatDateForInput(date: string | null): string {
+  formatDateForInput(date: string): string {
     if (!date) return '';
     return new Date(date).toISOString().split('T')[0];
   }
@@ -500,8 +487,6 @@ export class ProjectManagementComponent implements OnInit, OnDestroy {
     if (field && field.errors && field.touched) {
       if (field.errors['required']) return `${this.getFieldLabel(fieldName)} is required`;
       if (field.errors['minlength']) return `${this.getFieldLabel(fieldName)} must be at least ${field.errors['minlength'].requiredLength} characters`;
-      if (field.errors['email']) return 'Please enter a valid email address';
-      if (field.errors['min']) return `${this.getFieldLabel(fieldName)} must be greater than ${field.errors['min'].min}`;
     }
     return '';
   }
@@ -512,13 +497,7 @@ export class ProjectManagementComponent implements OnInit, OnDestroy {
       description: 'Description',
       start_date: 'Start date',
       end_date: 'End date',
-      status: 'Status',
-      technology_stack: 'Technology stack',
-      client_name: 'Client name',
-      client_email: 'Client email',
-      estimated_hours: 'Estimated hours',
-      repository_url: 'Repository URL',
-      documentation_url: 'Documentation URL'
+      status: 'Status'
     };
     return labels[fieldName] || fieldName;
   }

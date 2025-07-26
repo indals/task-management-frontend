@@ -82,11 +82,31 @@ export class LoginComponent implements OnInit, OnDestroy {
       });
   }
 
-  onRegisterClick(): void {
-    this.router.navigate(['/auth/register'], {
-      queryParams: { returnUrl: this.returnUrl }
-    });
+onRegisterClick(): void {
+  console.log('🔘 Register button clicked');
+
+  if (!this.returnUrl) {
+    console.warn('⚠️ returnUrl is undefined or empty. Defaulting to "/"');
+    this.returnUrl = '/';
+  } else {
+    console.log('✅ returnUrl found:', this.returnUrl);
   }
+
+  console.log('➡️ Navigating to /register with queryParams:', {
+    returnUrl: this.returnUrl
+  });
+
+  debugger; // <-- Useful to pause and inspect this.returnUrl
+
+  this.router.navigate(['register'], {
+    queryParams: { returnUrl: this.returnUrl }
+  }).then(success => {
+    console.log('✅ Navigation to /register successful:', success);
+  }).catch(error => {
+    console.error('❌ Navigation to /register failed:', error);
+  });
+}
+
 
   onForgotPasswordClick(): void {
     // TODO: Implement forgot password functionality

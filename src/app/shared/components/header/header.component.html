@@ -27,7 +27,7 @@
     <!-- Center Section: Page Title / Breadcrumb -->
     <div class="header-center">
       <div class="greeting" *ngIf="currentUser">
-        <span class="greeting-text">{{ getGreeting() }}, {{ currentUser.name?.split(' ')[0] }}!</span>
+        <span class="greeting-text">{{ getGreeting() }}, {{ currentUser?.name }}!</span>
       </div>
     </div>
 
@@ -127,8 +127,8 @@
           <div class="profile-avatar">
             <img 
               *ngIf="currentUser?.avatar_url; else avatarFallback" 
-              [src]="currentUser.avatar_url" 
-              [alt]="currentUser.name">
+              [src]="currentUser?.avatar_url" 
+              [alt]="currentUser?.name || 'User Avatar'">
             <ng-template #avatarFallback>
               <div class="avatar-initials">{{ getUserInitials() }}</div>
             </ng-template>
@@ -177,8 +177,8 @@
 </header>
 
 <!-- Backdrop for notification panel -->
-<div 
+<!-- <div 
   class="notification-backdrop" 
   *ngIf="showNotificationPanel"
   (click)="closeNotificationPanel()">
-</div>
+</div> -->

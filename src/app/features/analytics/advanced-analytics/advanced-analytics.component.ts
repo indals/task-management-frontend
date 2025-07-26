@@ -140,7 +140,7 @@ export class AdvancedAnalyticsComponent implements OnInit, OnDestroy {
       users: this.authService.getUsers()
     }).subscribe({
       next: (data) => {
-        this.projects = data.projects;
+        this.projects = (data.projects as unknown as any).results;
         this.users = data.users;
         this.loadAnalyticsData();
       },
@@ -162,7 +162,7 @@ export class AdvancedAnalyticsComponent implements OnInit, OnDestroy {
       priorityDistribution: this.analyticsService.getTaskPriorityDistribution()
     }).subscribe({
       next: (data) => {
-        this.analyticsData = data;
+        this.analyticsData = data as any;
         this.processSummaryStats();
         this.generateTeamMemberData();
         this.generateProjectSummaries();

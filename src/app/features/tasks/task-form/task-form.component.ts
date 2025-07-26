@@ -3,7 +3,6 @@ import { FormBuilder, FormGroup, FormArray, Validators } from '@angular/forms';
 import { TaskService } from '../../../core/services/task.service';
 import { AuthService, UserListItem } from '../../../core/services/auth.service';
 import { Task } from '../../../core/models/task.model';
-import { User } from '../../../core/models/user.model';
 
 @Component({
   selector: 'app-task-form',
@@ -11,7 +10,7 @@ import { User } from '../../../core/models/user.model';
   styleUrls: ['./task-form.component.scss']
 })
 export class TaskFormComponent implements OnInit {
-  @Input() task: Task | null = null;
+  @Input() task: Task & { subtasks?: any[] } | null = null;
   @Output() formSubmit = new EventEmitter<Task>();
   @Output() cancel = new EventEmitter<void>();
 
@@ -76,9 +75,9 @@ export class TaskFormComponent implements OnInit {
       id: [null],
       title: ['', [Validators.required, Validators.minLength(3)]],
       description: [''],
-      due_date: [null], // Changed to match API
-      priority: ['MEDIUM'], // Default to API value
-      status: ['PENDING'], // Default to API value
+      due_date: [null],
+      priority: ['MEDIUM'],
+      status: ['PENDING'],
       assigneeId: [null],
       subtasks: this.fb.array([])
     });
@@ -91,7 +90,7 @@ export class TaskFormComponent implements OnInit {
       id: this.task.id,
       title: this.task.title,
       description: this.task.description,
-      due_date: this.formatDateForInput(this.task.due_date),
+      due_date: this.formatDateForInput(this.task.due_date || ''),
       priority: this.task.priority,
       status: this.task.status,
       assigneeId: this.task.assigned_to?.id || null
@@ -109,7 +108,7 @@ export class TaskFormComponent implements OnInit {
     }
   }
 
-  formatDateForInput(date: Date | string | null): string {
+  formatDateForInput(date: Date | string): string {
     if (!date) return '';
     const d = new Date(date);
     return d.toISOString().slice(0, 16);
@@ -161,7 +160,8 @@ export class TaskFormComponent implements OnInit {
       next: (response) => {
         this.isLoading = false;
         this.formSubmit.emit(response);
-      },      error: (error) => {
+      },      
+      error: (error) => {
         this.isLoading = false;
         console.error('Error saving task:', error);
         this.errorMessage = error.error?.error || 'Failed to save task. Please try again.';

@@ -85,7 +85,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (response) => {
+
           this.recentTasks = response.data;
+          console.log('Recent tasks loaded:', this.recentTasks);
         },
         error: (error) => {
           console.error('Error loading recent tasks:', error);

@@ -699,6 +699,7 @@ export class TimeTrackingComponent implements OnInit, OnDestroy {
   }
 
   calculateWeeklyStats(): void {
+    console.log('Calculating weekly stats from daily logs:', this.dailyTimeLogs);
     const totalMinutes = this.dailyTimeLogs.reduce((sum, log) => sum + log.totalMinutes, 0);
     this.weeklyStats.totalHours = Math.round(totalMinutes / 60 * 10) / 10;
     this.weeklyStats.dailyAverages = Math.round(totalMinutes / 7 / 60 * 10) / 10;
@@ -711,6 +712,7 @@ export class TimeTrackingComponent implements OnInit, OnDestroy {
     // Find most productive day
     const maxLog = this.dailyTimeLogs.reduce((max, log) => 
       log.totalMinutes > max.totalMinutes ? log : max, this.dailyTimeLogs[0]);
+    console.log('Most productive day:', maxLog);
     this.weeklyStats.mostProductiveDay = new Date(maxLog.date).toLocaleDateString('en', { weekday: 'long' });
     
     // Calculate project breakdown

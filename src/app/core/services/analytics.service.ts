@@ -138,7 +138,7 @@ export class AnalyticsService {
     );
   }
 
-  // Original methods with better error handling
+  // 🔧 IMPROVED: Better response handling for new format
   getTaskCompletionAnalytics(filters?: AnalyticsFilters): Observable<TaskCompletionAnalytics> {
     this.loadingSubject.next(true);
     
@@ -154,12 +154,19 @@ export class AnalyticsService {
 
     return this.http.get<ApiResponse<TaskCompletionAnalytics>>(API_ENDPOINTS.ANALYTICS.TASK_COMPLETION, { params })
       .pipe(
-        map(response => response.data!),
+        map(response => {
+          if (response.success && response.data) {
+            return response.data;
+          } else {
+            throw new Error(response.message || 'Failed to get task completion analytics');
+          }
+        }),
         tap(() => this.loadingSubject.next(false)),
         catchError(this.handleError.bind(this))
       );
   }
 
+  // 🔧 IMPROVED: Better response handling for new format
   getUserProductivityAnalytics(filters?: AnalyticsFilters): Observable<UserProductivityAnalytics[]> {
     this.loadingSubject.next(true);
     
@@ -175,12 +182,19 @@ export class AnalyticsService {
 
     return this.http.get<ApiResponse<UserProductivityAnalytics[]>>(API_ENDPOINTS.ANALYTICS.USER_PRODUCTIVITY, { params })
       .pipe(
-        map(response => response.data!),
+        map(response => {
+          if (response.success && response.data) {
+            return response.data;
+          } else {
+            throw new Error(response.message || 'Failed to get user productivity analytics');
+          }
+        }),
         tap(() => this.loadingSubject.next(false)),
         catchError(this.handleError.bind(this))
       );
   }
 
+  // 🔧 IMPROVED: Better response handling for new format
   getTaskStatusDistributionData(filters?: AnalyticsFilters): Observable<TaskStatusDistribution[]> {
     this.loadingSubject.next(true);
     
@@ -196,12 +210,19 @@ export class AnalyticsService {
 
     return this.http.get<ApiResponse<TaskStatusDistribution[]>>(API_ENDPOINTS.ANALYTICS.STATUS_DISTRIBUTION, { params })
       .pipe(
-        map(response => response.data!),
+        map(response => {
+          if (response.success && response.data) {
+            return response.data;
+          } else {
+            throw new Error(response.message || 'Failed to get task status distribution');
+          }
+        }),
         tap(() => this.loadingSubject.next(false)),
         catchError(this.handleError.bind(this))
       );
   }
 
+  // 🔧 IMPROVED: Better response handling for new format
   getTaskPriorityDistribution(filters?: AnalyticsFilters): Observable<TaskPriorityDistribution[]> {
     this.loadingSubject.next(true);
     
@@ -217,7 +238,13 @@ export class AnalyticsService {
 
     return this.http.get<ApiResponse<TaskPriorityDistribution[]>>(API_ENDPOINTS.ANALYTICS.PRIORITY_DISTRIBUTION, { params })
       .pipe(
-        map(response => response.data!),
+        map(response => {
+          if (response.success && response.data) {
+            return response.data;
+          } else {
+            throw new Error(response.message || 'Failed to get task priority distribution');
+          }
+        }),
         tap(() => this.loadingSubject.next(false)),
         catchError(this.handleError.bind(this))
       );
@@ -239,7 +266,13 @@ export class AnalyticsService {
 
     return this.http.get<ApiResponse<TeamPerformanceMetrics>>(`${API_ENDPOINTS.ANALYTICS.BASE}/team-performance`, { params })
       .pipe(
-        map(response => response.data!),
+        map(response => {
+          if (response.success && response.data) {
+            return response.data;
+          } else {
+            throw new Error(response.message || 'Failed to get team performance metrics');
+          }
+        }),
         tap(() => this.loadingSubject.next(false)),
         catchError(this.handleError.bind(this))
       );
@@ -264,7 +297,13 @@ export class AnalyticsService {
 
     return this.http.get<ApiResponse<ProjectAnalytics[]>>(`${API_ENDPOINTS.ANALYTICS.BASE}/project-analytics`, { params })
       .pipe(
-        map(response => response.data!),
+        map(response => {
+          if (response.success && response.data) {
+            return response.data;
+          } else {
+            throw new Error(response.message || 'Failed to get project analytics');
+          }
+        }),
         tap(() => this.loadingSubject.next(false)),
         catchError(this.handleError.bind(this))
       );
@@ -287,7 +326,13 @@ export class AnalyticsService {
 
     return this.http.get<ApiResponse<UserProductivityAnalytics>>(`${API_ENDPOINTS.ANALYTICS.USER_PRODUCTIVITY}/${userId}`, { params })
       .pipe(
-        map(response => response.data!),
+        map(response => {
+          if (response.success && response.data) {
+            return response.data;
+          } else {
+            throw new Error(response.message || 'Failed to get user analytics');
+          }
+        }),
         tap(() => this.loadingSubject.next(false)),
         catchError(this.handleError.bind(this))
       );
@@ -331,7 +376,13 @@ export class AnalyticsService {
 
     return this.http.get<ApiResponse<any>>(`${API_ENDPOINTS.ANALYTICS.BASE}/sprint-analytics`, { params })
       .pipe(
-        map(response => response.data!),
+        map(response => {
+          if (response.success && response.data) {
+            return response.data;
+          } else {
+            throw new Error(response.message || 'Failed to get sprint analytics');
+          }
+        }),
         tap(() => this.loadingSubject.next(false)),
         catchError(this.handleError.bind(this))
       );
@@ -353,7 +404,13 @@ export class AnalyticsService {
 
     return this.http.get<ApiResponse<any>>(`${API_ENDPOINTS.ANALYTICS.BASE}/dashboard`, { params })
       .pipe(
-        map(response => response.data!),
+        map(response => {
+          if (response.success && response.data) {
+            return response.data;
+          } else {
+            throw new Error(response.message || 'Failed to get dashboard analytics');
+          }
+        }),
         tap(() => this.loadingSubject.next(false)),
         catchError(this.handleError.bind(this))
       );
@@ -375,7 +432,13 @@ export class AnalyticsService {
 
     return this.http.get<ApiResponse<any>>(`${API_ENDPOINTS.ANALYTICS.BASE}/comparison`, { params })
       .pipe(
-        map(response => response.data!),
+        map(response => {
+          if (response.success && response.data) {
+            return response.data;
+          } else {
+            throw new Error(response.message || 'Failed to get comparison analytics');
+          }
+        }),
         tap(() => this.loadingSubject.next(false)),
         catchError(this.handleError.bind(this))
       );
@@ -447,15 +510,22 @@ export class AnalyticsService {
     };
   }
 
+  // 🔧 IMPROVED: Better error handling for new response format
   private handleError(error: HttpErrorResponse): Observable<never> {
     this.loadingSubject.next(false);
     
     let errorMessage = 'An error occurred';
     
     if (error.error instanceof ErrorEvent) {
+      // Client-side error
       errorMessage = error.error.message;
     } else {
-      if (error.error?.message) {
+      // Server-side error - handle new response format
+      if (error.error?.success === false) {
+        // New standardized error format
+        errorMessage = error.error.message || `Error ${error.status}`;
+      } else if (error.error?.message) {
+        // Legacy error format
         errorMessage = error.error.message;
       } else if (error.error?.errors && error.error.errors.length > 0) {
         errorMessage = error.error.errors[0];

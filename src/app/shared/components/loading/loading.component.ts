@@ -45,6 +45,7 @@ import { Component, Input } from '@angular/core';
   `]
 })
 export class LoadingComponent {
+  @Input() showProgress: boolean = false;
   @Input() message: string = '';
   @Input() size: number = 50;
   @Input() color: 'primary' | 'accent' | 'warn' = 'primary';

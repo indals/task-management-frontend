@@ -10,7 +10,10 @@ import { Comment } from '../../../core/models/comment.model';
   styleUrls: ['./task-details.component.scss']
 })
 export class TaskDetailsComponent implements OnInit {
-  task: Task | null = null;
+  task: Task & { 
+    subtasks?: any[];
+    comments?: Comment[];
+  } | null = null;
   loading: boolean = true;
   error: string | null = null;
   newComment: string = '';
@@ -40,20 +43,23 @@ export class TaskDetailsComponent implements OnInit {
         // Transform API response to match our TypeScript model
         this.task = {
           ...task,
-          comments: task.comments?.map((apiComment: any) => {
-            const commentText = apiComment.comment || apiComment.text || '';
-            const createdAtDate = apiComment.created_at ? 
-                new Date(apiComment.created_at) : new Date();
+          // Add subtasks and comments as optional properties
+          subtasks:  [],
+          // comments: task.comments?.map((apiComment: any) => {
+          //   const commentText = apiComment.comment || apiComment.text || '';
+          //   const createdAtDate = apiComment.created_at ? 
+          //       new Date(apiComment.created_at) : new Date();
                 
-            return {
-              id: apiComment.id,
-              text: commentText,
-              comment: commentText, // Include comment field for template compatibility
-              created_at: apiComment.created_at, // Include created_at for template
-              author: apiComment.author,
-              createdAt: createdAtDate
-            } as Comment;
-          }) || []
+          //   return {
+          //     id: apiComment.id,
+          //     text: commentText,
+          //     comment: commentText,
+          //     created_at: apiComment.created_at,
+          //     author: apiComment.author,
+          //     createdAt: createdAtDate,
+          //     user_id: apiComment.user_id || apiComment.author?.id || 0
+          //   } as Comment;
+          // }) || []
         };
         this.loading = false;
       },
@@ -88,10 +94,10 @@ export class TaskDetailsComponent implements OnInit {
   markAsComplete(): void {
     if (!this.task) return;
 
-    const updatedTask: any = { ...this.task, status: 'Completed' };
+    const updatedTask: any = { ...this.task, status: 'DONE' };
     this.taskService.updateTask(this.task.id, updatedTask).subscribe({
       next: (task) => {
-        this.task = task;
+        this.task = { ...this.task!, ...task };
       },
       error: (error) => {
         this.error = 'Failed to update task status: ' + (error?.message || 'Unknown error');
@@ -114,7 +120,7 @@ export class TaskDetailsComponent implements OnInit {
     const updatedTask: any = { ...this.task, subtasks: updatedSubtasks };
     this.taskService.updateTask(this.task.id, updatedTask).subscribe({
       next: (task) => {
-        this.task = task;
+        this.task = { ...this.task!, subtasks: updatedSubtasks };
       },
       error: (error) => {
         this.error = 'Failed to update subtask: ' + (error?.message || 'Unknown error');
@@ -125,24 +131,22 @@ export class TaskDetailsComponent implements OnInit {
   addComment(): void {
     if (!this.task || !this.newComment.trim()) return;
   
-    // Send text in the format API expects
     const commentPayload = { text: this.newComment.trim() };
   
-    // Explicitly type the response as any
     this.taskService.addComment(this.task.id, commentPayload).subscribe({
       next: (response: any) => {
-        // Create a new comment that matches our Comment interface
         const commentText = response.comment || response.text || this.newComment.trim();
         const createdAtStr = response.created_at || response.createdAt;
         const createdAtDate = createdAtStr ? new Date(createdAtStr) : new Date();
-        debugger;
+        
         const newComment: Comment = {
           id: response.id,
           text: commentText,
-          comment: commentText, // Add for template compatibility
-          created_at: createdAtStr, // Add for template compatibility
+          comment: commentText,
+          created_at: createdAtStr,
           author: response.author,
           createdAt: createdAtDate,
+          user_id: response.user_id || response.author?.id || 0,
           updatedAt: response.updated_at || response.updatedAt ? 
                      new Date(response.updated_at || response.updatedAt) : undefined
         };
@@ -153,7 +157,6 @@ export class TaskDetailsComponent implements OnInit {
           comments: [...(this.task?.comments || []), newComment]
         };
   
-        // Clear the input field
         this.newComment = '';
       },
       error: (error) => {

@@ -78,20 +78,24 @@ export class NotificationService {
     return this.unreadCount$;
   }
 
-  // FIXED: Method that components are calling with boolean parameter
+  // 🔧 IMPROVED: Handle new response format with success validation
   getNotifications(unreadOnly: boolean = false): Observable<AppNotification[]> {
     this.loadingSubject.next(true);
     
     let params = new HttpParams();
     if (unreadOnly) {
-      params = params.set('is_read', 'false');
+      params = params.set('unread_only', 'true');
     }
 
-    return this.http.get<PaginatedResponse<Notification>>(API_ENDPOINTS.NOTIFICATIONS.BASE, { params })
+    return this.http.get<ApiResponse<Notification[]>>(API_ENDPOINTS.NOTIFICATIONS.BASE, { params })
       .pipe(
         map(response => {
-          // Convert API notifications to AppNotification format
-          return response.data.map(this.convertToAppNotification);
+          if (response.success && response.data) {
+            // Convert API notifications to AppNotification format
+            return response.data.map(this.convertToAppNotification);
+          } else {
+            throw new Error(response.message || 'Failed to load notifications');
+          }
         }),
         tap(notifications => {
           this.notificationsSubject.next(notifications);
@@ -101,7 +105,7 @@ export class NotificationService {
       );
   }
 
-  // Original method with filters
+  // 🔧 IMPROVED: Handle new response format for paginated results
   getNotificationsWithFilters(filters?: NotificationFilters): Observable<PaginatedResponse<Notification>> {
     this.loadingSubject.next(true);
     
@@ -115,10 +119,17 @@ export class NotificationService {
       });
     }
 
-    return this.http.get<PaginatedResponse<Notification>>(API_ENDPOINTS.NOTIFICATIONS.BASE, { params })
+    return this.http.get<ApiResponse<PaginatedResponse<Notification>>>(API_ENDPOINTS.NOTIFICATIONS.BASE, { params })
       .pipe(
-        tap(response => {
-          const appNotifications = response.data.map(this.convertToAppNotification);
+        map(response => {
+          if (response.success && response.data) {
+            return response.data;
+          } else {
+            throw new Error(response.message || 'Failed to load notifications with filters');
+          }
+        }),
+        tap(paginatedResponse => {
+          const appNotifications = paginatedResponse.data.map(this.convertToAppNotification);
           this.notificationsSubject.next(appNotifications);
           this.loadingSubject.next(false);
         }),
@@ -126,19 +137,32 @@ export class NotificationService {
       );
   }
 
+  // 🔧 IMPROVED: Handle new response format
   getNotificationById(id: number): Observable<Notification> {
     return this.http.get<ApiResponse<Notification>>(`${API_ENDPOINTS.NOTIFICATIONS.BASE}/${id}`)
       .pipe(
-        map(response => response.data!),
+        map(response => {
+          if (response.success && response.data) {
+            return response.data;
+          } else {
+            throw new Error(response.message || 'Failed to load notification');
+          }
+        }),
         catchError(this.handleError.bind(this))
       );
   }
 
-  // FIXED: Method that components are calling
+  // 🔧 IMPROVED: Handle new response format for mark as read
   markAsRead(id: number): Observable<AppNotification> {
     return this.http.post<ApiResponse<Notification>>(API_ENDPOINTS.NOTIFICATIONS.MARK_READ(id), {})
       .pipe(
-        map(response => this.convertToAppNotification(response.data!)),
+        map(response => {
+          if (response.success && response.data) {
+            return this.convertToAppNotification(response.data);
+          } else {
+            throw new Error(response.message || 'Failed to mark notification as read');
+          }
+        }),
         tap(updatedNotification => {
           const currentNotifications = this.notificationsSubject.value;
           const index = currentNotifications.findIndex(notif => notif.id === id);
@@ -153,9 +177,16 @@ export class NotificationService {
       );
   }
 
+  // 🔧 IMPROVED: Handle new response format
   markAllAsRead(): Observable<ApiResponse> {
     return this.http.post<ApiResponse>(API_ENDPOINTS.NOTIFICATIONS.READ_ALL, {})
       .pipe(
+        map(response => {
+          if (!response.success) {
+            throw new Error(response.message || 'Failed to mark all notifications as read');
+          }
+          return response;
+        }),
         tap(() => {
           const currentNotifications = this.notificationsSubject.value;
           const updatedNotifications = currentNotifications.map(notif => ({
@@ -169,10 +200,17 @@ export class NotificationService {
       );
   }
 
+  // 🔧 IMPROVED: Handle new response format
   createNotification(notificationData: CreateNotificationRequest): Observable<Notification> {
     return this.http.post<ApiResponse<Notification>>(API_ENDPOINTS.NOTIFICATIONS.BASE, notificationData)
       .pipe(
-        map(response => response.data!),
+        map(response => {
+          if (response.success && response.data) {
+            return response.data;
+          } else {
+            throw new Error(response.message || 'Failed to create notification');
+          }
+        }),
         tap(notification => {
           const appNotification = this.convertToAppNotification(notification);
           const currentNotifications = this.notificationsSubject.value;
@@ -183,11 +221,16 @@ export class NotificationService {
       );
   }
 
-  // FIXED: Method that components are calling
+  // 🔧 IMPROVED: Handle new response format for delete
   deleteNotification(id: number): Observable<void> {
     return this.http.delete<ApiResponse>(`${API_ENDPOINTS.NOTIFICATIONS.BASE}/${id}`)
       .pipe(
-        map(() => void 0), // Return void as expected by components
+        map(response => {
+          if (!response.success) {
+            throw new Error(response.message || 'Failed to delete notification');
+          }
+          return void 0; // Return void as expected by components
+        }),
         tap(() => {
           const currentNotifications = this.notificationsSubject.value;
           const filteredNotifications = currentNotifications.filter(notif => notif.id !== id);
@@ -198,10 +241,17 @@ export class NotificationService {
       );
   }
 
+  // 🔧 IMPROVED: Handle new response format for summary
   getNotificationSummary(): Observable<NotificationSummary> {
     return this.http.get<ApiResponse<NotificationSummary>>(`${API_ENDPOINTS.NOTIFICATIONS.BASE}/summary`)
       .pipe(
-        map(response => response.data!),
+        map(response => {
+          if (response.success && response.data) {
+            return response.data;
+          } else {
+            throw new Error(response.message || 'Failed to load notification summary');
+          }
+        }),
         tap(summary => {
           this.unreadCountSubject.next(summary.unread_count);
         }),
@@ -231,24 +281,31 @@ export class NotificationService {
     return {
       id: notification.id,
       message: notification.message,
-      read: notification.is_read,
+      read: notification.is_read, // Handle both property names
       createdAt: new Date(notification.created_at),
       type: notification.type,
       title: notification.title,
-      user_id: notification.user?.id,
+      user_id: notification.user?.id || notification.id,
       action_url: notification.action_url
     };
   }
 
+  // 🔧 IMPROVED: Better error handling for new response format
   private handleError(error: HttpErrorResponse): Observable<never> {
     this.loadingSubject.next(false);
     
     let errorMessage = 'An error occurred';
     
     if (error.error instanceof ErrorEvent) {
+      // Client-side error
       errorMessage = error.error.message;
     } else {
-      if (error.error?.message) {
+      // Server-side error - handle new response format
+      if (error.error?.success === false) {
+        // New standardized error format
+        errorMessage = error.error.message || `Error ${error.status}`;
+      } else if (error.error?.message) {
+        // Legacy error format
         errorMessage = error.error.message;
       } else if (error.error?.errors && error.error.errors.length > 0) {
         errorMessage = error.error.errors[0];

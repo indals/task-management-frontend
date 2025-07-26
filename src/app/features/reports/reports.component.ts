@@ -135,8 +135,10 @@ private loadProjectReports() {
   this.loading = true;
 
   this.projectService.getProjects().subscribe({
-    next: (data) => {
-      this.projectReports = data.map(p => {
+    next: (data: any) => { // <--- Temporary fix: override type
+      const results = data.results || [];
+
+      this.projectReports = results.map((p: any) => {
         const totalTasks = p.tasks_count ?? 0;
         const completedTasks = totalTasks > 0 ? Math.floor(totalTasks * 0.6) : 0;
         const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
@@ -158,6 +160,8 @@ private loadProjectReports() {
     }
   });
 }
+
+
 
   // private loadProjectReports() {
   //   // Since your API doesn't have a projects summary endpoint, 

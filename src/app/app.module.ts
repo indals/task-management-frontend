@@ -26,7 +26,6 @@ import { DomSanitizer } from '@angular/platform-browser';
     BrowserModule,
     BrowserAnimationsModule,
     HttpClientModule,
-    
     // Routing
     AppRoutingModule,
     

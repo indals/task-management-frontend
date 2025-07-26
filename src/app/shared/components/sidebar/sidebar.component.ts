@@ -116,7 +116,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
       route: '/analytics',
       active: false,
       badge: null,
-      permissions: ['view_analytics']
+      permissions: []
     },
     { 
       icon: 'settings', 

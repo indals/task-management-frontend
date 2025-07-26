@@ -4,8 +4,8 @@
       <div class="profile-avatar">
         <img 
           *ngIf="currentUser?.avatar_url; else avatarFallback" 
-          [src]="currentUser.avatar_url" 
-          [alt]="currentUser.name">
+          [src]="currentUser?.avatar_url" 
+          [alt]="currentUser?.name">
         <ng-template #avatarFallback>
           <div class="avatar-initials">{{ getUserInitials() }}</div>
         </ng-template>

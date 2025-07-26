@@ -42,7 +42,7 @@ export class ProjectService {
 
   constructor(private http: HttpClient) {}
 
-  // Project CRUD operations
+  // 🔧 IMPROVED: Handle new response format for projects list
   getProjects(filters?: ProjectFilters): Observable<PaginatedResponse<Project>> {
     this.loadingSubject.next(true);
     
@@ -56,30 +56,51 @@ export class ProjectService {
       });
     }
 
-    return this.http.get<PaginatedResponse<Project>>(API_ENDPOINTS.PROJECTS.BASE, { params })
+    return this.http.get<ApiResponse<PaginatedResponse<Project>>>(API_ENDPOINTS.PROJECTS.BASE, { params })
       .pipe(
-        tap(response => {
-          this.projectsSubject.next(response.data);
+        map(response => {
+          if (response.success && response.data) {
+            return response.data;
+          } else {
+            throw new Error(response.message || 'Failed to load projects');
+          }
+        }),
+        tap(paginatedResponse => {
+          this.projectsSubject.next(paginatedResponse.data);
           this.loadingSubject.next(false);
         }),
         catchError(this.handleError.bind(this))
       );
   }
 
+  // 🔧 IMPROVED: Handle new response format
   getProjectById(id: number): Observable<Project> {
     return this.http.get<ApiResponse<Project>>(API_ENDPOINTS.PROJECTS.BY_ID(id))
       .pipe(
-        map(response => response.data!),
+        map(response => {
+          if (response.success && response.data) {
+            return response.data;
+          } else {
+            throw new Error(response.message || 'Failed to load project');
+          }
+        }),
         catchError(this.handleError.bind(this))
       );
   }
 
+  // 🔧 IMPROVED: Handle new response format for create
   createProject(projectData: CreateProjectRequest): Observable<Project> {
     this.loadingSubject.next(true);
     
     return this.http.post<ApiResponse<Project>>(API_ENDPOINTS.PROJECTS.BASE, projectData)
       .pipe(
-        map(response => response.data!),
+        map(response => {
+          if (response.success && response.data) {
+            return response.data;
+          } else {
+            throw new Error(response.message || 'Failed to create project');
+          }
+        }),
         tap(project => {
           const currentProjects = this.projectsSubject.value;
           this.projectsSubject.next([project, ...currentProjects]);
@@ -89,12 +110,19 @@ export class ProjectService {
       );
   }
 
+  // 🔧 IMPROVED: Handle new response format for update
   updateProject(id: number, projectData: UpdateProjectRequest): Observable<Project> {
     this.loadingSubject.next(true);
     
     return this.http.put<ApiResponse<Project>>(API_ENDPOINTS.PROJECTS.BY_ID(id), projectData)
       .pipe(
-        map(response => response.data!),
+        map(response => {
+          if (response.success && response.data) {
+            return response.data;
+          } else {
+            throw new Error(response.message || 'Failed to update project');
+          }
+        }),
         tap(updatedProject => {
           const currentProjects = this.projectsSubject.value;
           const index = currentProjects.findIndex(project => project.id === id);
@@ -108,11 +136,18 @@ export class ProjectService {
       );
   }
 
+  // 🔧 IMPROVED: Handle new response format for delete
   deleteProject(id: number): Observable<ApiResponse> {
     this.loadingSubject.next(true);
     
     return this.http.delete<ApiResponse>(API_ENDPOINTS.PROJECTS.BY_ID(id))
       .pipe(
+        map(response => {
+          if (!response.success) {
+            throw new Error(response.message || 'Failed to delete project');
+          }
+          return response;
+        }),
         tap(() => {
           const currentProjects = this.projectsSubject.value;
           const filteredProjects = currentProjects.filter(project => project.id !== id);
@@ -123,19 +158,32 @@ export class ProjectService {
       );
   }
 
+  // 🔧 IMPROVED: Handle new response format for recent projects
   getRecentProjects(): Observable<Project[]> {
     return this.http.get<ApiResponse<Project[]>>(API_ENDPOINTS.PROJECTS.RECENT)
       .pipe(
-        map(response => response.data!),
+        map(response => {
+          if (response.success && response.data) {
+            return response.data;
+          } else {
+            throw new Error(response.message || 'Failed to load recent projects');
+          }
+        }),
         catchError(this.handleError.bind(this))
       );
   }
 
-  // Project Members
+  // 🔧 IMPROVED: Project Members with new response format
   getProjectMembers(projectId: number): Observable<ProjectMember[]> {
     return this.http.get<ApiResponse<ProjectMember[]>>(`${API_ENDPOINTS.PROJECTS.BY_ID(projectId)}/members`)
       .pipe(
-        map(response => response.data!),
+        map(response => {
+          if (response.success && response.data) {
+            return response.data;
+          } else {
+            throw new Error(response.message || 'Failed to load project members');
+          }
+        }),
         catchError(this.handleError.bind(this))
       );
   }
@@ -143,7 +191,13 @@ export class ProjectService {
   addProjectMember(projectId: number, memberData: AddProjectMemberRequest): Observable<ProjectMember> {
     return this.http.post<ApiResponse<ProjectMember>>(`${API_ENDPOINTS.PROJECTS.BY_ID(projectId)}/members`, memberData)
       .pipe(
-        map(response => response.data!),
+        map(response => {
+          if (response.success && response.data) {
+            return response.data;
+          } else {
+            throw new Error(response.message || 'Failed to add project member');
+          }
+        }),
         catchError(this.handleError.bind(this))
       );
   }
@@ -151,6 +205,12 @@ export class ProjectService {
   removeProjectMember(projectId: number, userId: number): Observable<ApiResponse> {
     return this.http.delete<ApiResponse>(`${API_ENDPOINTS.PROJECTS.BY_ID(projectId)}/members/${userId}`)
       .pipe(
+        map(response => {
+          if (!response.success) {
+            throw new Error(response.message || 'Failed to remove project member');
+          }
+          return response;
+        }),
         catchError(this.handleError.bind(this))
       );
   }
@@ -158,7 +218,13 @@ export class ProjectService {
   updateProjectMemberRole(projectId: number, userId: number, role: string): Observable<ProjectMember> {
     return this.http.put<ApiResponse<ProjectMember>>(`${API_ENDPOINTS.PROJECTS.BY_ID(projectId)}/members/${userId}`, { role })
       .pipe(
-        map(response => response.data!),
+        map(response => {
+          if (response.success && response.data) {
+            return response.data;
+          } else {
+            throw new Error(response.message || 'Failed to update member role');
+          }
+        }),
         catchError(this.handleError.bind(this))
       );
   }
@@ -200,11 +266,17 @@ export class ProjectService {
       );
   }
 
-  // Project Statistics
+  // 🔧 IMPROVED: Project Statistics with new response format
   getProjectStats(projectId: number): Observable<any> {
     return this.http.get<ApiResponse<any>>(`${API_ENDPOINTS.PROJECTS.BY_ID(projectId)}/stats`)
       .pipe(
-        map(response => response.data!),
+        map(response => {
+          if (response.success && response.data) {
+            return response.data;
+          } else {
+            throw new Error(response.message || 'Failed to load project statistics');
+          }
+        }),
         catchError(this.handleError.bind(this))
       );
   }
@@ -212,7 +284,13 @@ export class ProjectService {
   getProjectProgress(projectId: number): Observable<any> {
     return this.http.get<ApiResponse<any>>(`${API_ENDPOINTS.PROJECTS.BY_ID(projectId)}/progress`)
       .pipe(
-        map(response => response.data!),
+        map(response => {
+          if (response.success && response.data) {
+            return response.data;
+          } else {
+            throw new Error(response.message || 'Failed to load project progress');
+          }
+        }),
         catchError(this.handleError.bind(this))
       );
   }
@@ -230,15 +308,22 @@ export class ProjectService {
     return 0;
   }
 
+  // 🔧 IMPROVED: Better error handling for new response format
   private handleError(error: HttpErrorResponse): Observable<never> {
     this.loadingSubject.next(false);
     
     let errorMessage = 'An error occurred';
     
     if (error.error instanceof ErrorEvent) {
+      // Client-side error
       errorMessage = error.error.message;
     } else {
-      if (error.error?.message) {
+      // Server-side error - handle new response format
+      if (error.error?.success === false) {
+        // New standardized error format
+        errorMessage = error.error.message || `Error ${error.status}`;
+      } else if (error.error?.message) {
+        // Legacy error format
         errorMessage = error.error.message;
       } else if (error.error?.errors && error.error.errors.length > 0) {
         errorMessage = error.error.errors[0];

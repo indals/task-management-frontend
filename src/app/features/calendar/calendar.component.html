@@ -108,7 +108,7 @@
           <div 
             class="task-item" 
             *ngFor="let task of selectedDay.tasks"
-            [class.completed]="task.status === 'COMPLETED'"
+            [class.completed]="task.status === 'DONE'"
           >
             <div class="task-info">
               <h4>{{ task.title }}</h4>

@@ -57,31 +57,49 @@ export class AuthService {
     }
   }
 
+  // 🔧 FIXED: Updated login to handle new response format
   login(credentials: LoginRequest): Observable<AuthResponse> {
     this.loadingSubject.next(true);
-    
+    console.log('Attempting login with credentials:', credentials);
+
     return this.http.post<ApiResponse<AuthResponse>>(API_ENDPOINTS.AUTH.LOGIN, credentials)
       .pipe(
-        map(response => response.data!),
+        map(response => {
+          // Handle new response format: { success: true, data: AuthResponse, ... }
+          if (response.success && response.data) {
+            return response.data;
+          } else {
+            throw new Error(response.message || 'Login failed');
+          }
+        }),
         tap(authResponse => {
           this.handleAuthSuccess(authResponse);
+          console.log('Login successful:', authResponse);
         }),
         catchError(this.handleError.bind(this)),
         tap(() => this.loadingSubject.next(false))
       );
   }
 
+  // 🔧 FIXED: Updated register to handle new response format  
   register(userData: RegisterRequest): Observable<User> {
     this.loadingSubject.next(true);
     
-    return this.http.post<ApiResponse<User>>(API_ENDPOINTS.AUTH.REGISTER, userData)
+    return this.http.post<ApiResponse<{ user: User }>>(API_ENDPOINTS.AUTH.REGISTER, userData)
       .pipe(
-        map(response => response.data!),
+        map(response => {
+          if (response.success && response.data) {
+            return response.data.user;
+          } else {
+            throw new Error(response.message || 'Registration failed');
+          }
+        }),
         catchError(this.handleError.bind(this)),
         tap(() => this.loadingSubject.next(false))
       );
   }
 
+  // 🔧 FIXED: Updated refreshToken to handle new response format
   refreshToken(): Observable<AuthResponse> {
     const refreshToken = this.getRefreshToken();
     if (!refreshToken) {
@@ -92,7 +110,13 @@ export class AuthService {
     
     return this.http.post<ApiResponse<AuthResponse>>(API_ENDPOINTS.AUTH.REFRESH, request)
       .pipe(
-        map(response => response.data!),
+        map(response => {
+          if (response.success && response.data) {
+            return response.data;
+          } else {
+            throw new Error(response.message || 'Token refresh failed');
+          }
+        }),
         tap(authResponse => {
           this.handleAuthSuccess(authResponse);
         }),
@@ -120,10 +144,17 @@ export class AuthService {
     this.router.navigate(['/auth/login']);
   }
 
+  // 🔧 FIXED: Updated getCurrentUser to handle new response format
   getCurrentUser(): Observable<User> {
     return this.http.get<ApiResponse<User>>(API_ENDPOINTS.AUTH.ME)
       .pipe(
-        map(response => response.data!),
+        map(response => {
+          if (response.success && response.data) {
+            return response.data;
+          } else {
+            throw new Error(response.message || 'Failed to get user profile');
+          }
+        }),
         tap(user => {
           this.currentUserSubject.next(user);
           this.storeUser(user);
@@ -132,12 +163,19 @@ export class AuthService {
       );
   }
 
+  // 🔧 FIXED: Updated updateProfile to handle new response format
   updateProfile(profileData: ProfileUpdateRequest): Observable<User> {
     this.loadingSubject.next(true);
     
     return this.http.put<ApiResponse<User>>(API_ENDPOINTS.AUTH.PROFILE, profileData)
       .pipe(
-        map(response => response.data!),
+        map(response => {
+          if (response.success && response.data) {
+            return response.data;
+          } else {
+            throw new Error(response.message || 'Failed to update profile');
+          }
+        }),
         tap(user => {
           this.currentUserSubject.next(user);
           this.storeUser(user);
@@ -147,38 +185,56 @@ export class AuthService {
       );
   }
 
+  // 🔧 FIXED: Updated changePassword to handle new response format
   changePassword(passwordData: ChangePasswordRequest): Observable<ApiResponse> {
     this.loadingSubject.next(true);
     
     return this.http.post<ApiResponse>(API_ENDPOINTS.AUTH.CHANGE_PASSWORD, passwordData)
       .pipe(
+        map(response => {
+          if (!response.success) {
+            throw new Error(response.message || 'Failed to change password');
+          }
+          return response;
+        }),
         catchError(this.handleError.bind(this)),
         tap(() => this.loadingSubject.next(false))
       );
   }
 
-  // FIXED: Return UserListItem[] that components expect
+  // 🔧 FIXED: Updated getUsers to handle new response format
   getUsers(): Observable<UserListItem[]> {
     return this.http.get<ApiResponse<User[]>>(API_ENDPOINTS.AUTH.USERS)
       .pipe(
         map(response => {
-          const users = response.data!;
-          return users.map(user => ({
-            id: user.id,
-            name: user.name,
-            email: user.email,
-            role: user.role,
-            avatar_url: user.avatar_url,
-            is_active: user.is_active
-          }));
+          if (response.success && response.data) {
+            const users = response.data;
+            return users.map(user => ({
+              id: user.id,
+              name: user.name,
+              email: user.email,
+              role: user.role,
+              avatar_url: user.avatar_url,
+              is_active: user.is_active
+            }));
+          } else {
+            throw new Error(response.message || 'Failed to get users');
+          }
         }),
         catchError(this.handleError.bind(this))
       );
   }
 
+  // 🔧 FIXED: Updated ping to handle new response format
   ping(): Observable<ApiResponse> {
     return this.http.get<ApiResponse>(API_ENDPOINTS.AUTH.PING)
       .pipe(
+        map(response => {
+          if (!response.success) {
+            throw new Error(response.message || 'Ping failed');
+          }
+          return response;
+        }),
         catchError(this.handleError.bind(this))
       );
   }
@@ -223,6 +279,7 @@ export class AuthService {
   }
 
   private handleAuthSuccess(authResponse: AuthResponse): void {
+    console.log('Handling auth success:', authResponse);
     // Store tokens
     localStorage.setItem(STORAGE_KEYS.TOKEN, authResponse.access_token);
     localStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, authResponse.refresh_token);
@@ -239,6 +296,7 @@ export class AuthService {
     localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
   }
 
+  // 🔧 IMPROVED: Better error handling for new response format
   private handleError(error: HttpErrorResponse): Observable<never> {
     let errorMessage = 'An error occurred';
     
@@ -246,8 +304,12 @@ export class AuthService {
       // Client-side error
       errorMessage = error.error.message;
     } else {
-      // Server-side error
-      if (error.error?.message) {
+      // Server-side error - handle new response format
+      if (error.error?.success === false) {
+        // New standardized error format
+        errorMessage = error.error.message || `Error ${error.status}`;
+      } else if (error.error?.message) {
+        // Legacy error format
         errorMessage = error.error.message;
       } else if (error.error?.errors && error.error.errors.length > 0) {
         errorMessage = error.error.errors[0];

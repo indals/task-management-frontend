@@ -14,7 +14,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatDatepickerModule } from '@angular/material/datepicker';
-import { MatNativeDateModule } from '@angular/material/core';
+import { MatNativeDateModule, MatRippleModule } from '@angular/material/core';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatRadioModule } from '@angular/material/radio';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
@@ -32,7 +32,6 @@ import { MatTableModule } from '@angular/material/table';
 import { MatPaginatorModule } from '@angular/material/paginator';
 import { MatSortModule } from '@angular/material/sort';
 import { MatBadgeModule } from '@angular/material/badge';
-import { MatRippleModule } from '@angular/material/core';
 import { MatDividerModule } from '@angular/material/divider';
 
 // CDK Modules
@@ -55,7 +54,7 @@ import { RelativeTimePipe } from './pipes/relative-time.pipe';
 import { TruncatePipe } from './pipes/truncate.pipe';
 import { SafeHtmlPipe } from './pipes/safe-html.pipe';
 
-// Material modules array for easier management
+// Grouped Material modules
 const MATERIAL_MODULES = [
   MatToolbarModule,
   MatButtonModule,
@@ -89,6 +88,7 @@ const MATERIAL_MODULES = [
   MatDividerModule
 ];
 
+// Grouped CDK modules
 const CDK_MODULES = [
   DragDropModule,
   ScrollingModule,
@@ -96,6 +96,7 @@ const CDK_MODULES = [
   OverlayModule
 ];
 
+// Grouped Custom declarations
 const CUSTOM_COMPONENTS = [
   SidebarComponent,
   HeaderComponent,
@@ -128,25 +129,22 @@ const CUSTOM_PIPES = [
     ...CDK_MODULES
   ],
   exports: [
-    // Angular modules
+    // Angular & Common modules
     CommonModule,
     FormsModule,
     ReactiveFormsModule,
-    
-    // Material modules
+    RouterModule,
+
+    // Angular Material modules
     ...MATERIAL_MODULES,
-    
+
     // CDK modules
     ...CDK_MODULES,
-    
-    // Custom components
+
+    // Custom declarations
     ...CUSTOM_COMPONENTS,
-    
-    // Custom directives
     ...CUSTOM_DIRECTIVES,
-    
-    // Custom pipes
     ...CUSTOM_PIPES
   ]
 })
-export class SharedModule { }
+export class SharedModule {}
