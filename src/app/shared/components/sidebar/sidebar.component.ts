@@ -2,6 +2,7 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Router, NavigationEnd } from '@angular/router';
 import { Subject } from 'rxjs';
 import { takeUntil, filter } from 'rxjs/operators';
+import { trigger, state, style, transition, animate } from '@angular/animations';
 
 import { AuthService } from '../../../core/services/auth.service';
 import { NotificationService } from '../../../core/services/notification.service';
@@ -22,7 +23,20 @@ interface MenuItem {
 @Component({
   selector: 'app-sidebar',
   templateUrl: './sidebar.component.html',
-  styleUrls: ['./sidebar.component.scss']
+  styleUrls: ['./sidebar.component.scss'],
+  animations: [
+    trigger('slideInOut', [
+      state('in', style({ height: '*', opacity: 1 })),
+      transition(':enter', [
+        style({ height: 0, opacity: 0 }),
+        animate('300ms ease-in-out', style({ height: '*', opacity: 1 }))
+      ]),
+      transition(':leave', [
+        style({ height: '*', opacity: 1 }),
+        animate('300ms ease-in-out', style({ height: 0, opacity: 0 }))
+      ])
+    ])
+  ]
 })
 export class SidebarComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
