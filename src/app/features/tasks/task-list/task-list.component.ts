@@ -1,6 +1,7 @@
-// src/app/features/tasks/task-list/task-list.component.ts
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Router } from '@angular/router';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 import { Task } from '../../../core/models/task.model';
 import { TaskService } from '../../../core/services/task.service';
 
@@ -9,7 +10,9 @@ import { TaskService } from '../../../core/services/task.service';
   templateUrl: './task-list.component.html',
   styleUrls: ['./task-list.component.scss']
 })
-export class TaskListComponent implements OnInit {
+export class TaskListComponent implements OnInit, OnDestroy {
+  private destroy$ = new Subject<void>();
+  
   tasks: Task[] = [];
   filteredTasks: Task[] = [];
   filterStatus: string = 'all';
@@ -45,12 +48,17 @@ export class TaskListComponent implements OnInit {
     this.loadTasks();
   }
 
-  // ADD: Missing trackBy function for performance optimization
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  // Performance optimization
   trackByTaskId(index: number, task: Task): number {
     return task.id;
   }
 
-  // ADD: Missing getTasksByStatus method for kanban view
+  // Get tasks by status for kanban view
   getTasksByStatus(status: string): Task[] {
     return this.filteredTasks.filter(task => task.status === status);
   }
@@ -58,30 +66,33 @@ export class TaskListComponent implements OnInit {
   loadTasks(): void {
     this.isLoading = true;
     this.errorMessage = null;
-    console.log('Loading tasks...');
+    
+    // Get current user ID for filtering tasks
     const user = JSON.parse(localStorage.getItem('user-info') || '{}');
     const userId = user?.id;
   
     if (!userId) {
-      this.errorMessage = 'User ID not found!';
+      this.errorMessage = 'User ID not found! Please log in again.';
       this.isLoading = false;
       return;
     }
-    console.log('User ID:', userId);
-    const params = { created_by: userId };
-    this.taskService.getAllTasks(params).subscribe({
-      next: (tasks) => {
-        this.tasks = Array.isArray(tasks) ? tasks : [tasks];
-        this.applyFilters();
-        this.isLoading = false;
-      },
-      error: (error) => {
-        this.errorMessage = 'Error loading tasks: ' + (error?.message || 'Unknown error');
-        this.tasks = [];
-        this.applyFilters();
-        this.isLoading = false;
-      }
-    });
+
+    // FIXED: Use proper service method with correct parameters
+    this.taskService.getAllTasks({ created_by: userId })
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (tasks) => {
+          this.tasks = Array.isArray(tasks) ? tasks : [tasks];
+          this.applyFilters();
+          this.isLoading = false;
+        },
+        error: (error) => {
+          this.errorMessage = this.getErrorMessage(error);
+          this.tasks = [];
+          this.applyFilters();
+          this.isLoading = false;
+        }
+      });
   }
   
   refreshTasks(): void {
@@ -95,10 +106,6 @@ export class TaskListComponent implements OnInit {
       return;
     }
 
-    console.log('Filter status:', this.filterStatus);
-    console.log('Search term:', this.searchTerm);
-    console.log('Applying filters with tasks:', this.tasks);
-
     this.filteredTasks = this.tasks.filter(task => {
       const matchesStatus =
         this.filterStatus === 'all' ||
@@ -106,7 +113,8 @@ export class TaskListComponent implements OnInit {
 
       const matchesSearch =
         !this.searchTerm ||
-        (task.title && task.title.toLowerCase().includes(this.searchTerm.toLowerCase()));
+        (task.title && task.title.toLowerCase().includes(this.searchTerm.toLowerCase())) ||
+        (task.description && task.description.toLowerCase().includes(this.searchTerm.toLowerCase()));
 
       return matchesStatus && matchesSearch;
     });
@@ -132,16 +140,19 @@ export class TaskListComponent implements OnInit {
 
   deleteTask(taskId: number, event: Event): void {
     event.stopPropagation();
+    
     if (confirm('Are you sure you want to delete this task?')) {
-      this.taskService.deleteTask(taskId).subscribe(
-        () => {
-          this.tasks = this.tasks.filter(task => task.id !== taskId);
-          this.applyFilters();
-        },
-        (error) => {
-          console.error('Error deleting task:', error);
-        }
-      );
+      this.taskService.deleteTask(taskId)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: () => {
+            this.tasks = this.tasks.filter(task => task.id !== taskId);
+            this.applyFilters();
+          },
+          error: (error) => {
+            this.errorMessage = this.getErrorMessage(error);
+          }
+        });
     }
   }
 
@@ -152,6 +163,13 @@ export class TaskListComponent implements OnInit {
       case 'IN_PROGRESS': return 'In Progress';
       case 'COMPLETED': return 'Completed';
       case 'CANCELLED': return 'Cancelled';
+      case 'BACKLOG': return 'Backlog';
+      case 'TODO': return 'To Do';
+      case 'IN_REVIEW': return 'In Review';
+      case 'TESTING': return 'Testing';
+      case 'BLOCKED': return 'Blocked';
+      case 'DONE': return 'Done';
+      case 'DEPLOYED': return 'Deployed';
       default: return status;
     }
   }
@@ -162,6 +180,7 @@ export class TaskListComponent implements OnInit {
 
   getPriorityLabel(priority: string): string {
     switch (priority) {
+      case 'CRITICAL': return 'Critical';
       case 'HIGH': return 'High';
       case 'MEDIUM': return 'Medium';
       case 'LOW': return 'Low';
@@ -169,8 +188,84 @@ export class TaskListComponent implements OnInit {
     }
   }
 
-  // ADD: Method to change view mode
+  // Set view mode
   setViewMode(mode: 'list' | 'grid' | 'kanban'): void {
     this.viewMode = mode;
+  }
+
+  // Clear all filters
+  clearFilters(): void {
+    this.searchTerm = '';
+    this.filterStatus = 'all';
+    this.applyFilters();
+  }
+
+  // Get task priority color for UI
+  getTaskPriorityColor(priority: string): string {
+    switch (priority) {
+      case 'CRITICAL': return '#dc2626';
+      case 'HIGH': return '#ef4444';
+      case 'MEDIUM': return '#f59e0b';
+      case 'LOW': return '#10b981';
+      default: return '#6b7280';
+    }
+  }
+
+  // Get task status color for UI
+  getTaskStatusColor(status: string): string {
+    switch (status) {
+      case 'COMPLETED':
+      case 'DONE': return '#10b981';
+      case 'IN_PROGRESS': return '#3b82f6';
+      case 'PENDING':
+      case 'TODO': return '#f59e0b';
+      case 'CANCELLED': return '#ef4444';
+      case 'BLOCKED': return '#dc2626';
+      case 'IN_REVIEW': return '#8b5cf6';
+      case 'TESTING': return '#06b6d4';
+      default: return '#6b7280';
+    }
+  }
+
+  // Check if task is overdue
+  isTaskOverdue(task: Task): boolean {
+    if (!task.due_date) return false;
+    const dueDate = new Date(task.due_date);
+    const now = new Date();
+    return dueDate < now && task.status !== 'COMPLETED' && task.status !== 'DONE';
+  }
+
+  // Get relative time for task creation
+  getRelativeTime(dateString: string): string {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffTime = now.getTime() - date.getTime();
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 0) {
+      const diffHours = Math.floor(diffTime / (1000 * 60 * 60));
+      if (diffHours === 0) {
+        const diffMinutes = Math.floor(diffTime / (1000 * 60));
+        return `${diffMinutes} minutes ago`;
+      }
+      return `${diffHours} hours ago`;
+    } else if (diffDays === 1) {
+      return 'Yesterday';
+    } else if (diffDays < 7) {
+      return `${diffDays} days ago`;
+    } else {
+      return date.toLocaleDateString();
+    }
+  }
+
+  // Get error message from error object
+  private getErrorMessage(error: any): string {
+    if (error?.error?.message) {
+      return error.error.message;
+    }
+    if (error?.message) {
+      return error.message;
+    }
+    return 'An unexpected error occurred while loading tasks';
   }
 }

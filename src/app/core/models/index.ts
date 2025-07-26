@@ -1,3 +1,5 @@
+// Fixed core/models/index.ts - Complete barrel exports
+
 // Auth models
 export * from './auth.model';
 export * from './user.model';
@@ -7,6 +9,7 @@ export * from './task.model';
 export * from './project.model';
 export * from './sprint.model';
 export * from './notification.model';
+export * from './comment.model';
 
 // Analytics models
 export * from './analytics.model';
@@ -14,6 +17,10 @@ export * from './analytics.model';
 // System models
 export * from './enum.model';
 export * from './response.model';
+export * from './error.model';
+
+// Legacy enum support
+export * from './enums';
 
 // Re-export commonly used interfaces for convenience
 export type { 
@@ -73,3 +80,22 @@ export type {
   TaskStatusDistribution, 
   TaskPriorityDistribution 
 } from './analytics.model';
+
+export type {
+  Comment,
+  CommentApiResponse
+} from './comment.model';
+
+export type {
+  ErrorResponse as StandardErrorResponse,
+  ApiError,
+  ValidationError,
+  ClientError,
+  AppError,
+  ErrorType,
+  ErrorSeverity
+} from './error.model';
+
+// Re-export helper functions
+export { normalizeCommentFromApi } from './comment.model';
+export { ErrorUtils } from './error.model';

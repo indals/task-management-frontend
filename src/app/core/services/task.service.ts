@@ -27,6 +27,7 @@ export interface TaskFilters {
   project_id?: number;
   sprint_id?: number;
   created_by_id?: number;
+  created_by?: number; // Alternative field name
   due_date_from?: string;
   due_date_to?: string;
   search?: string;
@@ -47,6 +48,13 @@ export class TaskService {
   public loading$ = this.loadingSubject.asObservable();
 
   constructor(private http: HttpClient) {}
+
+  // FIXED: Add getAllTasks method that components are calling
+  getAllTasks(filters?: TaskFilters): Observable<Task[]> {
+    return this.getTasks(filters).pipe(
+      map(response => response.data)
+    );
+  }
 
   // Task CRUD operations
   getTasks(filters?: TaskFilters): Observable<PaginatedResponse<Task>> {
@@ -153,7 +161,7 @@ export class TaskService {
       );
   }
 
-  // Task Comments
+  // Task Comments - FIXED: Add proper comment methods
   getTaskComments(taskId: number): Observable<TaskComment[]> {
     return this.http.get<ApiResponse<TaskComment[]>>(API_ENDPOINTS.TASKS.COMMENTS(taskId))
       .pipe(
@@ -168,6 +176,14 @@ export class TaskService {
         map(response => response.data!),
         catchError(this.handleError.bind(this))
       );
+  }
+
+  // FIXED: Add addComment method that components are calling
+  addComment(taskId: number, commentData: { text: string }): Observable<TaskComment> {
+    const createCommentRequest: CreateCommentRequest = {
+      content: commentData.text
+    };
+    return this.createTaskComment(taskId, createCommentRequest);
   }
 
   updateTaskComment(commentId: number, commentData: UpdateCommentRequest): Observable<TaskComment> {

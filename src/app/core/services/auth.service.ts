@@ -17,6 +17,16 @@ import {
   ApiResponse
 } from '../models';
 
+// FIXED: Add missing types that components expect
+export interface UserListItem {
+  id: number;
+  name: string;
+  email: string;
+  role: string;
+  avatar_url?: string;
+  is_active: boolean;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -147,10 +157,21 @@ export class AuthService {
       );
   }
 
-  getUsers(): Observable<User[]> {
+  // FIXED: Return UserListItem[] that components expect
+  getUsers(): Observable<UserListItem[]> {
     return this.http.get<ApiResponse<User[]>>(API_ENDPOINTS.AUTH.USERS)
       .pipe(
-        map(response => response.data!),
+        map(response => {
+          const users = response.data!;
+          return users.map(user => ({
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            role: user.role,
+            avatar_url: user.avatar_url,
+            is_active: user.is_active
+          }));
+        }),
         catchError(this.handleError.bind(this))
       );
   }

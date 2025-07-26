@@ -14,6 +14,8 @@ import { SprintService } from './services/sprint.service';
 import { NotificationService } from './services/notification.service';
 import { AnalyticsService } from './services/analytics.service';
 import { EnumService } from './services/enum.service';
+import { LayoutService } from './services/layout.service';
+import { ErrorHandlerService } from './services/error-handler.service';
 import { LoadingService } from './interceptors/loading.interceptor';
 
 // Interceptors
@@ -32,7 +34,7 @@ import { AuthGuard } from './guards/auth.guard';
     MatProgressSpinnerModule
   ],
   providers: [
-    // Services
+    // Core Services
     AuthService,
     TaskService,
     ProjectService,
@@ -40,6 +42,8 @@ import { AuthGuard } from './guards/auth.guard';
     NotificationService,
     AnalyticsService,
     EnumService,
+    LayoutService,
+    ErrorHandlerService,
     LoadingService,
     
     // Guards
