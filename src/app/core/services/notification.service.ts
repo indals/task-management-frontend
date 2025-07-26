@@ -1,9 +1,10 @@
+// ===== FIXED notification.service.ts (add missing APP_CONFIG) =====
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
 import { Observable, throwError, BehaviorSubject, interval } from 'rxjs';
 import { map, catchError, tap, switchMap, startWith } from 'rxjs/operators';
 
-import { API_ENDPOINTS, APP_CONFIG } from '../constants/api.constants';
+import { API_ENDPOINTS } from '../constants/api.constants';
 import { 
   Notification, 
   CreateNotificationRequest,
@@ -12,6 +13,7 @@ import {
   PaginatedResponse
 } from '../models';
 
+// Export the interface so it can be used elsewhere
 export interface NotificationFilters {
   type?: string;
   is_read?: boolean;
@@ -26,6 +28,11 @@ export interface NotificationFilters {
   sort_by?: string;
   sort_order?: 'asc' | 'desc';
 }
+
+// Define APP_CONFIG locally if not available in constants
+const APP_CONFIG = {
+  NOTIFICATION_CHECK_INTERVAL: 30000 // 30 seconds
+};
 
 @Injectable({
   providedIn: 'root'

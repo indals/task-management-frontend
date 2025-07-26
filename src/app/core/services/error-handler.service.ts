@@ -1,7 +1,15 @@
+// ===== FIXED error-handler.service.ts =====
 import { Injectable } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
-import { ApiError } from '../interfaces';
+
+// Define ApiError interface locally since it's not available
+export interface ApiError {
+  message: string;
+  status?: number;
+  errors?: string[];
+  code?: string;
+}
 
 @Injectable({
   providedIn: 'root'
