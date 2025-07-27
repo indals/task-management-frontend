@@ -11,23 +11,27 @@
             placeholder="Search tasks, projects..." 
             [(ngModel)]="searchQuery"
             (keyup.enter)="onSearch()"
-            maxlength="100">
+            (keyup.escape)="searchQuery = ''"
+            maxlength="100"
+            aria-label="Search">
           <button 
             mat-icon-button 
             matSuffix 
             *ngIf="searchQuery"
             (click)="searchQuery = ''; onSearch()"
-            matTooltip="Clear search">
+            matTooltip="Clear search"
+            aria-label="Clear search">
             <mat-icon>clear</mat-icon>
           </button>
         </mat-form-field>
       </div>
     </div>
 
-    <!-- Center Section: Page Title / Breadcrumb -->
+    <!-- Center Section: Greeting -->
     <div class="header-center">
       <div class="greeting" *ngIf="currentUser">
-        <span class="greeting-text">{{ getGreeting() }}, {{ currentUser?.name }}!</span>
+        <span class="greeting-text">{{ getGreeting() }}, {{ currentUser.name }}!</span>
+        <small class="role-display">{{ getUserRoleDisplay() }}</small>
       </div>
     </div>
 
@@ -39,14 +43,16 @@
         <button 
           mat-icon-button 
           matTooltip="Create Task"
-          routerLink="/tasks/create">
+          (click)="createTask()"
+          aria-label="Create Task">
           <mat-icon>add_task</mat-icon>
         </button>
         
         <button 
           mat-icon-button 
           matTooltip="Create Project"
-          routerLink="/projects/create">
+          (click)="createProject()"
+          aria-label="Create Project">
           <mat-icon>create_new_folder</mat-icon>
         </button>
       </div>
@@ -58,52 +64,101 @@
           class="notification-btn"
           [class.has-notifications]="unreadNotificationCount > 0"
           (click)="onNotificationClick()"
-          matTooltip="Notifications">
+          matTooltip="Notifications ({{ unreadNotificationCount }})"
+          aria-label="Notifications">
           <mat-icon>notifications</mat-icon>
           <span 
             class="notification-badge" 
-            *ngIf="unreadNotificationCount > 0">
+            *ngIf="unreadNotificationCount > 0"
+            [attr.aria-label]="unreadNotificationCount + ' unread notifications'">
             {{ unreadNotificationCount > 99 ? '99+' : unreadNotificationCount }}
           </span>
         </button>
 
-        <!-- Notification Panel -->
+        <!-- Enhanced Notification Panel -->
         <div 
           class="notification-panel" 
           *ngIf="showNotificationPanel"
-          (clickOutside)="closeNotificationPanel()">
+          clickOutside
+          (clickOutside)="closeNotificationPanel()"
+          role="dialog"
+          aria-label="Notifications">
           
           <div class="panel-header">
             <h3>Notifications</h3>
-            <button 
-              mat-icon-button 
-              (click)="markAllNotificationsAsRead()"
-              matTooltip="Mark all as read"
-              *ngIf="unreadNotificationCount > 0">
-              <mat-icon>done_all</mat-icon>
-            </button>
+            <div class="header-actions">
+              <button 
+                mat-icon-button 
+                (click)="markAllNotificationsAsRead()"
+                matTooltip="Mark all as read"
+                *ngIf="unreadNotificationCount > 0"
+                aria-label="Mark all notifications as read">
+                <mat-icon>done_all</mat-icon>
+              </button>
+              <button 
+                mat-icon-button 
+                (click)="closeNotificationPanel()"
+                matTooltip="Close"
+                aria-label="Close notifications">
+                <mat-icon>close</mat-icon>
+              </button>
+            </div>
           </div>
 
           <div class="panel-content">
-            <div class="no-notifications" *ngIf="unreadNotificationCount === 0">
+            <!-- Loading State -->
+            <div class="loading-state" *ngIf="isLoading">
+              <mat-icon class="spinning">refresh</mat-icon>
+              <p>Loading notifications...</p>
+            </div>
+
+            <!-- No Notifications -->
+            <div class="no-notifications" *ngIf="!isLoading && unreadNotificationCount === 0">
               <mat-icon>notifications_none</mat-icon>
               <p>No new notifications</p>
+              <small>You're all caught up!</small>
             </div>
             
-            <div class="notification-list" *ngIf="unreadNotificationCount > 0">
-              <!-- This would be populated with actual notifications -->
-              <div class="notification-item">
-                <mat-icon>assignment</mat-icon>
+            <!-- Notification List -->
+            <div class="notification-list" *ngIf="!isLoading && notifications.length > 0">
+              <div 
+                class="notification-item"
+                *ngFor="let notification of notifications; trackBy: trackByNotificationId"
+                [class.unread]="!notification.read"
+                (click)="onNotificationItemClick(notification)"
+                role="button"
+                tabindex="0"
+                [attr.aria-label]="notification.message">
+                
+                <div class="notification-icon">
+                  <mat-icon [ngSwitch]="notification.type">
+                    <ng-container *ngSwitchCase="'TASK_ASSIGNED'">assignment_ind</ng-container>
+                    <ng-container *ngSwitchCase="'TASK_COMPLETED'">task_alt</ng-container>
+                    <ng-container *ngSwitchCase="'COMMENT_ADDED'">comment</ng-container>
+                    <ng-container *ngSwitchCase="'PROJECT_UPDATED'">folder</ng-container>
+                    <ng-container *ngSwitchCase="'SPRINT_STARTED'">play_arrow</ng-container>
+                    <ng-container *ngSwitchDefault>notifications</ng-container>
+                  </mat-icon>
+                </div>
+                
                 <div class="notification-content">
-                  <p>You have {{ unreadNotificationCount }} unread notifications</p>
-                  <small>Click to view all</small>
+                  <p class="notification-title">{{ notification.title || 'Notification' }}</p>
+                  <p class="notification-message">{{ notification.message }}</p>
+                  <small class="notification-time">{{ notification.createdAt | date:'short' }}</small>
+                </div>
+                
+                <div class="notification-status" *ngIf="!notification.read">
+                  <div class="unread-dot"></div>
                 </div>
               </div>
             </div>
           </div>
 
           <div class="panel-footer">
-            <button mat-button routerLink="/notifications" (click)="closeNotificationPanel()">
+            <button 
+              mat-button 
+              (click)="viewAllNotifications()"
+              class="view-all-btn">
               View All Notifications
             </button>
           </div>
@@ -114,7 +169,8 @@
       <button 
         mat-icon-button 
         matTooltip="Settings"
-        (click)="onSettingsClick()">
+        (click)="onSettingsClick()"
+        aria-label="Settings">
         <mat-icon>settings</mat-icon>
       </button>
 
@@ -123,26 +179,31 @@
         <button 
           mat-button 
           class="profile-btn"
-          [matMenuTriggerFor]="profileMenu">
+          [matMenuTriggerFor]="profileMenu"
+          aria-label="Profile menu">
           <div class="profile-avatar">
             <img 
               *ngIf="currentUser?.avatar_url; else avatarFallback" 
               [src]="currentUser?.avatar_url" 
-              [alt]="currentUser?.name || 'User Avatar'">
+              [alt]="(currentUser?.name || 'User') + ' avatar'"
+              loading="lazy">
             <ng-template #avatarFallback>
-              <div class="avatar-initials">{{ getUserInitials() }}</div>
+              <div class="avatar-initials" [attr.aria-label]="currentUser?.name + ' initials'">
+                {{ getUserInitials() }}
+              </div>
             </ng-template>
           </div>
           <span class="profile-name" *ngIf="currentUser">{{ currentUser.name }}</span>
-          <mat-icon>arrow_drop_down</mat-icon>
+          <mat-icon class="dropdown-arrow">arrow_drop_down</mat-icon>
         </button>
 
         <mat-menu #profileMenu="matMenu" class="profile-menu">
-          <div class="profile-header">
+          <!-- Profile Header in Menu -->
+          <div class="profile-header" mat-menu-item disabled>
             <div class="profile-info">
               <div class="profile-name">{{ currentUser?.name }}</div>
               <div class="profile-email">{{ currentUser?.email }}</div>
-              <div class="profile-role">{{ currentUser?.role?.replace('_', ' ') | titlecase }}</div>
+              <div class="profile-role">{{ getUserRoleDisplay() }}</div>
             </div>
           </div>
           
@@ -150,13 +211,23 @@
           
           <button mat-menu-item routerLink="/profile">
             <mat-icon>person</mat-icon>
-            <span>Profile</span>
+            <span>My Profile</span>
           </button>
           
           <button mat-menu-item routerLink="/settings">
             <mat-icon>settings</mat-icon>
             <span>Settings</span>
           </button>
+          
+          <button mat-menu-item routerLink="/notifications">
+            <mat-icon>notifications</mat-icon>
+            <span>Notifications</span>
+            <span class="menu-badge" *ngIf="unreadNotificationCount > 0">
+              {{ unreadNotificationCount }}
+            </span>
+          </button>
+          
+          <mat-divider></mat-divider>
           
           <button mat-menu-item routerLink="/help">
             <mat-icon>help</mat-icon>
@@ -175,10 +246,3 @@
     </div>
   </div>
 </header>
-
-<!-- Backdrop for notification panel -->
-<!-- <div 
-  class="notification-backdrop" 
-  *ngIf="showNotificationPanel"
-  (click)="closeNotificationPanel()">
-</div> -->

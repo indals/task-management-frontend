@@ -1,3 +1,4 @@
+// src/app/shared/components/sidebar/sidebar.component.ts - Enhanced with auth state
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Router, NavigationEnd } from '@angular/router';
 import { Subject } from 'rxjs';
@@ -6,6 +7,7 @@ import { trigger, state, style, transition, animate } from '@angular/animations'
 
 import { AuthService } from '../../../core/services/auth.service';
 import { NotificationService } from '../../../core/services/notification.service';
+import { AuthGuard } from '../../../core/guards/auth.guard';
 import { User } from '../../../core/models';
 
 interface MenuItem {
@@ -18,6 +20,7 @@ interface MenuItem {
   roles?: string[];
   permissions?: string[];
   children?: MenuItem[];
+  hidden?: boolean; // Add hidden property for dynamic hiding
 }
 
 @Component({
@@ -41,18 +44,21 @@ interface MenuItem {
 export class SidebarComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
   
+  // 🔧 FIXED: Add authentication state tracking
   currentUser: User | null = null;
+  isAuthenticated = false;
   unreadNotificationCount = 0;
   isCollapsed = false;
   
-  // 🔧 FIXED: Added missing Reports and corrected permissions
+  // 🔧 FIXED: Enhanced menu items with better permission mapping
   menuItems: MenuItem[] = [
     { 
       icon: 'dashboard', 
       label: 'Dashboard', 
       route: '/dashboard',
       active: false,
-      badge: null
+      badge: null,
+      hidden: false
     },
     { 
       icon: 'assignment', 
@@ -60,11 +66,19 @@ export class SidebarComponent implements OnInit, OnDestroy {
       route: '/tasks',
       active: false,
       badge: null,
+      hidden: false,
       children: [
-        { icon: 'list', label: 'All Tasks', route: '/tasks', active: false },
-        { icon: 'person', label: 'My Tasks', route: '/tasks/my-tasks', active: false },
-        { icon: 'warning', label: 'Overdue', route: '/tasks/overdue', active: false },
-        { icon: 'add_task', label: 'Create Task', route: '/tasks/create', active: false }
+        { icon: 'list', label: 'All Tasks', route: '/tasks', active: false, hidden: false },
+        { icon: 'person', label: 'My Tasks', route: '/tasks/my-tasks', active: false, hidden: false },
+        { icon: 'warning', label: 'Overdue', route: '/tasks/overdue', active: false, hidden: false },
+        { 
+          icon: 'add_task', 
+          label: 'Create Task', 
+          route: '/tasks/create', 
+          active: false, 
+          hidden: false,
+          permissions: ['create_task'] 
+        }
       ]
     },
     { 
@@ -73,10 +87,25 @@ export class SidebarComponent implements OnInit, OnDestroy {
       route: '/projects',
       active: false,
       badge: null,
+      hidden: false,
       permissions: ['view_all_projects', 'view_team_projects'],
       children: [
-        { icon: 'list', label: 'All Projects', route: '/projects', active: false },
-        { icon: 'add', label: 'Create Project', route: '/projects/create', active: false }
+        { 
+          icon: 'list', 
+          label: 'All Projects', 
+          route: '/projects', 
+          active: false, 
+          hidden: false,
+          permissions: ['view_all_projects', 'view_team_projects']
+        },
+        { 
+          icon: 'add', 
+          label: 'Create Project', 
+          route: '/projects/create', 
+          active: false, 
+          hidden: false,
+          permissions: ['create_project']
+        }
       ]
     },
     { 
@@ -85,6 +114,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
       route: '/sprints',
       active: false,
       badge: null,
+      hidden: false,
       permissions: ['manage_sprints', 'view_sprints']
     },
     { 
@@ -93,6 +123,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
       route: '/team',
       active: false,
       badge: null,
+      hidden: false,
       permissions: ['manage_team', 'view_team_tasks']
     },
     { 
@@ -100,21 +131,24 @@ export class SidebarComponent implements OnInit, OnDestroy {
       label: 'Time Tracking', 
       route: '/time-tracking',
       active: false,
-      badge: null
+      badge: null,
+      hidden: false
     },
     { 
       icon: 'calendar_today', 
       label: 'Calendar', 
       route: '/calendar',
       active: false,
-      badge: null
+      badge: null,
+      hidden: false
     },
     { 
       icon: 'notifications', 
       label: 'Notifications', 
       route: '/notifications',
       active: false,
-      badge: 'unreadCount'
+      badge: 'unreadCount',
+      hidden: false
     },
     { 
       icon: 'assessment', 
@@ -122,20 +156,41 @@ export class SidebarComponent implements OnInit, OnDestroy {
       route: '/analytics',
       active: false,
       badge: null,
-      permissions: ['view_analytics'] // 🔧 FIXED: Added proper permissions
+      hidden: false,
+      permissions: ['view_analytics']
     },
-    // 🔧 ADDED: Missing Reports module
     { 
       icon: 'bar_chart', 
       label: 'Reports', 
       route: '/reports',
       active: false,
       badge: null,
-      permissions: ['view_analytics'], // Reports usually need analytics permission
+      hidden: false,
+      permissions: ['view_analytics'],
       children: [
-        { icon: 'trending_up', label: 'Performance Reports', route: '/reports/performance', active: false },
-        { icon: 'pie_chart', label: 'Project Reports', route: '/reports/projects', active: false },
-        { icon: 'timeline', label: 'Time Reports', route: '/reports/time', active: false }
+        { 
+          icon: 'trending_up', 
+          label: 'Performance Reports', 
+          route: '/reports/performance', 
+          active: false, 
+          hidden: false,
+          permissions: ['view_analytics']
+        },
+        { 
+          icon: 'pie_chart', 
+          label: 'Project Reports', 
+          route: '/reports/projects', 
+          active: false, 
+          hidden: false,
+          permissions: ['view_analytics']
+        },
+        { 
+          icon: 'timeline', 
+          label: 'Time Reports', 
+          route: '/reports/time', 
+          active: false, 
+          hidden: false
+        }
       ]
     },
     { 
@@ -143,22 +198,21 @@ export class SidebarComponent implements OnInit, OnDestroy {
       label: 'Settings', 
       route: '/settings',
       active: false,
-      badge: null
+      badge: null,
+      hidden: false
     }
   ];
 
   constructor(
     private router: Router,
     private authService: AuthService,
-    private notificationService: NotificationService
+    private notificationService: NotificationService,
+    private authGuard: AuthGuard
   ) {}
 
   ngOnInit(): void {
-    this.setupUserSubscription();
+    this.setupSubscriptions();
     this.initializeComponent();
-    this.setupRouterSubscription();
-    this.setupNotificationSubscription();
-    
   }
 
   ngOnDestroy(): void {
@@ -166,12 +220,38 @@ export class SidebarComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
-  private initializeComponent(): void {
-    // Set initial active route
-    this.updateActiveRoute(this.router.url);
+  private setupSubscriptions(): void {
+    // 🔧 FIXED: Track authentication state properly
+    this.authService.isAuthenticated$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(isAuth => {
+        this.isAuthenticated = isAuth;
+        console.log('Sidebar: Authentication state changed:', isAuth);
+        
+        if (isAuth) {
+          this.filterMenuItemsByPermissions();
+        } else {
+          this.hideAllMenuItems();
+        }
+      });
+
+    // Current user subscription
+    this.authService.currentUser$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(user => {
+        this.currentUser = user;
+        console.log('Sidebar: Current user changed:', user);
+        
+        if (user) {
+          this.filterMenuItemsByPermissions();
+        }
+      });
+
+    // Router events
+    this.setupRouterSubscription();
     
-    // Filter menu items based on user permissions
-    this.filterMenuItemsByPermissions();
+    // 🔧 FIXED: Only subscribe to notifications if authenticated
+    this.setupNotificationSubscription();
   }
 
   private setupRouterSubscription(): void {
@@ -186,27 +266,109 @@ export class SidebarComponent implements OnInit, OnDestroy {
   }
 
   private setupNotificationSubscription(): void {
-    this.notificationService.unreadCount$
+    this.authService.isAuthenticated$
       .pipe(takeUntil(this.destroy$))
-      .subscribe(count => {
-        this.unreadNotificationCount = count;
-        this.updateNotificationBadge();
+      .subscribe(isAuth => {
+        if (isAuth) {
+          this.notificationService.unreadCount$
+            .pipe(takeUntil(this.destroy$))
+            .subscribe(count => {
+              this.unreadNotificationCount = count;
+              this.updateNotificationBadge();
+            });
+        } else {
+          this.unreadNotificationCount = 0;
+          this.updateNotificationBadge();
+        }
       });
   }
 
-  private setupUserSubscription(): void {
-    this.authService.currentUser$
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(user => {
-        this.currentUser = user;
-        this.filterMenuItemsByPermissions();
-      });
+  private initializeComponent(): void {
+    // Set initial active route
+    this.updateActiveRoute(this.router.url);
+    
+    // Set initial sidebar state on mobile
+    if (this.isMobile()) {
+      this.isCollapsed = true;
+    }
+  }
+
+  // 🔧 FIXED: Add method to check if sidebar should be visible
+  shouldShowSidebar(): boolean {
+    return this.isAuthenticated;
+  }
+
+  // 🔧 FIXED: Add method to hide all menu items when not authenticated
+  private hideAllMenuItems(): void {
+    this.menuItems.forEach(item => {
+      item.hidden = true;
+      if (item.children) {
+        item.children.forEach(child => child.hidden = true);
+      }
+    });
+  }
+
+  // 🔧 IMPROVED: Enhanced permission filtering with better logic
+  private filterMenuItemsByPermissions(): void {
+    if (!this.isAuthenticated || !this.currentUser) {
+      this.hideAllMenuItems();
+      return;
+    }
+
+    console.log('Filtering menu items for user role:', this.currentUser.role);
+
+    // Show/hide main menu items
+    this.menuItems.forEach(item => {
+      item.hidden = !this.canShowMenuItem(item);
+      
+      // Filter child menu items
+      if (item.children) {
+        item.children.forEach(child => {
+          child.hidden = !this.canShowMenuItem(child);
+        });
+        
+        // Hide parent if all children are hidden
+        const visibleChildren = item.children.filter(child => !child.hidden);
+        if (visibleChildren.length === 0 && item.permissions) {
+          item.hidden = true;
+        }
+      }
+    });
+
+    console.log('Menu items after filtering:', this.menuItems.map(item => ({
+      label: item.label,
+      hidden: item.hidden,
+      children: item.children?.map(child => ({ label: child.label, hidden: child.hidden }))
+    })));
+  }
+
+  private canShowMenuItem(item: MenuItem): boolean {
+    // Always show items without restrictions
+    if (!item.permissions && !item.roles) {
+      return true;
+    }
+
+    // Check roles
+    if (item.roles && !this.authService.hasAnyRole(item.roles)) {
+      return false;
+    }
+
+    // Check permissions using AuthGuard
+    if (item.permissions && item.permissions.length > 0) {
+      const hasPermission = item.permissions.some(permission => 
+        this.authGuard.hasPermission(permission)
+      );
+      if (!hasPermission) {
+        return false;
+      }
+    }
+
+    return true;
   }
 
   // 🔧 IMPROVED: Better route matching logic
   private updateActiveRoute(url: string): void {
     this.menuItems.forEach(item => {
-      // Reset all items to inactive first
       item.active = false;
       if (item.children) {
         item.children.forEach(child => child.active = false);
@@ -234,7 +396,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
         item.children.forEach(child => {
           if (url === child.route || url.startsWith(child.route + '/') || url.startsWith(child.route + '?')) {
             child.active = true;
-            item.active = true; // Also mark parent as active
+            item.active = true;
           }
         });
       }
@@ -248,123 +410,76 @@ export class SidebarComponent implements OnInit, OnDestroy {
     }
   }
 
-  // 🔧 IMPROVED: Better permission filtering
-  private filterMenuItemsByPermissions(): void {
-    console.log('Filtering menu items by permissions for user:', this.currentUser?.role);
-    debugger
-    if (!this.currentUser) {
-      // Hide permission-restricted items if no user
-      this.menuItems = this.menuItems.filter(item => !item.permissions || item.permissions.length === 0);
+  // 🔧 FIXED: Add permission checks for menu interactions
+  onMenuItemClick(item: MenuItem): void {
+    if (!this.isAuthenticated) {
+      console.warn('Menu item clicked while not authenticated');
       return;
     }
 
-    // Filter main menu items
-    this.menuItems = this.menuItems.filter(item => this.canShowMenuItem(item));
-    
-    // Filter child menu items
-    this.menuItems.forEach(item => {
-      if (item.children) {
-        item.children = item.children.filter(child => this.canShowMenuItem(child));
-      }
-    });
-  }
-
-  private canShowMenuItem(item: MenuItem): boolean {
-    // If no permissions or roles specified, show the item
-    if (!item.permissions && !item.roles) {
-      return true;
+    if (item.hidden) {
+      console.warn('Attempted to access hidden menu item:', item.label);
+      return;
     }
 
-    // Check roles
-    if (item.roles && !this.authService.hasAnyRole(item.roles)) {
-      return false;
-    }
-
-    // Check permissions
-    if (item.permissions && item.permissions.length > 0 && !this.hasAnyPermission(item.permissions)) {
-      return false;
-    }
-
-    return true;
-  }
-
-  private hasAnyPermission(permissions: string[]): boolean {
-    const currentUser = this.authService.getCurrentUserValue();
-    if (!currentUser) return false;
-
-    const userPermissions = this.getUserPermissions(currentUser.role);
-    return permissions.some(permission => userPermissions.includes(permission));
-  }
-
-  // 🔧 UPDATED: Enhanced permissions with more granular control
-  private getUserPermissions(role: string): string[] {
-    const rolePermissions: { [key: string]: string[] } = {
-
-      'ADMIN': [
-        'view_all_tasks', 'create_task', 'edit_task', 'delete_task', 'assign_task',
-        'view_all_projects', 'create_project', 'edit_project', 'delete_project',
-        'manage_team', 'view_analytics', 'manage_sprints', 'manage_users',
-        'view_team_tasks', 'view_team_projects'
-      ],
-      'PROJECT_MANAGER': [
-        'view_all_tasks', 'create_task', 'edit_task', 'delete_task', 'assign_task',
-        'view_all_projects', 'create_project', 'edit_project',
-        'view_analytics', 'manage_sprints', 'manage_team',
-        'view_team_tasks', 'view_team_projects'
-      ],
-      'TEAM_LEAD': [
-        'view_team_tasks', 'create_task', 'edit_task', 'assign_task',
-        'view_team_projects', 'view_analytics', 'manage_sprints'
-      ],
-      'SENIOR_DEVELOPER': [
-        'view_assigned_tasks', 'create_task', 'edit_own_tasks',
-        'view_project_tasks', 'view_sprints'
-      ],
-      'DEVELOPER': [
-        'view_assigned_tasks', 'edit_own_tasks', 'view_project_tasks', 'view_sprints'
-      ],
-      'QA_ENGINEER': [
-        'view_assigned_tasks', 'edit_own_tasks', 'view_project_tasks', 'view_sprints'
-      ],
-      'DEVOPS_ENGINEER': [
-        'view_assigned_tasks', 'edit_own_tasks', 'view_project_tasks', 'view_sprints'
-      ],
-      'UI_UX_DESIGNER': [
-        'view_assigned_tasks', 'edit_own_tasks', 'view_project_tasks', 'view_sprints'
-      ],
-      'BUSINESS_ANALYST': [
-        'view_assigned_tasks', 'create_task', 'edit_own_tasks',
-        'view_project_tasks', 'view_analytics'
-      ],
-      'PRODUCT_OWNER': [
-        'view_all_tasks', 'create_task', 'edit_task',
-        'view_all_projects', 'view_analytics', 'manage_sprints'
-      ],
-      'SCRUM_MASTER': [
-        'view_team_tasks', 'view_team_projects', 'view_analytics', 'manage_sprints'
-      ]
-    };
-    console.log(`Permissions for role ${role}:`, rolePermissions[role]);
-    return rolePermissions[role] || [];
-  }
-
-  onMenuItemClick(item: MenuItem): void {
     if (item.children && item.children.length > 0) {
       // Toggle child menu
       item.active = !item.active;
     } else {
+      // Navigate to route
       this.router.navigate([item.route]);
+      
+      // Collapse sidebar on mobile after navigation
+      if (this.isMobile()) {
+        this.isCollapsed = true;
+      }
     }
   }
 
   onChildMenuClick(parent: MenuItem, child: MenuItem): void {
+    if (!this.isAuthenticated) {
+      console.warn('Child menu item clicked while not authenticated');
+      return;
+    }
+
+    if (child.hidden) {
+      console.warn('Attempted to access hidden child menu item:', child.label);
+      return;
+    }
+
     this.router.navigate([child.route]);
+    
+    // Collapse sidebar on mobile after navigation
+    if (this.isMobile()) {
+      this.isCollapsed = true;
+    }
   }
 
   toggleSidebar(): void {
     this.isCollapsed = !this.isCollapsed;
   }
 
+  onLogout(): void {
+    if (!this.isAuthenticated) {
+      console.warn('Logout attempted while not authenticated');
+      return;
+    }
+    
+    console.log('Logging out user from sidebar:', this.currentUser?.email);
+    this.authService.logout();
+  }
+
+  openQuickSearch(): void {
+    if (!this.isAuthenticated) {
+      console.warn('Quick search attempted while not authenticated');
+      return;
+    }
+    
+    console.log('Quick search clicked');
+    // TODO: Implement quick search functionality
+  }
+
+  // Helper methods
   getNotificationBadgeText(): string {
     return this.unreadNotificationCount > 99 ? '99+' : this.unreadNotificationCount.toString();
   }
@@ -384,19 +499,26 @@ export class SidebarComponent implements OnInit, OnDestroy {
   }
 
   getUserRole(): string {
-    return this.currentUser?.role?.replace('_', ' ') || 'User';
-  }
-
-  onLogout(): void {
-    this.authService.logout();
-  }
-
-  openQuickSearch(): void {
-    // TODO: Implement quick search functionality
-    console.log('Quick search clicked');
+    if (!this.currentUser?.role) return 'User';
+    
+    return this.currentUser.role
+      .split('_')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ');
   }
 
   isMobile(): boolean {
     return window.innerWidth <= 768;
+  }
+
+  // 🔧 NEW: Get visible menu items for template
+  getVisibleMenuItems(): MenuItem[] {
+    return this.menuItems.filter(item => !item.hidden);
+  }
+
+  // 🔧 NEW: Get visible child items
+  getVisibleChildItems(item: MenuItem): MenuItem[] {
+    if (!item.children) return [];
+    return item.children.filter(child => !child.hidden);
   }
 }

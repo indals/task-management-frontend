@@ -1,5 +1,15 @@
+// src/app/core/guards/auth.guard.ts - Enhanced version
 import { Injectable } from '@angular/core';
-import { CanActivate, CanActivateChild, CanLoad, Router, ActivatedRouteSnapshot, RouterStateSnapshot, Route, UrlSegment } from '@angular/router';
+import { 
+  CanActivate, 
+  CanActivateChild, 
+  CanLoad, 
+  Router, 
+  ActivatedRouteSnapshot, 
+  RouterStateSnapshot, 
+  Route, 
+  UrlSegment 
+} from '@angular/router';
 import { Observable, of } from 'rxjs';
 import { map, take, catchError } from 'rxjs/operators';
 
@@ -41,6 +51,8 @@ export class AuthGuard implements CanActivate, CanActivateChild, CanLoad {
     return this.authService.isAuthenticated$.pipe(
       take(1),
       map(isAuthenticated => {
+        console.log('Auth Guard Check:', { isAuthenticated, url, route: route?.data });
+        
         if (isAuthenticated) {
           // Check for role-based access if specified in route data
           if (route?.data?.['roles']) {
@@ -114,100 +126,53 @@ export class AuthGuard implements CanActivate, CanActivateChild, CanLoad {
   }
 
   private getUserPermissions(role: string): string[] {
-    // Define permissions for each role
+    // Define permissions for each role - matches your existing structure
     const rolePermissions: { [key: string]: string[] } = {
       'ADMIN': [
-        'view_all_tasks',
-        'create_task',
-        'edit_task',
-        'delete_task',
-        'assign_task',
-        'view_all_projects',
-        'create_project',
-        'edit_project',
-        'delete_project',
-        'manage_team',
-        'view_analytics',
-        'manage_sprints',
-        'manage_users'
+        'view_all_tasks', 'create_task', 'edit_task', 'delete_task', 'assign_task',
+        'view_all_projects', 'create_project', 'edit_project', 'delete_project',
+        'manage_team', 'view_analytics', 'manage_sprints', 'manage_users'
       ],
       'PROJECT_MANAGER': [
-        'view_all_tasks',
-        'create_task',
-        'edit_task',
-        'delete_task',
-        'assign_task',
-        'view_all_projects',
-        'create_project',
-        'edit_project',
-        'view_analytics',
-        'manage_sprints',
-        'manage_team'
+        'view_all_tasks', 'create_task', 'edit_task', 'delete_task', 'assign_task',
+        'view_all_projects', 'create_project', 'edit_project',
+        'view_analytics', 'manage_sprints', 'manage_team'
       ],
       'TEAM_LEAD': [
-        'view_team_tasks',
-        'create_task',
-        'edit_task',
-        'assign_task',
-        'view_team_projects',
-        'view_analytics',
-        'manage_sprints'
+        'view_team_tasks', 'create_task', 'edit_task', 'assign_task',
+        'view_team_projects', 'view_analytics', 'manage_sprints'
       ],
       'SENIOR_DEVELOPER': [
-        'view_assigned_tasks',
-        'create_task',
-        'edit_own_tasks',
-        'view_project_tasks',
-        'view_sprints'
+        'view_assigned_tasks', 'create_task', 'edit_own_tasks',
+        'view_project_tasks', 'view_sprints'
       ],
       'DEVELOPER': [
-        'view_assigned_tasks',
-        'edit_own_tasks',
-        'view_project_tasks',
-        'view_sprints'
+        'view_assigned_tasks', 'edit_own_tasks',
+        'view_project_tasks', 'view_sprints'
       ],
       'QA_ENGINEER': [
-        'view_assigned_tasks',
-        'edit_own_tasks',
-        'view_project_tasks',
-        'view_sprints',
-        'test_tasks'
+        'view_assigned_tasks', 'edit_own_tasks',
+        'view_project_tasks', 'view_sprints', 'test_tasks'
       ],
       'DEVOPS_ENGINEER': [
-        'view_assigned_tasks',
-        'edit_own_tasks',
-        'view_project_tasks',
-        'view_sprints',
-        'deploy_tasks'
+        'view_assigned_tasks', 'edit_own_tasks',
+        'view_project_tasks', 'view_sprints', 'deploy_tasks'
       ],
       'UI_UX_DESIGNER': [
-        'view_assigned_tasks',
-        'edit_own_tasks',
-        'view_project_tasks',
-        'view_sprints',
-        'design_tasks'
+        'view_assigned_tasks', 'edit_own_tasks',
+        'view_project_tasks', 'view_sprints', 'design_tasks'
       ],
       'BUSINESS_ANALYST': [
-        'view_assigned_tasks',
-        'create_task',
-        'edit_own_tasks',
-        'view_project_tasks',
-        'view_analytics'
+        'view_assigned_tasks', 'create_task', 'edit_own_tasks',
+        'view_project_tasks', 'view_analytics'
       ],
       'PRODUCT_OWNER': [
-        'view_all_tasks',
-        'create_task',
-        'edit_task',
-        'view_all_projects',
-        'view_analytics',
-        'manage_sprints'
+        'view_all_tasks', 'create_task', 'edit_task',
+        'view_all_projects', 'view_analytics', 'manage_sprints'
       ],
       'SCRUM_MASTER': [
-        'view_team_tasks',
-        'view_team_projects',
-        'view_analytics',
-        'manage_sprints',
-        'facilitate_ceremonies'
+        'view_team_tasks', 'view_team_projects',
+        'view_analytics', 'manage_sprints', 'facilitate_ceremonies'
       ]
     };
 
@@ -218,7 +183,7 @@ export class AuthGuard implements CanActivate, CanActivateChild, CanLoad {
     this.router.navigate(['/access-denied']);
   }
 
-  // Utility methods for components to check permissions
+  // 🔧 ENHANCED: Public utility methods for components
   hasPermission(permission: string): boolean {
     const currentUser = this.authService.getCurrentUserValue();
     if (!currentUser) return false;
@@ -233,6 +198,19 @@ export class AuthGuard implements CanActivate, CanActivateChild, CanLoad {
 
   hasAnyRole(roles: string[]): boolean {
     return this.authService.hasAnyRole(roles);
+  }
+
+  // 🔧 NEW: Helper methods for UI components
+  canAccessDashboard(): boolean {
+    return this.authService.isLoggedIn();
+  }
+
+  canAccessSidebar(): boolean {
+    return this.authService.isLoggedIn();
+  }
+
+  canShowUserMenu(): boolean {
+    return this.authService.isLoggedIn();
   }
 
   canAccessAdminFeatures(): boolean {
@@ -272,29 +250,62 @@ export class AuthGuard implements CanActivate, CanActivateChild, CanLoad {
   }
 }
 
-// Route data interface for type safety
+// 🔧 NEW: Route data interface with better typing
 export interface RouteAuthData {
   roles?: string[];
   permissions?: string[];
   requiresAuth?: boolean;
+  allowGuests?: boolean; // For routes that can be accessed by both auth/unauth users
 }
 
-// Usage example in routing:
-/*
-{
-  path: 'admin',
-  component: AdminComponent,
-  canActivate: [AuthGuard],
-  data: { 
-    roles: ['ADMIN'] 
-  }
-},
-{
-  path: 'projects',
-  component: ProjectsComponent,
-  canActivate: [AuthGuard],
-  data: { 
-    permissions: ['view_all_projects'] 
-  }
-}
-*/
+// 🔧 NEW: Example route configurations
+export const ROUTE_EXAMPLES = {
+  // Public routes (no guard needed)
+  PUBLIC: [
+    { path: 'login', component: 'LoginComponent' },
+    { path: 'register', component: 'RegisterComponent' },
+    { path: 'forgot-password', component: 'ForgotPasswordComponent' }
+  ],
+
+  // Protected routes with basic auth
+  AUTHENTICATED: [
+    {
+      path: 'dashboard',
+      component: 'DashboardComponent',
+      canActivate: ['AuthGuard'],
+      data: { requiresAuth: true }
+    }
+  ],
+
+  // Role-based protected routes
+  ROLE_PROTECTED: [
+    {
+      path: 'admin',
+      component: 'AdminComponent',
+      canActivate: ['AuthGuard'],
+      data: { roles: ['ADMIN'] }
+    },
+    {
+      path: 'projects/manage',
+      component: 'ProjectManagementComponent',
+      canActivate: ['AuthGuard'],
+      data: { roles: ['ADMIN', 'PROJECT_MANAGER'] }
+    }
+  ],
+
+  // Permission-based protected routes
+  PERMISSION_PROTECTED: [
+    {
+      path: 'projects',
+      component: 'ProjectsComponent',
+      canActivate: ['AuthGuard'],
+      data: { permissions: ['view_all_projects'] }
+    },
+    {
+      path: 'analytics',
+      component: 'AnalyticsComponent',
+      canActivate: ['AuthGuard'],
+      data: { permissions: ['view_analytics'] }
+    }
+  ]
+};

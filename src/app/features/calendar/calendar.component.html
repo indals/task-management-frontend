@@ -1,135 +1,401 @@
-
-    <div class="calendar-container">
-      <!-- Calendar Header -->
-      <div class="calendar-header">
+<div class="calendar-container">
+  <!-- Calendar Header -->
+  <mat-card class="calendar-header">
+    <mat-card-content>
+      <div class="header-content">
+        <!-- Navigation Controls -->
         <div class="header-controls">
-          <button class="nav-btn" (click)="previousMonth()">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <polyline points="15,18 9,12 15,6"></polyline>
-            </svg>
+          <button 
+            mat-icon-button 
+            (click)="previousPeriod()"
+            [matTooltip]="'Previous ' + viewMode"
+            class="nav-btn">
+            <mat-icon>chevron_left</mat-icon>
           </button>
           
-          <h2 class="month-year">{{ currentDate | date:'MMMM yyyy' }}</h2>
+          <h2 class="period-title">{{ getFormattedDate() }}</h2>
           
-          <button class="nav-btn" (click)="nextMonth()">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <polyline points="9,18 15,12 9,6"></polyline>
-            </svg>
+          <button 
+            mat-icon-button 
+            (click)="nextPeriod()"
+            [matTooltip]="'Next ' + viewMode"
+            class="nav-btn">
+            <mat-icon>chevron_right</mat-icon>
           </button>
         </div>
-        
+
+        <!-- Action Controls -->
         <div class="header-actions">
-          <button class="today-btn" (click)="goToToday()">Today</button>
-          <select class="view-selector" [(ngModel)]="viewMode" (change)="onViewModeChange()">
-            <option value="month">Month</option>
-            <option value="week">Week</option>
-          </select>
+          <button 
+            mat-button 
+            color="primary" 
+            (click)="goToToday()">
+            <mat-icon>today</mat-icon>
+            Today
+          </button>
+
+          <mat-select 
+            [(value)]="viewMode" 
+            (selectionChange)="onViewModeChange()"
+            class="view-selector">
+            <mat-option value="month">Month</mat-option>
+            <mat-option value="week">Week</mat-option>
+            <mat-option value="day">Day</mat-option>
+          </mat-select>
+
+          <button 
+            mat-icon-button 
+            [matMenuTriggerFor]="filterMenu"
+            matTooltip="Filter tasks">
+            <mat-icon>filter_list</mat-icon>
+          </button>
+
+          <button 
+            mat-icon-button 
+            (click)="refreshTasks()"
+            matTooltip="Refresh"
+            [disabled]="loading">
+            <mat-icon [class.spinning]="loading">refresh</mat-icon>
+          </button>
+
+          <button 
+            mat-raised-button 
+            color="primary" 
+            (click)="createTask()"
+            class="create-btn">
+            <mat-icon>add</mat-icon>
+            Create Task
+          </button>
         </div>
       </div>
 
-      <!-- Calendar Grid -->
-      <div class="calendar-grid" *ngIf="viewMode === 'month'">
-        <!-- Day Headers -->
-        <div class="day-header" *ngFor="let day of dayHeaders">
-          {{ day }}
+      <!-- Filter Menu -->
+      <mat-menu #filterMenu="matMenu" class="filter-menu">
+        <div class="filter-content" (click)="$event.stopPropagation()">
+          <h4>Filter Tasks</h4>
+          
+          <div class="filter-section">
+            <mat-checkbox 
+              [(ngModel)]="filterOptions.showMyTasks"
+              (change)="toggleFilter('myTasks')">
+              My Tasks Only
+            </mat-checkbox>
+          </div>
+          
+          <div class="filter-section">
+            <mat-checkbox 
+              [(ngModel)]="filterOptions.showCompleted"
+              (change)="toggleFilter('completed')">
+              Show Completed
+            </mat-checkbox>
+          </div>
+        </div>
+      </mat-menu>
+
+      <!-- Loading Progress -->
+      <mat-progress-bar 
+        *ngIf="loading" 
+        mode="indeterminate" 
+        class="loading-bar">
+      </mat-progress-bar>
+
+      <!-- Error Message -->
+      <div class="error-message" *ngIf="error">
+        <mat-icon>error</mat-icon>
+        <span>{{ error }}</span>
+        <button mat-button (click)="refreshTasks()">Retry</button>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <!-- Month View -->
+  <mat-card class="calendar-content" *ngIf="viewMode === 'month'">
+    <div class="calendar-grid">
+      <!-- Day Headers -->
+      <div 
+        class="day-header" 
+        *ngFor="let day of dayHeadersShort">
+        {{ day }}
+      </div>
+      
+      <!-- Calendar Days -->
+      <div 
+        class="calendar-day" 
+        *ngFor="let day of calendarDays; trackBy: trackByDay"
+        [class.other-month]="!day.isCurrentMonth"
+        [class.today]="day.isToday"
+        [class.selected]="day.isSelected"
+        [class.weekend]="day.isWeekend"
+        [class.has-tasks]="day.taskCount > 0"
+        [class.has-overdue]="day.hasOverdueTasks"
+        (click)="selectDay(day)"
+        [matTooltip]="day.taskCount + ' task(s)'"
+        role="button"
+        tabindex="0"
+        [attr.aria-label]="day.date.toDateString() + ', ' + day.taskCount + ' tasks'">
+        
+        <div class="day-number">
+          {{ day.date.getDate() }}
         </div>
         
-        <!-- Calendar Days -->
+        <!-- Task Indicators -->
+        <div class="task-indicators" *ngIf="day.taskCount > 0">
+          <div 
+            class="task-dot" 
+            *ngFor="let task of day.tasks.slice(0, 3); trackBy: trackByTask"
+            [style.background-color]="getTaskPriorityColor(task.priority)"
+            [matTooltip]="task.title + ' (' + task.priority + ')'"
+            (click)="$event.stopPropagation(); viewTaskDetails(task)">
+          </div>
+          <span class="more-tasks" *ngIf="day.taskCount > 3">
+            +{{ day.taskCount - 3 }}
+          </span>
+        </div>
+
+        <!-- Quick Add Button -->
+        <button 
+          mat-icon-button 
+          class="quick-add-btn"
+          *ngIf="day.isSelected"
+          (click)="$event.stopPropagation(); createTask(day.date)"
+          matTooltip="Add task">
+          <mat-icon>add</mat-icon>
+        </button>
+      </div>
+    </div>
+  </mat-card>
+
+  <!-- Week View -->
+  <mat-card class="calendar-content week-view" *ngIf="viewMode === 'week'">
+    <!-- Week Header -->
+    <div class="week-header">
+      <div class="time-column-header">Time</div>
+      <div 
+        class="day-column-header" 
+        *ngFor="let day of weekDays; trackBy: trackByDay"
+        [class.today]="day.isToday"
+        [class.weekend]="day.isWeekend">
+        <div class="day-name">{{ day.date | date:'EEE' }}</div>
+        <div class="day-date">{{ day.date | date:'d' }}</div>
+        <div class="task-count" *ngIf="day.taskCount > 0">
+          {{ day.taskCount }} task{{ day.taskCount !== 1 ? 's' : '' }}
+        </div>
+      </div>
+    </div>
+    
+    <!-- Week Content -->
+    <div class="week-content">
+      <!-- Time Slots -->
+      <div class="time-slots">
         <div 
-          class="calendar-day" 
-          *ngFor="let day of calendarDays"
-          [class.other-month]="!day.isCurrentMonth"
+          class="time-slot" 
+          *ngFor="let hour of timeSlots.slice(6, 22)">
+          <span class="time-label">
+            {{ hour }}:00
+          </span>
+        </div>
+      </div>
+      
+      <!-- Day Columns -->
+      <div class="day-columns">
+        <div 
+          class="day-column" 
+          *ngFor="let day of weekDays; trackBy: trackByDay"
           [class.today]="day.isToday"
-          [class.selected]="day.isSelected"
-          [class.has-tasks]="day.tasks.length > 0"
-          (click)="selectDay(day)"
-        >
-          <div class="day-number">{{ day.date.getDate() }}</div>
+          [class.weekend]="day.isWeekend"
+          (click)="selectDay(day)">
           
-          <!-- Task indicators -->
-          <div class="task-indicators" *ngIf="day.tasks.length > 0">
-            <div 
-              class="task-dot" 
-              *ngFor="let task of day.tasks.slice(0, 3)"
-              [class.priority-high]="task.priority === 'HIGH'"
-              [class.priority-medium]="task.priority === 'MEDIUM'"
-              [class.priority-low]="task.priority === 'LOW'"
-              [title]="task.title"
-            ></div>
-            <span class="more-tasks" *ngIf="day.tasks.length > 3">+{{ day.tasks.length - 3 }}</span>
+          <!-- Tasks -->
+          <div class="day-tasks">
+            <mat-card 
+              class="week-task" 
+              *ngFor="let task of day.tasks; trackBy: trackByTask"
+              [style.border-left-color]="getTaskPriorityColor(task.priority)"
+              (click)="$event.stopPropagation(); viewTaskDetails(task)"
+              [matTooltip]="task.description">
+              
+              <mat-card-content class="task-content">
+                <div class="task-title">{{ task.title }}</div>
+                <div class="task-meta">
+                  <mat-chip class="priority-chip" [style.background-color]="getTaskPriorityColor(task.priority)">
+                    {{ task.priority }}
+                  </mat-chip>
+                  <span class="task-time" *ngIf="task.due_date">
+                    {{ task.due_date | date:'shortTime' }}
+                  </span>
+                </div>
+              </mat-card-content>
+            </mat-card>
           </div>
         </div>
       </div>
+    </div>
+  </mat-card>
 
-      <!-- Week View -->
-      <div class="week-view" *ngIf="viewMode === 'week'">
-        <div class="week-header">
-          <div class="time-column"></div>
-          <div class="day-column" *ngFor="let day of weekDays">
-            <div class="day-name">{{ day.date | date:'EEE' }}</div>
-            <div class="day-date" [class.today]="day.isToday">{{ day.date | date:'d' }}</div>
-          </div>
-        </div>
-        
-        <div class="week-content">
-          <div class="time-slots">
-            <div class="time-slot" *ngFor="let hour of timeSlots">
-              <span class="time-label">{{ hour }}:00</span>
-            </div>
-          </div>
-          
-          <div class="day-columns">
-            <div class="day-column" *ngFor="let day of weekDays">
-              <div class="day-tasks">
-                <div 
-                  class="week-task" 
-                  *ngFor="let task of day.tasks"
-                  [class.priority-high]="task.priority === 'HIGH'"
-                  [class.priority-medium]="task.priority === 'MEDIUM'"
-                  [class.priority-low]="task.priority === 'LOW'"
-                  (click)="viewTaskDetails(task)"
-                >
-                  <div class="task-title">{{ task.title }}</div>
-                  <div class="task-time" *ngIf="task.due_date">
+  <!-- Day View -->
+  <mat-card class="calendar-content day-view" *ngIf="viewMode === 'day'">
+    <mat-card-header>
+      <mat-card-title>
+        {{ currentDate | date:'fullDate' }}
+      </mat-card-title>
+      <mat-card-subtitle *ngIf="selectedDay">
+        {{ selectedDay.taskCount }} task{{ selectedDay.taskCount !== 1 ? 's' : '' }} scheduled
+      </mat-card-subtitle>
+    </mat-card-header>
+
+    <mat-card-content>
+      <div class="day-timeline" *ngIf="selectedDay">
+        <!-- All Day Tasks -->
+        <div class="all-day-section" *ngIf="selectedDay.tasks.length > 0">
+          <h4>All Day Tasks</h4>
+          <div class="all-day-tasks">
+            <mat-card 
+              class="day-task-card"
+              *ngFor="let task of selectedDay.tasks; trackBy: trackByTask"
+              [class.completed]="task.status === 'DONE'"
+              (click)="viewTaskDetails(task)">
+              
+              <mat-card-content>
+                <div class="task-header">
+                  <h5>{{ task.title }}</h5>
+                  <div class="task-actions">
+                    <mat-chip [style.background-color]="getTaskPriorityColor(task.priority)">
+                      {{ task.priority }}
+                    </mat-chip>
+                    <mat-chip [style.background-color]="getTaskStatusColor(task.status)">
+                      {{ task.status | titlecase }}
+                    </mat-chip>
+                  </div>
+                </div>
+                
+                <p class="task-description" *ngIf="task.description">
+                  {{ task.description }}
+                </p>
+                
+                <div class="task-details">
+                  <div class="assignee" *ngIf="task.assigned_to">
+                    <mat-icon>person</mat-icon>
+                    {{ task.assigned_to.name }}
+                  </div>
+                  <div class="due-time" *ngIf="task.due_date">
+                    <mat-icon>schedule</mat-icon>
                     {{ task.due_date | date:'shortTime' }}
                   </div>
                 </div>
-              </div>
-            </div>
+              </mat-card-content>
+              
+              <mat-card-actions>
+                <button mat-button (click)="$event.stopPropagation(); editTask(task)">
+                  <mat-icon>edit</mat-icon>
+                  Edit
+                </button>
+                <button mat-button (click)="$event.stopPropagation(); viewTaskDetails(task)">
+                  <mat-icon>visibility</mat-icon>
+                  View
+                </button>
+              </mat-card-actions>
+            </mat-card>
           </div>
         </div>
-      </div>
 
-      <!-- Selected Day Details -->
-      <div class="day-details" *ngIf="selectedDay">
-        <h3>{{ selectedDay.date | date:'fullDate' }}</h3>
-        
-        <div class="day-tasks-list" *ngIf="selectedDay.tasks.length > 0; else noTasks">
-          <div 
-            class="task-item" 
-            *ngFor="let task of selectedDay.tasks"
-            [class.completed]="task.status === 'DONE'"
-          >
+        <!-- No Tasks Message -->
+        <div class="no-tasks" *ngIf="selectedDay.taskCount === 0">
+          <mat-icon>event_available</mat-icon>
+          <h3>No tasks scheduled</h3>
+          <p>You have a free day! Would you like to add a task?</p>
+          <button mat-raised-button color="primary" (click)="createTask(selectedDay.date)">
+            <mat-icon>add</mat-icon>
+            Add Task
+          </button>
+        </div>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <!-- Selected Day Details (for month/week view) -->
+  <mat-card class="day-details" *ngIf="selectedDay && viewMode !== 'day'">
+    <mat-card-header>
+      <mat-card-title>
+        {{ selectedDay.date | date:'fullDate' }}
+      </mat-card-title>
+      <mat-card-subtitle>
+        {{ selectedDay.taskCount }} task{{ selectedDay.taskCount !== 1 ? 's' : '' }}
+      </mat-card-subtitle>
+      <div class="header-spacer"></div>
+      <button 
+        mat-icon-button 
+        (click)="createTask(selectedDay.date)"
+        matTooltip="Add task to this day">
+        <mat-icon>add</mat-icon>
+      </button>
+    </mat-card-header>
+    
+    <mat-card-content>
+      <div class="day-tasks-list" *ngIf="selectedDay.taskCount > 0; else noTasksTemplate">
+        <mat-card 
+          class="task-item" 
+          *ngFor="let task of selectedDay.tasks; trackBy: trackByTask"
+          [class.completed]="task.status === 'DONE'"
+          (click)="viewTaskDetails(task)">
+          
+          <mat-card-content>
             <div class="task-info">
               <h4>{{ task.title }}</h4>
-              <p>{{ task.description }}</p>
+              <p *ngIf="task.description">{{ task.description }}</p>
+              
               <div class="task-meta">
-                <span class="status" [class]="'status-' + task.status.toLowerCase()">
+                <mat-chip 
+                  class="status-chip" 
+                  [style.background-color]="getTaskStatusColor(task.status)">
                   {{ task.status | titlecase }}
-                </span>
-                <span class="priority" [class]="'priority-' + task.priority.toLowerCase()">
-                  {{ task.priority | titlecase }}
-                </span>
+                </mat-chip>
+                <mat-chip 
+                  class="priority-chip" 
+                  [style.background-color]="getTaskPriorityColor(task.priority)">
+                  {{ task.priority }}
+                </mat-chip>
                 <span class="assignee" *ngIf="task.assigned_to">
-                  Assigned to: {{ task.assigned_to.name }}
+                  <mat-icon>person</mat-icon>
+                  {{ task.assigned_to.name }}
+                </span>
+                <span class="due-time" *ngIf="task.due_date">
+                  <mat-icon>schedule</mat-icon>
+                  {{ task.due_date | date:'shortTime' }}
                 </span>
               </div>
             </div>
-          </div>
-        </div>
-        
-        <ng-template #noTasks>
-          <p class="no-tasks">No tasks scheduled for this day</p>
-        </ng-template>
+          </mat-card-content>
+          
+          <mat-card-actions>
+            <button 
+              mat-button 
+              (click)="$event.stopPropagation(); editTask(task)"
+              matTooltip="Edit task">
+              <mat-icon>edit</mat-icon>
+            </button>
+            <button 
+              mat-button 
+              (click)="$event.stopPropagation(); viewTaskDetails(task)"
+              matTooltip="View details">
+              <mat-icon>visibility</mat-icon>
+            </button>
+          </mat-card-actions>
+        </mat-card>
       </div>
-    </div>
+      
+      <ng-template #noTasksTemplate>
+        <div class="no-tasks">
+          <mat-icon>event_available</mat-icon>
+          <p>No tasks scheduled for this day</p>
+          <button 
+            mat-button 
+            color="primary" 
+            (click)="createTask(selectedDay.date)">
+            <mat-icon>add</mat-icon>
+            Add Task
+          </button>
+        </div>
+      </ng-template>
+    </mat-card-content>
+  </mat-card>
+</div>

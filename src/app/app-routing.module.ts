@@ -1,195 +1,167 @@
-// import { NgModule } from '@angular/core';
-// import { RouterModule, Routes } from '@angular/router';
-// import { PreloadAllModules } from '@angular/router';
-// import { AuthGuard } from './core/guards/auth.guard';
-
-// const routes: Routes = [
-//   { 
-//     path: '', 
-//     redirectTo: '/dashboard', 
-//     pathMatch: 'full' 
-//   },
-//   {
-//     path: 'auth',
-//     loadChildren: () => import('./features/auth/auth.module').then(m => m.AuthModule)
-//   },
-//   {
-//     path: 'dashboard',
-//     loadChildren: () => import('./features/dashboard/dashboard.module').then(m => m.DashboardModule),
-//     canActivate: [AuthGuard]
-//   },
-//   {
-//     path: 'tasks',
-//     loadChildren: () => import('./features/tasks/tasks.module').then(m => m.TasksModule),
-//     canActivate: [AuthGuard]
-//   },
-//   {
-//     path: 'projects',
-//     loadChildren: () => import('./features/projects/projects.module').then(m => m.ProjectsModule),
-//     canActivate: [AuthGuard],
-//     data: { permissions: ['view_all_projects', 'view_team_projects'] }
-//   },
-//   {
-//     path: 'sprints',
-//     loadChildren: () => import('./features/sprints/sprint-management/sprints.module').then(m => m.SprintsModule),
-//     canActivate: [AuthGuard],
-//     data: { permissions: ['manage_sprints', 'view_sprints'] }
-//   },
-//   {
-//     path: 'team',
-//     loadChildren: () => import('./features/team/team.module').then(m => m.TeamModule),
-//     canActivate: [AuthGuard],
-//     data: { permissions: ['manage_team', 'view_team_tasks'] }
-//   },
-//   {
-//     path: 'time-tracking',
-//     loadChildren: () => import('./features/time-tracking/time-tracking.module').then(m => m.TimeTrackingModule),
-//     canActivate: [AuthGuard]
-//   },
-//   {
-//     path: 'analytics',
-//     loadChildren: () => import('./features/analytics/analytics.module').then(m => m.AnalyticsModule),
-//     canActivate: [AuthGuard],
-//     data: { permissions: ['view_analytics'] }
-//   },
-//   {
-//     path: 'calendar',
-//     loadComponent: () => import('./features/calendar/calendar.component').then(c => c.CalendarComponent),
-//     canActivate: [AuthGuard]
-//   },
-//   {
-//     path: 'notifications',
-//     loadChildren: () => import('./features/notifications/notifications.module').then(m => m.NotificationsModule),
-//     canActivate: [AuthGuard]
-//   },
-//   {
-//     path: 'settings',
-//     loadChildren: () => import('./features/settings/settings.module').then(m => m.SettingsModule),
-//     canActivate: [AuthGuard]
-//   },
-//   {
-//     path: 'profile',
-//     loadComponent: () => import('./features/auth/profile/profile.component').then(c => c.ProfileComponent),
-//     canActivate: [AuthGuard]
-//   },
-//   {
-//     path: 'access-denied',
-//     loadComponent: () => import('./shared/access-denied/access-denied.component').then(c => c.AccessDeniedComponent)
-//   },
-//   { 
-//     path: '**', 
-//     redirectTo: '/dashboard' 
-//   }
-// ];
-
-// @NgModule({
-//   imports: [RouterModule.forRoot(routes, {
-//     enableTracing: false, // Set to true for debugging
-//     preloadingStrategy: PreloadAllModules,
-//     scrollPositionRestoration: 'top',
-//     onSameUrlNavigation: 'reload'
-//   })],
-//   exports: [RouterModule]
-// })
-// export class AppRoutingModule { }
-
-
-
+// src/app/app-routing.module.ts - Enhanced with proper auth guards
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
-import { PreloadAllModules } from '@angular/router';
-import { AuthGuard } from './core/guards/auth.guard';
 
-export const routes: Routes = [
-  { 
-    path: '', 
-    redirectTo: '/dashboard', 
-    pathMatch: 'full' 
+// Import guards
+import { AuthGuard } from './core/guards/auth.guard';
+// ✅ Add this import at the top
+import { PreloadAllModules } from '@angular/router';
+
+const routes: Routes = [
+  // Root redirect
+  {
+    path: '',
+    redirectTo: '/dashboard',
+    pathMatch: 'full'
   },
+
+  // 🔧 FIXED: Auth routes with AntiAuthGuard to prevent logged-in users from accessing
   {
     path: 'auth',
+    canActivate: [AuthGuard], // Prevent authenticated users from accessing auth pages
     loadChildren: () => import('./features/auth/auth.module').then(m => m.AuthModule)
   },
+
+  // 🔧 FIXED: Protected routes with AuthGuard
   {
     path: 'dashboard',
+    canActivate: [AuthGuard],
     loadChildren: () => import('./features/dashboard/dashboard.module').then(m => m.DashboardModule),
-    canActivate: [AuthGuard]
+    data: { requiresAuth: true }
   },
+
   {
     path: 'tasks',
+    canActivate: [AuthGuard],
     loadChildren: () => import('./features/tasks/tasks.module').then(m => m.TasksModule),
-    canActivate: [AuthGuard]
+    data: { requiresAuth: true }
   },
+
   {
     path: 'projects',
-    loadChildren: () => import('./features/projects/projects.module').then(m => m.ProjectsModule),
     canActivate: [AuthGuard],
-    data: { permissions: ['view_all_projects', 'view_team_projects'] }
+    loadChildren: () => import('./features/projects/projects.module').then(m => m.ProjectsModule),
+    data: { 
+      requiresAuth: true,
+      permissions: ['view_all_projects', 'view_team_projects'] 
+    }
   },
+
   {
     path: 'sprints',
-    loadChildren: () => import('./features/sprints/sprints.module').then(m => m.SprintsModule),
     canActivate: [AuthGuard],
-    data: { permissions: ['manage_sprints', 'view_sprints'] }
+    loadChildren: () => import('./features/sprints/sprints.module').then(m => m.SprintsModule),
+    data: { 
+      requiresAuth: true,
+      permissions: ['manage_sprints', 'view_sprints'] 
+    }
   },
+
   {
     path: 'team',
-    loadChildren: () => import('./features/team/team.module').then(m => m.TeamModule),
     canActivate: [AuthGuard],
-    data: { permissions: ['manage_team', 'view_team_tasks'] }
+    loadChildren: () => import('./features/team/team.module').then(m => m.TeamModule),
+    data: { 
+      requiresAuth: true,
+      permissions: ['manage_team', 'view_team_tasks'] 
+    }
   },
+
   {
     path: 'time-tracking',
-    loadChildren: () => import('./features/time-tracking/time-tracking.module').then(m => m.TimeTrackingModule),
-    canActivate: [AuthGuard]
-  },
-  {
-    path: 'analytics',
-    loadChildren: () => import('./features/analytics/analytics.module').then(m => m.AnalyticsModule),
     canActivate: [AuthGuard],
-    data: { permissions: ['view_analytics'] }
+    loadChildren: () => import('./features/time-tracking/time-tracking.module').then(m => m.TimeTrackingModule),
+    data: { requiresAuth: true }
   },
-  {
-    path: 'reports',
-    loadChildren: () => import('./features/reports/reports.module').then(m => m.ReportsModule),
-    canActivate: [AuthGuard]
-  },
+
   {
     path: 'calendar',
+    canActivate: [AuthGuard],
+    // ✅ Correct - import from calendar.module.ts
     loadComponent: () => import('./features/calendar/calendar.component').then(c => c.CalendarComponent),
-    canActivate: [AuthGuard]
+    data: { requiresAuth: true }
   },
+
   {
     path: 'notifications',
+    canActivate: [AuthGuard],
     loadChildren: () => import('./features/notifications/notifications.module').then(m => m.NotificationsModule),
-    canActivate: [AuthGuard]
+    data: { requiresAuth: true }
   },
+
+  {
+    path: 'analytics',
+    canActivate: [AuthGuard],
+    loadChildren: () => import('./features/analytics/analytics.module').then(m => m.AnalyticsModule),
+    data: { 
+      requiresAuth: true,
+      permissions: ['view_analytics'] 
+    }
+  },
+
+  {
+    path: 'reports',
+    canActivate: [AuthGuard],
+    loadChildren: () => import('./features/reports/reports.module').then(m => m.ReportsModule),
+    data: { 
+      requiresAuth: true,
+      permissions: ['view_analytics'] 
+    }
+  },
+
   {
     path: 'settings',
+    canActivate: [AuthGuard],
     loadChildren: () => import('./features/settings/settings.module').then(m => m.SettingsModule),
-    canActivate: [AuthGuard]
+    data: { requiresAuth: true }
   },
+
+  // 🔧 NEW: Profile route (should be accessible to all authenticated users)
   {
     path: 'profile',
+    canActivate: [AuthGuard],
     loadComponent: () => import('./features/auth/profile/profile.component').then(c => c.ProfileComponent),
-    canActivate: [AuthGuard]
+    data: { requiresAuth: true }
   },
+
+  // Admin routes with specific role requirements
+  // {
+  //   path: 'admin',
+  //   canActivate: [AuthGuard],
+  //   loadChildren: () => import('./features/admin/admin.module').then(m => m.AdminModule),
+  //   data: { 
+  //     requiresAuth: true,
+  //     roles: ['ADMIN'] 
+  //   }
+  // },
+
+  // Access denied page
   {
     path: 'access-denied',
-    loadComponent: () => import('./shared/access-denied/access-denied.component').then(c => c.AccessDeniedComponent)
+    loadChildren: () => import('./shared/access-denied/access-denied.module').then(m => m.AccessDeniedModule)
   },
-  { 
-    path: '**', 
-    redirectTo: '/dashboard' 
+
+  // 404 page
+  // {
+  //   path: '404',
+  //   loadChildren: () => import('./features/not-found/not-found.module').then(m => m.NotFoundModule)
+  // },
+
+  // Wildcard route - must be last
+  {
+    path: '**',
+    redirectTo: '/404'
   }
 ];
 
 @NgModule({
   imports: [RouterModule.forRoot(routes, {
+    // Enable router logging in development
     enableTracing: false, // Set to true for debugging
+    // Enable router preloading
     preloadingStrategy: PreloadAllModules,
-    scrollPositionRestoration: 'top',
-    onSameUrlNavigation: 'reload'
+    // Scroll to top on route change
+    scrollPositionRestoration: 'top'
   })],
   exports: [RouterModule]
 })
