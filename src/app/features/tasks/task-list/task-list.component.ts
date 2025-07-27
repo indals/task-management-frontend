@@ -4,6 +4,8 @@ import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { Task } from '../../../core/models/task.model';
 import { TaskService } from '../../../core/services/task.service';
+import { AuthService } from '../../../core/services/auth.service';
+import { EnumService } from '../../../core/services/enum.service';
 
 @Component({
   selector: 'app-task-list',
@@ -19,38 +21,63 @@ export class TaskListComponent implements OnInit, OnDestroy {
   searchTerm: string = '';
   isLoading: boolean = false;
   errorMessage: string | null = null;
+  currentUserId: number = 0;
   
   // Add view mode and columns for different layouts
   viewMode: 'list' | 'grid' | 'kanban' = 'list';
   
-  // Define status columns for kanban view
+  // 🔧 FIXED: Updated status columns to match API enum values
   statusColumns = [
-    { status: 'PENDING', label: 'Pending', color: '#fbbf24' },
+    { status: 'BACKLOG', label: 'Backlog', color: '#6b7280' },
+    { status: 'TODO', label: 'To Do', color: '#fbbf24' },
     { status: 'IN_PROGRESS', label: 'In Progress', color: '#3b82f6' },
-    { status: 'COMPLETED', label: 'Completed', color: '#10b981' },
+    { status: 'IN_REVIEW', label: 'In Review', color: '#8b5cf6' },
+    { status: 'TESTING', label: 'Testing', color: '#06b6d4' },
+    { status: 'DONE', label: 'Done', color: '#10b981' },
+    { status: 'BLOCKED', label: 'Blocked', color: '#dc2626' },
     { status: 'CANCELLED', label: 'Cancelled', color: '#ef4444' }
   ];
   
+  // 🔧 FIXED: Updated status options to match API
   statusOptions = [
     { value: 'all', label: 'All' },
-    { value: 'PENDING', label: 'Pending' },
+    { value: 'BACKLOG', label: 'Backlog' },
+    { value: 'TODO', label: 'To Do' },
     { value: 'IN_PROGRESS', label: 'In Progress' },
-    { value: 'COMPLETED', label: 'Completed' },
-    { value: 'CANCELLED', label: 'Cancelled' }
+    { value: 'IN_REVIEW', label: 'In Review' },
+    { value: 'TESTING', label: 'Testing' },
+    { value: 'DONE', label: 'Done' },
+    { value: 'BLOCKED', label: 'Blocked' },
+    { value: 'CANCELLED', label: 'Cancelled' },
+    { value: 'DEPLOYED', label: 'Deployed' }
   ];
 
   constructor(
     private taskService: TaskService,
+    private authService: AuthService,
+    private enumService: EnumService,
     public router: Router
   ) { }
 
   ngOnInit(): void {
+    this.getCurrentUser();
     this.loadTasks();
   }
 
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
+  }
+
+  // 🔧 FIXED: Get current user ID properly
+  private getCurrentUser(): void {
+    this.authService.currentUser$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(user => {
+        if (user) {
+          this.currentUserId = user.id;
+        }
+      });
   }
 
   // Performance optimization
@@ -63,40 +90,39 @@ export class TaskListComponent implements OnInit, OnDestroy {
     return this.filteredTasks.filter(task => task.status === status);
   }
 
-loadTasks(): void {
-  this.isLoading = true;
-  this.errorMessage = null;
+  // 🔧 FIXED: Proper API integration with pagination handling
+  loadTasks(): void {
+    this.isLoading = true;
+    this.errorMessage = null;
 
-  const userId = JSON.parse(localStorage.getItem('user-info') || '{}')?.id;
+    // Load tasks with proper filters
+    const filters = {
+      assigned_to_id: this.currentUserId, // Get user's assigned tasks
+      page: 1,
+      per_page: 50, // Reasonable limit
+      sort_by: 'created_at',
+      sort_order: 'desc' as 'desc'
+    };
 
-  if (!userId) {
-    this.errorMessage = 'User ID not found! Please log in again.';
-    this.isLoading = false;
-    return;
+    this.taskService.getTasks(filters)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (response) => {
+          console.log('Tasks response:', response);
+          // Handle paginated response format
+          this.tasks = Array.isArray(response.data) ? response.data : [];
+          this.applyFilters();
+          this.isLoading = false;
+        },
+        error: (error) => {
+          console.error('Error loading tasks:', error);
+          this.errorMessage = this.getErrorMessage(error);
+          this.tasks = [];
+          this.applyFilters();
+          this.isLoading = false;
+        }
+      });
   }
-
-  this.taskService.getAllTasks({ created_by: userId })
-    .pipe(takeUntil(this.destroy$))
-    .subscribe({
-      next: (tasks) => {
-        debugger
-        this.tasks = Array.isArray(tasks) ? tasks : [tasks];
-        this.applyFilters();
-      },
-      error: (error) => {
-        debugger
-        console.error('Error loading tasks:', error);
-        this.errorMessage = this.getErrorMessage(error);
-        this.tasks = [];
-        this.applyFilters();
-      },
-      complete: () => {
-        this.isLoading = false;
-        debugger
-      }
-    });
-}
-
   
   refreshTasks(): void {
     this.loadTasks();
@@ -112,7 +138,7 @@ loadTasks(): void {
     this.filteredTasks = this.tasks.filter(task => {
       const matchesStatus =
         this.filterStatus === 'all' ||
-        (task.status && task.status.toLowerCase() === this.filterStatus.toLowerCase());
+        (task.status && task.status === this.filterStatus);
 
       const matchesSearch =
         !this.searchTerm ||
@@ -141,6 +167,7 @@ loadTasks(): void {
     this.router.navigate(['/tasks/new']);
   }
 
+  // 🔧 FIXED: Use proper API method for delete
   deleteTask(taskId: number, event: Event): void {
     event.stopPropagation();
     
@@ -159,36 +186,20 @@ loadTasks(): void {
     }
   }
 
-  // Helper methods for template
+  // 🔧 IMPROVED: Use EnumService for consistent labeling
   getStatusLabel(status: string): string {
-    switch (status) {
-      case 'PENDING': return 'Pending';
-      case 'IN_PROGRESS': return 'In Progress';
-      case 'COMPLETED': return 'Completed';
-      case 'CANCELLED': return 'Cancelled';
-      case 'BACKLOG': return 'Backlog';
-      case 'TODO': return 'To Do';
-      case 'IN_REVIEW': return 'In Review';
-      case 'TESTING': return 'Testing';
-      case 'BLOCKED': return 'Blocked';
-      case 'DONE': return 'Done';
-      case 'DEPLOYED': return 'Deployed';
-      default: return status;
-    }
+    if (!status) return 'Unknown';
+    return this.enumService.getTaskStatusLabel(status) || status.replace('_', ' ');
   }
 
   getPriorityClass(priority: string): string {
+    if (!priority) return 'priority-medium';
     return `priority-${priority.toLowerCase()}`;
   }
 
   getPriorityLabel(priority: string): string {
-    switch (priority) {
-      case 'CRITICAL': return 'Critical';
-      case 'HIGH': return 'High';
-      case 'MEDIUM': return 'Medium';
-      case 'LOW': return 'Low';
-      default: return priority;
-    }
+    if (!priority) return 'Medium';
+    return this.enumService.getTaskPriorityLabel(priority) || priority.replace('_', ' ');
   }
 
   // Set view mode
@@ -203,31 +214,15 @@ loadTasks(): void {
     this.applyFilters();
   }
 
-  // Get task priority color for UI
+  // 🔧 IMPROVED: Use EnumService for colors
   getTaskPriorityColor(priority: string): string {
-    switch (priority) {
-      case 'CRITICAL': return '#dc2626';
-      case 'HIGH': return '#ef4444';
-      case 'MEDIUM': return '#f59e0b';
-      case 'LOW': return '#10b981';
-      default: return '#6b7280';
-    }
+    if (!priority) return '#6b7280';
+    return this.enumService.getTaskPriorityColor(priority) || '#6b7280';
   }
 
-  // Get task status color for UI
   getTaskStatusColor(status: string): string {
-    switch (status) {
-      case 'COMPLETED':
-      case 'DONE': return '#10b981';
-      case 'IN_PROGRESS': return '#3b82f6';
-      case 'PENDING':
-      case 'TODO': return '#f59e0b';
-      case 'CANCELLED': return '#ef4444';
-      case 'BLOCKED': return '#dc2626';
-      case 'IN_REVIEW': return '#8b5cf6';
-      case 'TESTING': return '#06b6d4';
-      default: return '#6b7280';
-    }
+    if (!status) return '#6b7280';
+    return this.enumService.getTaskStatusColor(status) || '#6b7280';
   }
 
   // Check if task is overdue
@@ -235,11 +230,13 @@ loadTasks(): void {
     if (!task.due_date) return false;
     const dueDate = new Date(task.due_date);
     const now = new Date();
-    return dueDate < now && task.status !== 'DONE';
+    return dueDate < now && !['DONE', 'COMPLETED', 'DEPLOYED', 'CANCELLED'].includes(task.status);
   }
 
   // Get relative time for task creation
   getRelativeTime(dateString: string): string {
+    if (!dateString) return '';
+    
     const date = new Date(dateString);
     const now = new Date();
     const diffTime = now.getTime() - date.getTime();
@@ -261,14 +258,101 @@ loadTasks(): void {
     }
   }
 
-  // Get error message from error object
+  // 🔧 IMPROVED: Better error handling for new API format
   private getErrorMessage(error: any): string {
+    // Handle new standardized error format
+    if (error?.error?.success === false) {
+      return error.error.message || 'Failed to load tasks';
+    }
+    
+    // Handle legacy error format
     if (error?.error?.message) {
       return error.error.message;
     }
+    
     if (error?.message) {
       return error.message;
     }
+    
     return 'An unexpected error occurred while loading tasks';
+  }
+
+  // 🔧 NEW: Load tasks by different criteria
+  loadMyTasks(): void {
+    this.isLoading = true;
+    this.taskService.getMyTasks()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (tasks) => {
+          this.tasks = tasks;
+          this.applyFilters();
+          this.isLoading = false;
+        },
+        error: (error) => {
+          this.errorMessage = this.getErrorMessage(error);
+          this.isLoading = false;
+        }
+      });
+  }
+
+  loadOverdueTasks(): void {
+    this.isLoading = true;
+    this.taskService.getOverdueTasks()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (tasks) => {
+          this.tasks = tasks;
+          this.applyFilters();
+          this.isLoading = false;
+        },
+        error: (error) => {
+          this.errorMessage = this.getErrorMessage(error);
+          this.isLoading = false;
+        }
+      });
+  }
+
+  // 🔧 NEW: Quick actions for tasks
+  markTaskAsComplete(taskId: number, event: Event): void {
+    event.stopPropagation();
+    
+    const updateData = { status: 'DONE' };
+    this.taskService.updateTask(taskId, updateData)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (updatedTask) => {
+          // Update the task in the local array
+          const index = this.tasks.findIndex(task => task.id === taskId);
+          if (index !== -1) {
+            this.tasks[index] = updatedTask;
+            this.applyFilters();
+          }
+        },
+        error: (error) => {
+          this.errorMessage = this.getErrorMessage(error);
+        }
+      });
+  }
+
+  assignTaskToMe(taskId: number, event: Event): void {
+    event.stopPropagation();
+    
+    if (!this.currentUserId) return;
+    
+    const assignData = { assigned_to_id: this.currentUserId };
+    this.taskService.assignTask(taskId, assignData)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (updatedTask) => {
+          const index = this.tasks.findIndex(task => task.id === taskId);
+          if (index !== -1) {
+            this.tasks[index] = updatedTask;
+            this.applyFilters();
+          }
+        },
+        error: (error) => {
+          this.errorMessage = this.getErrorMessage(error);
+        }
+      });
   }
 }

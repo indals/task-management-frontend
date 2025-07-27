@@ -1,6 +1,7 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 
+// 🔧 FIXED: Removed standalone component imports - using module-declared components
 const routes: Routes = [
   {
     path: '',
@@ -9,11 +10,11 @@ const routes: Routes = [
   },
   {
     path: 'login',
-    loadComponent: () => import('./login/login.component').then(c => c.LoginComponent)
+    loadChildren: () => import('./auth.module').then(m => m.AuthModule)
   },
   {
     path: 'register', 
-    loadComponent: () => import('./register/register.component').then(c => c.RegisterComponent)
+    loadChildren: () => import('./auth.module').then(m => m.AuthModule)
   }
 ];
 

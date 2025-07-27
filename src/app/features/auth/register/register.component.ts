@@ -1,8 +1,8 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
-import { Subject } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
+import { Subject, of } from 'rxjs';
+import { takeUntil, catchError } from 'rxjs/operators';
 
 import { AuthService } from '../../../core/services/auth.service';
 import { EnumService } from '../../../core/services/enum.service';
@@ -37,6 +37,8 @@ export class RegisterComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     // Get return URL from route parameters or default to dashboard
     this.returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/dashboard';
+    
+    console.log('🔧 Register component initialized with returnUrl:', this.returnUrl);
     
     // Redirect if already logged in
     if (this.authService.isLoggedIn()) {
@@ -87,19 +89,44 @@ export class RegisterComponent implements OnInit, OnDestroy {
     return null;
   }
 
+  // 🔧 IMPROVED: Better role options loading with fallback
   private loadRoleOptions(): void {
-    // Filter roles appropriate for registration (exclude admin roles)
-    const allowedRoles = [
-      'DEVELOPER',
-      'SENIOR_DEVELOPER', 
-      'QA_ENGINEER',
-      'DEVOPS_ENGINEER',
-      'UI_UX_DESIGNER',
-      'BUSINESS_ANALYST'
-    ];
+    try {
+      // Filter roles appropriate for registration (exclude admin roles)
+      const allowedRoles = [
+        'DEVELOPER',
+        'SENIOR_DEVELOPER', 
+        'QA_ENGINEER',
+        'DEVOPS_ENGINEER',
+        'UI_UX_DESIGNER',
+        'BUSINESS_ANALYST'
+      ];
 
-    this.roleOptions = this.enumService.getUserRoleOptions()
-      .filter(role => allowedRoles.includes(role.value));
+      const enumOptions = this.enumService.getUserRoleOptions();
+      
+      if (enumOptions && enumOptions.length > 0) {
+        this.roleOptions = enumOptions.filter(role => allowedRoles.includes(role.value));
+      } else {
+        // Fallback role options if enum service fails
+        this.roleOptions = [
+          { value: 'DEVELOPER', label: 'Developer' },
+          { value: 'SENIOR_DEVELOPER', label: 'Senior Developer' },
+          { value: 'QA_ENGINEER', label: 'QA Engineer' },
+          { value: 'DEVOPS_ENGINEER', label: 'DevOps Engineer' },
+          { value: 'UI_UX_DESIGNER', label: 'UI/UX Designer' },
+          { value: 'BUSINESS_ANALYST', label: 'Business Analyst' }
+        ];
+      }
+      
+      console.log('✅ Role options loaded:', this.roleOptions);
+    } catch (error) {
+      console.error('❌ Failed to load role options:', error);
+      // Use fallback options
+      this.roleOptions = [
+        { value: 'DEVELOPER', label: 'Developer' },
+        { value: 'SENIOR_DEVELOPER', label: 'Senior Developer' }
+      ];
+    }
   }
 
   onSubmit(): void {
@@ -120,42 +147,61 @@ export class RegisterComponent implements OnInit, OnDestroy {
       daily_work_hours: formValue.daily_work_hours
     };
 
+    console.log('🔄 Attempting registration with:', {
+      name: registerData.name,
+      email: registerData.email,
+      role: registerData.role
+    });
+
     this.authService.register(registerData)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (user) => {
-          console.log('Registration successful:', user);
+          console.log('✅ Registration successful:', user);
           // Auto-login after successful registration
           this.autoLogin(formValue.email, formValue.password);
         },
         error: (error) => {
-          console.error('Registration failed:', error);
+          console.error('❌ Registration failed:', error);
           this.error = error.message || 'Registration failed. Please try again.';
         }
       });
   }
 
+  // 🔧 IMPROVED: Better auto-login with error handling
   private autoLogin(email: string, password: string): void {
+    console.log('🔄 Attempting auto-login after registration...');
+    
     this.authService.login({ email, password })
-      .pipe(takeUntil(this.destroy$))
+      .pipe(
+        takeUntil(this.destroy$),
+        catchError(error => {
+          console.error('❌ Auto-login failed:', error);
+          // Don't throw error, handle gracefully
+          return of(null);
+        })
+      )
       .subscribe({
-        next: () => {
-          this.router.navigate([this.returnUrl]);
-        },
-        error: (error) => {
-          console.error('Auto-login failed:', error);
-          // Redirect to login page if auto-login fails
-          this.router.navigate(['/auth/login'], {
-            queryParams: { 
-              returnUrl: this.returnUrl,
-              message: 'Registration successful! Please log in.'
-            }
-          });
+        next: (response) => {
+          if (response) {
+            console.log('✅ Auto-login successful');
+            this.router.navigate([this.returnUrl]);
+          } else {
+            console.log('⚠️ Auto-login failed, redirecting to login page');
+            this.router.navigate(['/auth/login'], {
+              queryParams: { 
+                returnUrl: this.returnUrl,
+                message: 'Registration successful! Please log in.'
+              }
+            });
+          }
         }
       });
   }
 
   onLoginClick(): void {
+    console.log('🔄 Navigating to login page...');
+    
     this.router.navigate(['/auth/login'], {
       queryParams: { returnUrl: this.returnUrl }
     });

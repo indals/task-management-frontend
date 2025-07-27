@@ -6,6 +6,7 @@ import { TasksRoutingModule } from './tasks-routing.module';
 import { TaskListComponent } from './task-list/task-list.component';
 import { TaskDetailsComponent } from './task-details/task-details.component';
 import { TaskFormComponent } from './task-form/task-form.component';
+import { SharedModule } from '../../shared/shared.module';
 
 @NgModule({
   declarations: [
@@ -17,7 +18,8 @@ import { TaskFormComponent } from './task-form/task-form.component';
     CommonModule,
     FormsModule,
     ReactiveFormsModule,
-    TasksRoutingModule
+    TasksRoutingModule,
+    SharedModule
   ],
   exports: [
     TaskListComponent,

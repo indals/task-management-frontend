@@ -1,58 +1,75 @@
 <div class="task-form-container">
-  <h2>{{ isEditMode ? 'Edit Task' : 'Create New Task' }}</h2>
+  <div class="form-header">
+    <h2>{{ isEditMode ? 'Edit Task' : 'Create New Task' }}</h2>
+    <button type="button" class="btn btn-secondary close-btn" (click)="onCancel()">
+      <i class="fas fa-times"></i>
+    </button>
+  </div>
   
+  <!-- Loading State -->
+  <div *ngIf="isLoading && isEditMode" class="loading-container">
+    <div class="spinner"></div>
+    <p>Loading task data...</p>
+  </div>
+
   <!-- Error Message -->
   <div *ngIf="errorMessage" class="error-banner">
+    <i class="fas fa-exclamation-triangle"></i>
     {{ errorMessage }}
   </div>
 
-  <form [formGroup]="taskForm" (ngSubmit)="onSubmit()">
-    <div class="form-group">
-      <label for="title">Title *</label>
-      <input 
-        type="text" 
-        id="title" 
-        formControlName="title" 
-        class="form-control" 
-        placeholder="Enter task title"
-        [class.error]="submitted && f['title'].errors">
-      <div *ngIf="submitted && f['title'].errors" class="error-message">
-        <div *ngIf="f['title'].errors?.['required']">Title is required</div>
-        <div *ngIf="f['title'].errors?.['minlength']">Title must be at least 3 characters</div>
-      </div>          
-    </div>
-
-    <div class="form-group">
-      <label for="description">Description</label>
-      <textarea 
-        id="description" 
-        formControlName="description" 
-        class="form-control" 
-        rows="4" 
-        placeholder="Enter task description"></textarea>
-    </div>
-
-    <div class="form-row">
+  <!-- Form Content -->
+  <form [formGroup]="taskForm" (ngSubmit)="onSubmit()" *ngIf="!isLoading || !isEditMode">
+    
+    <!-- Basic Information Section -->
+    <div class="form-section">
+      <h3>Basic Information</h3>
+      
       <div class="form-group">
-        <label for="dueDate">Due Date</label>
+        <label for="title">Title *</label>
         <input 
-          type="datetime-local" 
-          id="dueDate" 
-          formControlName="due_date" 
-          class="form-control">
+          type="text" 
+          id="title" 
+          formControlName="title" 
+          class="form-control" 
+          placeholder="Enter task title"
+          [class.error]="submitted && f['title'].errors">
+        <div *ngIf="submitted && f['title'].errors" class="error-message">
+          <div *ngIf="f['title'].errors?.['required']">Title is required</div>
+          <div *ngIf="f['title'].errors?.['minlength']">Title must be at least 3 characters</div>
+        </div>          
       </div>
 
       <div class="form-group">
-        <label for="priority">Priority</label>
-        <select id="priority" formControlName="priority" class="form-control">
-          <option *ngFor="let option of priorityOptions" [value]="option.value">
-            {{ option.label }}
-          </option>
-        </select>
+        <label for="description">Description</label>
+        <textarea 
+          id="description" 
+          formControlName="description" 
+          class="form-control" 
+          rows="4" 
+          placeholder="Enter task description"></textarea>
       </div>
-    </div>
 
-    <div class="form-row">
+      <div class="form-row">
+        <div class="form-group">
+          <label for="task_type">Task Type</label>
+          <select id="task_type" formControlName="task_type" class="form-control">
+            <option *ngFor="let option of taskTypeOptions" [value]="option.value">
+              {{ option.label }}
+            </option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="priority">Priority</label>
+          <select id="priority" formControlName="priority" class="form-control">
+            <option *ngFor="let option of priorityOptions" [value]="option.value">
+              {{ option.label }}
+            </option>
+          </select>
+        </div>
+      </div>
+
       <div class="form-group" *ngIf="isEditMode">
         <label for="status">Status</label>
         <select id="status" formControlName="status" class="form-control">
@@ -61,43 +78,181 @@
           </option>
         </select>
       </div>
-
-      <div class="form-group">
-        <label for="assignee">Assignee</label>
-        <select id="assignee" formControlName="assigneeId" class="form-control">
-          <option value="">Unassigned</option>
-          <option *ngFor="let user of users" [value]="user.id">{{ user.name }}</option>
-        </select>
-      </div>
     </div>
 
-    <!-- Subtasks section - simplified for now -->
-    <div class="form-group" formArrayName="subtasks" *ngIf="subtasks.length > 0">
-      <label>Subtasks</label>
-      <div *ngFor="let subtask of subtasks.controls; let i = index" [formGroupName]="i" class="subtask-item">
-        <div class="subtask-controls">
-          <input 
-            type="text" 
-            formControlName="title" 
-            class="form-control" 
-            placeholder="Subtask title">
-          <button type="button" class="btn btn-danger" (click)="removeSubtask(i)">Remove</button>
+    <!-- Assignment & Project Section -->
+    <div class="form-section">
+      <h3>Assignment & Project</h3>
+      
+      <div class="form-row">
+        <div class="form-group">
+          <label for="project_id">Project</label>
+          <select id="project_id" formControlName="project_id" class="form-control">
+            <option value="">Select Project (Optional)</option>
+            <option *ngFor="let project of projects" [value]="project.id">
+              {{ project.name }}
+            </option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="sprint_id">Sprint</label>
+          <select id="sprint_id" formControlName="sprint_id" class="form-control" 
+                  [disabled]="!taskForm.get('project_id')?.value">
+            <option value="">Select Sprint (Optional)</option>
+            <option *ngFor="let sprint of sprints" [value]="sprint.id">
+              {{ sprint.name }}
+            </option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="assigneeId">Assignee</label>
+          <div class="assignee-field">
+            <select id="assigneeId" formControlName="assigneeId" class="form-control">
+              <option value="">Unassigned</option>
+              <option *ngFor="let user of users" [value]="user.id">{{ user.name }}</option>
+            </select>
+            <button type="button" class="btn btn-sm btn-outline" (click)="assignToMe()" 
+                    title="Assign to me">
+              <i class="fas fa-user"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="parent_task_id">Parent Task</label>
+          <select id="parent_task_id" formControlName="parent_task_id" class="form-control">
+            <option value="">No Parent Task</option>
+            <!-- You might want to load available tasks here -->
+          </select>
         </div>
       </div>
     </div>
-    
-    <div class="form-group">
-      <button type="button" class="btn btn-secondary" (click)="addSubtask()">Add Subtask</button>
+
+    <!-- Timeline Section -->
+    <div class="form-section">
+      <h3>Timeline</h3>
+      
+      <div class="form-row">
+        <div class="form-group">
+          <label for="start_date">Start Date</label>
+          <div class="date-field">
+            <input 
+              type="datetime-local" 
+              id="start_date" 
+              formControlName="start_date" 
+              class="form-control">
+            <button type="button" class="btn btn-sm btn-outline" (click)="setTodayAsStartDate()" 
+                    title="Set to today">
+              <i class="fas fa-calendar-day"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="due_date">Due Date</label>
+          <div class="date-field">
+            <input 
+              type="datetime-local" 
+              id="due_date" 
+              formControlName="due_date" 
+              class="form-control">
+            <button type="button" class="btn btn-sm btn-outline" (click)="setDueDateNextWeek()" 
+                    title="Set to next week">
+              <i class="fas fa-calendar-plus"></i>
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
 
+    <!-- Estimation Section -->
+    <div class="form-section">
+      <h3>Estimation</h3>
+      
+      <div class="form-row">
+        <div class="form-group">
+          <label for="estimated_hours">Estimated Hours</label>
+          <input 
+            type="number" 
+            id="estimated_hours" 
+            formControlName="estimated_hours" 
+            class="form-control" 
+            min="0.1" 
+            step="0.5"
+            placeholder="e.g., 8.5">
+          <div *ngIf="submitted && f['estimated_hours'].errors" class="error-message">
+            <div *ngIf="f['estimated_hours'].errors?.['min']">Estimated hours must be greater than 0</div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="story_points">Story Points</label>
+          <input 
+            type="number" 
+            id="story_points" 
+            formControlName="story_points" 
+            class="form-control" 
+            min="1" 
+            max="100"
+            placeholder="e.g., 5">
+          <div *ngIf="submitted && f['story_points'].errors" class="error-message">
+            <div *ngIf="f['story_points'].errors?.['min']">Story points must be at least 1</div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="estimation_unit">Estimation Unit</label>
+          <select id="estimation_unit" formControlName="estimation_unit" class="form-control">
+            <option *ngFor="let option of estimationUnitOptions" [value]="option.value">
+              {{ option.label }}
+            </option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Additional Information Section -->
+    <div class="form-section">
+      <h3>Additional Information</h3>
+      
+      <div class="form-group">
+        <label for="labels">Labels</label>
+        <input 
+          type="text" 
+          id="labels" 
+          formControlName="labels" 
+          class="form-control" 
+          placeholder="Enter labels separated by commas (e.g., frontend, urgent, bug)">
+        <small class="form-text">Separate multiple labels with commas</small>
+      </div>
+
+      <div class="form-group">
+        <label for="acceptance_criteria">Acceptance Criteria</label>
+        <textarea 
+          id="acceptance_criteria" 
+          formControlName="acceptance_criteria" 
+          class="form-control" 
+          rows="3" 
+          placeholder="Define the acceptance criteria for this task"></textarea>
+      </div>
+    </div>
+
+    <!-- Form Actions -->
     <div class="form-actions">
       <button type="button" class="btn btn-secondary" (click)="onCancel()" [disabled]="isLoading">
+        <i class="fas fa-times"></i>
         Cancel
       </button>
       <button type="submit" class="btn btn-primary" [disabled]="isLoading">
+        <i class="fas fa-spinner fa-spin" *ngIf="isLoading"></i>
+        <i class="fas fa-save" *ngIf="!isLoading"></i>
         <span *ngIf="isLoading">{{ isEditMode ? 'Updating...' : 'Creating...' }}</span>
-        <span *ngIf="!isLoading">{{ isEditMode ? 'Update' : 'Create' }}</span>
+        <span *ngIf="!isLoading">{{ isEditMode ? 'Update Task' : 'Create Task' }}</span>
       </button>
     </div>
-  </form>
+</form>
 </div>

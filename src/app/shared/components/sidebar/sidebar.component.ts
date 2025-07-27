@@ -45,6 +45,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
   unreadNotificationCount = 0;
   isCollapsed = false;
   
+  // 🔧 FIXED: Added missing Reports and corrected permissions
   menuItems: MenuItem[] = [
     { 
       icon: 'dashboard', 
@@ -62,7 +63,8 @@ export class SidebarComponent implements OnInit, OnDestroy {
       children: [
         { icon: 'list', label: 'All Tasks', route: '/tasks', active: false },
         { icon: 'person', label: 'My Tasks', route: '/tasks/my-tasks', active: false },
-        { icon: 'warning', label: 'Overdue', route: '/tasks/overdue', active: false }
+        { icon: 'warning', label: 'Overdue', route: '/tasks/overdue', active: false },
+        { icon: 'add_task', label: 'Create Task', route: '/tasks/create', active: false }
       ]
     },
     { 
@@ -71,7 +73,11 @@ export class SidebarComponent implements OnInit, OnDestroy {
       route: '/projects',
       active: false,
       badge: null,
-      permissions: ['view_all_projects', 'view_team_projects']
+      permissions: ['view_all_projects', 'view_team_projects'],
+      children: [
+        { icon: 'list', label: 'All Projects', route: '/projects', active: false },
+        { icon: 'add', label: 'Create Project', route: '/projects/create', active: false }
+      ]
     },
     { 
       icon: 'track_changes', 
@@ -116,7 +122,21 @@ export class SidebarComponent implements OnInit, OnDestroy {
       route: '/analytics',
       active: false,
       badge: null,
-      permissions: []
+      permissions: ['view_analytics'] // 🔧 FIXED: Added proper permissions
+    },
+    // 🔧 ADDED: Missing Reports module
+    { 
+      icon: 'bar_chart', 
+      label: 'Reports', 
+      route: '/reports',
+      active: false,
+      badge: null,
+      permissions: ['view_analytics'], // Reports usually need analytics permission
+      children: [
+        { icon: 'trending_up', label: 'Performance Reports', route: '/reports/performance', active: false },
+        { icon: 'pie_chart', label: 'Project Reports', route: '/reports/projects', active: false },
+        { icon: 'timeline', label: 'Time Reports', route: '/reports/time', active: false }
+      ]
     },
     { 
       icon: 'settings', 
@@ -134,10 +154,11 @@ export class SidebarComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
+    this.setupUserSubscription();
     this.initializeComponent();
     this.setupRouterSubscription();
     this.setupNotificationSubscription();
-    this.setupUserSubscription();
+    
   }
 
   ngOnDestroy(): void {
@@ -182,6 +203,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
       });
   }
 
+  // 🔧 IMPROVED: Better route matching logic
   private updateActiveRoute(url: string): void {
     this.menuItems.forEach(item => {
       // Reset all items to inactive first
@@ -190,17 +212,27 @@ export class SidebarComponent implements OnInit, OnDestroy {
         item.children.forEach(child => child.active = false);
       }
 
-      // Check main route
-      if (url.startsWith(item.route) && item.route !== '/') {
+      // Handle root route
+      if (url === '/' && item.route === '/dashboard') {
         item.active = true;
-      } else if (url === '/' && item.route === '/dashboard') {
+        return;
+      }
+
+      // Check exact route match first
+      if (url === item.route) {
+        item.active = true;
+        return;
+      }
+
+      // Check if URL starts with route (for nested routes)
+      if (url.startsWith(item.route + '/') || url.startsWith(item.route + '?')) {
         item.active = true;
       }
 
       // Check child routes
       if (item.children) {
         item.children.forEach(child => {
-          if (url.startsWith(child.route) && child.route !== '/') {
+          if (url === child.route || url.startsWith(child.route + '/') || url.startsWith(child.route + '?')) {
             child.active = true;
             item.active = true; // Also mark parent as active
           }
@@ -216,10 +248,25 @@ export class SidebarComponent implements OnInit, OnDestroy {
     }
   }
 
+  // 🔧 IMPROVED: Better permission filtering
   private filterMenuItemsByPermissions(): void {
-    if (!this.currentUser) return;
+    console.log('Filtering menu items by permissions for user:', this.currentUser?.role);
+    debugger
+    if (!this.currentUser) {
+      // Hide permission-restricted items if no user
+      this.menuItems = this.menuItems.filter(item => !item.permissions || item.permissions.length === 0);
+      return;
+    }
 
+    // Filter main menu items
     this.menuItems = this.menuItems.filter(item => this.canShowMenuItem(item));
+    
+    // Filter child menu items
+    this.menuItems.forEach(item => {
+      if (item.children) {
+        item.children = item.children.filter(child => this.canShowMenuItem(child));
+      }
+    });
   }
 
   private canShowMenuItem(item: MenuItem): boolean {
@@ -234,7 +281,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
     }
 
     // Check permissions
-    if (item.permissions && !this.hasAnyPermission(item.permissions)) {
+    if (item.permissions && item.permissions.length > 0 && !this.hasAnyPermission(item.permissions)) {
       return false;
     }
 
@@ -242,8 +289,6 @@ export class SidebarComponent implements OnInit, OnDestroy {
   }
 
   private hasAnyPermission(permissions: string[]): boolean {
-    // This would typically come from the AuthGuard or a permission service
-    // For now, we'll use a simplified role-based check
     const currentUser = this.authService.getCurrentUserValue();
     if (!currentUser) return false;
 
@@ -251,18 +296,21 @@ export class SidebarComponent implements OnInit, OnDestroy {
     return permissions.some(permission => userPermissions.includes(permission));
   }
 
+  // 🔧 UPDATED: Enhanced permissions with more granular control
   private getUserPermissions(role: string): string[] {
-    // This should match the permissions in AuthGuard
     const rolePermissions: { [key: string]: string[] } = {
+
       'ADMIN': [
         'view_all_tasks', 'create_task', 'edit_task', 'delete_task', 'assign_task',
         'view_all_projects', 'create_project', 'edit_project', 'delete_project',
-        'manage_team', 'view_analytics', 'manage_sprints', 'manage_users'
+        'manage_team', 'view_analytics', 'manage_sprints', 'manage_users',
+        'view_team_tasks', 'view_team_projects'
       ],
       'PROJECT_MANAGER': [
         'view_all_tasks', 'create_task', 'edit_task', 'delete_task', 'assign_task',
         'view_all_projects', 'create_project', 'edit_project',
-        'view_analytics', 'manage_sprints', 'manage_team'
+        'view_analytics', 'manage_sprints', 'manage_team',
+        'view_team_tasks', 'view_team_projects'
       ],
       'TEAM_LEAD': [
         'view_team_tasks', 'create_task', 'edit_task', 'assign_task',
@@ -296,7 +344,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
         'view_team_tasks', 'view_team_projects', 'view_analytics', 'manage_sprints'
       ]
     };
-
+    console.log(`Permissions for role ${role}:`, rolePermissions[role]);
     return rolePermissions[role] || [];
   }
 
@@ -345,7 +393,6 @@ export class SidebarComponent implements OnInit, OnDestroy {
 
   openQuickSearch(): void {
     // TODO: Implement quick search functionality
-    // This could open a dialog or navigate to a search page
     console.log('Quick search clicked');
   }
 

@@ -1,67 +1,395 @@
 <div class="task-details-container">
-  <div class="header">
-    <h2 class="title">{{ task?.title }}</h2>
-    <div class="status-badge" [ngClass]="task?.status?.toLowerCase()">
-      {{ task?.status }}
+  
+  <!-- Loading State -->
+  <div *ngIf="loading" class="loading-container">
+    <div class="spinner"></div>
+    <p>Loading task details...</p>
+  </div>
+
+  <!-- Error State -->
+  <div *ngIf="error && !loading" class="error-container">
+    <div class="error-banner">
+      <i class="fas fa-exclamation-triangle"></i>
+      {{ error }}
+      <button class="btn btn-sm btn-secondary" (click)="clearError(); refreshTask()">
+        <i class="fas fa-refresh"></i>
+        Retry
+      </button>
     </div>
   </div>
 
-  <div class="metadata">
-    <div class="metadata-item">
-      <span class="label">Created:</span>
-      <span class="value">{{ task?.created_at | date:'medium' }}</span>
-    </div>
-    <div class="metadata-item">
-      <span class="label">Due:</span>
-      <span class="value">{{ task?.due_date | date:'medium' }}</span>
-    </div>
-    <div class="metadata-item">
-      <span class="label">Priority:</span>
-      <span class="value priority" [ngClass]="task?.priority?.toLowerCase()">{{ task?.priority }}</span>
-    </div>
-    <div class="metadata-item">
-      <span class="label">Assigned to:</span>
-      <span class="value">{{ task?.assigned_to?.name || 'Unassigned' }}</span>
-    </div>
-  </div>
-
-  <div class="description">
-    <h3>Description</h3>
-    <p>{{ task?.description }}</p>
-  </div>
-
-  <div class="subtasks" *ngIf="task?.subtasks?.length">
-    <h3>Subtasks</h3>
-    <ul class="subtasks-list">
-      <li *ngFor="let subtask of task?.subtasks" class="subtask-item">
-        <input type="checkbox" [checked]="subtask.completed" (change)="toggleSubtask(subtask.id)">
-        <span [ngClass]="{'completed': subtask.completed}">{{ subtask.title }}</span>
-      </li>
-    </ul>
-  </div>
-
-  <div class="comments" *ngIf="task?.comments?.length">
-    <h3>Comments</h3>
-    <div class="comment-list">
-      <div *ngFor="let comment of task?.comments" class="comment">
-        <div class="comment-header">
-          <span class="comment-author">{{ comment.author?.name || 'Unknown' }}</span>
-          <span class="comment-date">{{ comment.created_at | date:'medium' }}</span>
+  <!-- Task Content -->
+  <div *ngIf="task && !loading" class="task-content">
+    
+    <!-- Header Section -->
+    <div class="task-header">
+      <div class="header-main">
+        <div class="title-section">
+          <button class="back-btn" (click)="goBack()" title="Back to tasks">
+            <i class="fas fa-arrow-left"></i>
+          </button>
+          <h1 class="task-title">{{ task.title }}</h1>
         </div>
-        <p class="comment-text">{{ comment.comment }}</p>
+        
+        <div class="header-badges">
+          <span class="status-badge" [ngClass]="getStatusClass(task.status)">
+            <i class="fas fa-circle"></i>
+            {{ getStatusLabel(task.status) }}
+          </span>
+          <span class="priority-badge" [ngClass]="getPriorityClass(task.priority)">
+            {{ getPriorityLabel(task.priority) }}
+          </span>
+          <span class="type-badge">
+            {{ getTaskTypeLabel(task.task_type) }}
+          </span>
+        </div>
+      </div>
+
+      <!-- Progress Bar -->
+      <div class="progress-section" *ngIf="task.status !== 'BACKLOG'">
+        <div class="progress-bar">
+          <div class="progress-fill" [style.width.%]="getProgressPercentage()"></div>
+        </div>
+        <span class="progress-text">{{ getProgressPercentage() }}% Complete</span>
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="quick-actions">
+        <button 
+          class="btn btn-primary" 
+          (click)="editTask()" 
+          [disabled]="!canEditTask()"
+          title="Edit task">
+          <i class="fas fa-edit"></i>
+          Edit
+        </button>
+        
+        <button 
+          *ngIf="task.status !== 'DONE'" 
+          class="btn btn-success" 
+          (click)="markAsComplete()"
+          [disabled]="isUpdatingStatus"
+          title="Mark as complete">
+          <i class="fas fa-check"></i>
+          Complete
+        </button>
+        
+        <button 
+          *ngIf="task.status === 'TODO' || task.status === 'BACKLOG'" 
+          class="btn btn-info" 
+          (click)="markAsInProgress()"
+          [disabled]="isUpdatingStatus"
+          title="Start working">
+          <i class="fas fa-play"></i>
+          Start
+        </button>
+        
+        <button 
+          *ngIf="!task.assigned_to || task.assigned_to.id !== (this.authService.getCurrentUserValue()?.id)" 
+          class="btn btn-outline" 
+          (click)="assignToMe()"
+          title="Assign to me">
+          <i class="fas fa-user-plus"></i>
+          Assign to Me
+        </button>
+
+        <button 
+          class="btn btn-danger" 
+          (click)="deleteTask()" 
+          [disabled]="!canDeleteTask()"
+          title="Delete task">
+          <i class="fas fa-trash"></i>
+          Delete
+        </button>
       </div>
     </div>
-  </div>
 
-  <div class="add-comment">
-    <h3>Add Comment</h3>
-    <textarea [(ngModel)]="newComment" placeholder="Write a comment..."></textarea>
-    <button class="btn btn-primary" (click)="addComment()">Post Comment</button>
-  </div>
+    <!-- Main Content Grid -->
+    <div class="content-grid">
+      
+      <!-- Left Column -->
+      <div class="left-column">
+        
+        <!-- Description Section -->
+        <div class="content-section" *ngIf="task.description">
+          <h3><i class="fas fa-file-text"></i> Description</h3>
+          <div class="description-content">
+            <p [innerHTML]="task.description"></p>
+          </div>
+        </div>
 
-  <div class="actions">
-    <button class="btn btn-edit" (click)="editTask()">Edit Task</button>
-    <button class="btn btn-delete" (click)="deleteTask()">Delete Task</button>
-    <button class="btn btn-primary" *ngIf="task?.status !== 'DONE'" (click)="markAsComplete()">Mark as Complete</button>
+        <!-- Acceptance Criteria -->
+        <div class="content-section" *ngIf="task.acceptance_criteria">
+          <h3><i class="fas fa-check-square"></i> Acceptance Criteria</h3>
+          <div class="criteria-content">
+            <p [innerHTML]="task.acceptance_criteria"></p>
+          </div>
+        </div>
+
+        <!-- Labels -->
+        <div class="content-section" *ngIf="getLabelsArray().length > 0">
+          <h3><i class="fas fa-tags"></i> Labels</h3>
+          <div class="labels-container">
+            <span 
+              *ngFor="let label of getLabelsArray()" 
+              class="label-tag">
+              {{ label }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Comments Section -->
+        <div class="content-section">
+          <h3><i class="fas fa-comments"></i> Comments ({{ comments.length }})</h3>
+          
+          <!-- Add Comment Form -->
+          <div class="add-comment-form">
+            <textarea 
+              [(ngModel)]="newComment" 
+              placeholder="Add a comment..."
+              class="comment-textarea"
+              rows="3"
+              [disabled]="isSubmittingComment"></textarea>
+            <div class="comment-actions">
+              <button 
+                class="btn btn-primary" 
+                (click)="addComment()" 
+                [disabled]="!newComment.trim() || isSubmittingComment">
+                <i class="fas fa-spinner fa-spin" *ngIf="isSubmittingComment"></i>
+                <i class="fas fa-paper-plane" *ngIf="!isSubmittingComment"></i>
+                {{ isSubmittingComment ? 'Posting...' : 'Post Comment' }}
+              </button>
+            </div>
+          </div>
+
+          <!-- Comments List -->
+          <div class="comments-list" *ngIf="comments.length > 0">
+            <div *ngFor="let comment of comments" class="comment-item">
+              <div class="comment-header">
+                <div class="comment-author">
+                  <div class="author-avatar" *ngIf="comment.created_by?.avatar_url; else avatarFallback">
+                    <img [src]="comment.created_by" [alt]="comment.created_by">
+                  </div>
+                  <ng-template #avatarFallback>
+                    <div class="author-avatar-initials">
+                      {{ 'User #' + comment.id }}
+                    </div>
+                  </ng-template>
+                  
+                  <div class="author-info">
+                    <span class="author-name">{{ 'User #' + comment.id }}</span>
+                    <span class="comment-date">{{ getRelativeTime(comment.created_at) }}</span>
+                  </div>
+                </div>
+                
+                <div class="comment-actions" *ngIf="comment?.id === (this.authService.getCurrentUserValue()?.id)">
+                  <button class="btn-icon" (click)="deleteComment(comment.id)" title="Delete comment">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </div>
+              </div>
+              
+              <div class="comment-content">
+                <p [innerHTML]="comment.content"></p>
+              </div>
+            </div>
+          </div>
+
+          <!-- No Comments Message -->
+          <div *ngIf="comments.length === 0" class="no-comments">
+            <i class="fas fa-comment-slash"></i>
+            <p>No comments yet. Be the first to add one!</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column -->
+      <div class="right-column">
+        
+        <!-- Task Metadata -->
+        <div class="metadata-card">
+          <h3><i class="fas fa-info-circle"></i> Task Information</h3>
+          
+          <div class="metadata-grid">
+            <div class="metadata-item">
+              <span class="label">Status:</span>
+              <span class="value">
+                <span class="status-indicator" [ngClass]="getStatusClass(task.status)"></span>
+                {{ getStatusLabel(task.status) }}
+              </span>
+            </div>
+            
+            <div class="metadata-item">
+              <span class="label">Priority:</span>
+              <span class="value priority-value" [ngClass]="getPriorityClass(task.priority)">
+                {{ getPriorityLabel(task.priority) }}
+              </span>
+            </div>
+            
+            <div class="metadata-item">
+              <span class="label">Type:</span>
+              <span class="value">{{ getTaskTypeLabel(task.task_type) }}</span>
+            </div>
+            
+            <div class="metadata-item" *ngIf="task.project">
+              <span class="label">Project:</span>
+              <span class="value">
+                <i class="fas fa-folder"></i>
+                {{ task.project.name }}
+              </span>
+            </div>
+            
+            <div class="metadata-item" *ngIf="task.sprint">
+              <span class="label">Sprint:</span>
+              <span class="value">
+                <i class="fas fa-running"></i>
+                {{ task.sprint.name }}
+              </span>
+            </div>
+            
+            <div class="metadata-item">
+              <span class="label">Created:</span>
+              <span class="value">{{ task.created_at | date:'medium' }}</span>
+            </div>
+            
+            <div class="metadata-item" *ngIf="task.updated_at !== task.created_at">
+              <span class="label">Updated:</span>
+              <span class="value">{{ task.updated_at | date:'medium' }}</span>
+            </div>
+            
+            <div class="metadata-item" *ngIf="task.start_date">
+              <span class="label">Start Date:</span>
+              <span class="value">{{ task.start_date | date:'medium' }}</span>
+            </div>
+            
+            <div class="metadata-item" *ngIf="task.due_date">
+              <span class="label">Due Date:</span>
+              <span class="value" [ngClass]="{ 'overdue': isTaskOverdue() }">
+                {{ task.due_date | date:'medium' }}
+                <span *ngIf="isTaskOverdue()" class="overdue-badge">
+                  <i class="fas fa-exclamation-triangle"></i>
+                  Overdue
+                </span>
+                <span *ngIf="!isTaskOverdue() && getDaysUntilDue() > 0" class="days-until">
+                  ({{ getDaysUntilDue() }} days left)
+                </span>
+              </span>
+            </div>
+            
+            <div class="metadata-item" *ngIf="task.completion_date">
+              <span class="label">Completed:</span>
+              <span class="value">{{ task.completion_date | date:'medium' }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Assignment Information -->
+        <div class="metadata-card">
+          <h3><i class="fas fa-users"></i> People</h3>
+          
+          <div class="people-grid">
+            <div class="person-item">
+              <span class="label">Assigned to:</span>
+              <div class="person-info" *ngIf="task.assigned_to; else unassigned">
+                <div class="person-avatar" *ngIf="task.assigned_to.avatar_url; else assigneeAvatarFallback">
+                  <img [src]="task.assigned_to.avatar_url" [alt]="task.assigned_to.name">
+                </div>
+                <ng-template #assigneeAvatarFallback>
+                  <div class="person-avatar-initials">
+                    {{ task.assigned_to.name.charAt(0).toUpperCase() }}
+                  </div>
+                </ng-template>
+                <div class="person-details">
+                  <span class="person-name">{{ task.assigned_to.name }}</span>
+                  <span class="person-role">{{ task.assigned_to.role }}</span>
+                </div>
+              </div>
+              <ng-template #unassigned>
+                <span class="unassigned-text">
+                  <i class="fas fa-user-slash"></i>
+                  Unassigned
+                </span>
+              </ng-template>
+            </div>
+            
+            <div class="person-item" *ngIf="task.created_by">
+              <span class="label">Created by:</span>
+              <div class="person-info">
+                <div class="person-avatar" *ngIf="task.created_by.avatar_url; else creatorAvatarFallback">
+                  <img [src]="task.created_by.avatar_url" [alt]="task.created_by.name">
+                </div>
+                <ng-template #creatorAvatarFallback>
+                  <div class="person-avatar-initials">
+                    {{ task.created_by.name.charAt(0).toUpperCase() }}
+                  </div>
+                </ng-template>
+                <div class="person-details">
+                  <span class="person-name">{{ task.created_by.name }}</span>
+                  <span class="person-role">{{ task.created_by.role }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Estimation Information -->
+        <div class="metadata-card" *ngIf="task.estimated_hours || task.actual_hours || task.story_points">
+          <h3><i class="fas fa-clock"></i> Time & Estimation</h3>
+          
+          <div class="estimation-grid">
+            <div class="estimation-item" *ngIf="task.estimated_hours">
+              <span class="label">Estimated:</span>
+              <span class="value">{{ formatDuration(task.estimated_hours) }}</span>
+            </div>
+            
+            <div class="estimation-item" *ngIf="task.actual_hours">
+              <span class="label">Actual:</span>
+              <span class="value">{{ formatDuration(task.actual_hours) }}</span>
+            </div>
+            
+            <div class="estimation-item" *ngIf="task.story_points">
+              <span class="label">Story Points:</span>
+              <span class="value">{{ task.story_points }}</span>
+            </div>
+            
+            <div class="estimation-item" *ngIf="task.estimation_unit">
+              <span class="label">Unit:</span>
+              <span class="value">{{ task.estimation_unit }}</span>
+            </div>
+          </div>
+
+          <!-- Time Progress Bar -->
+          <div class="time-progress" *ngIf="task.estimated_hours && task.actual_hours">
+            <div class="progress-header">
+              <span>Time Progress</span>
+              <span>{{ Math.round((task.actual_hours / task.estimated_hours) * 100) }}%</span>
+            </div>
+            <div class="progress-bar">
+              <div 
+                class="progress-fill" 
+                [style.width.%]="Math.min((task.actual_hours / task.estimated_hours) * 100, 100)"
+                [ngClass]="{ 'over-estimate': task.actual_hours > task.estimated_hours }">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Related Tasks -->
+        <div class="metadata-card" *ngIf="task.parent_task_id">
+          <h3><i class="fas fa-sitemap"></i> Related</h3>
+          
+          <div class="related-tasks">
+            <div class="related-item" *ngIf="task.parent_task_id">
+              <span class="label">Parent Task:</span>
+              <a [routerLink]="['/tasks', task.parent_task_id]" class="task-link">
+                <i class="fas fa-external-link-alt"></i>
+                View Parent Task
+              </a>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
   </div>
 </div>

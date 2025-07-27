@@ -19,7 +19,8 @@ export const API_ENDPOINTS = {
     COMMENTS: (id: number) => `${environment.apiUrl}/api/tasks/${id}/comments`,
     TIME_LOG: (id: number) => `${environment.apiUrl}/api/tasks/${id}/time`,
     OVERDUE: `${environment.apiUrl}/api/tasks/overdue`,
-    COMMENT_BY_ID: (commentId: number) => `${environment.apiUrl}/api/tasks/comments/${commentId}`
+    COMMENT_BY_ID: (commentId: number) => `${environment.apiUrl}/api/tasks/comments/${commentId}`,
+    TIME_LOGS: (timeLogId: number) => `${environment.apiUrl}/api/tasks/timelogs/${timeLogId}`,
   },
   PROJECTS: {
     BASE: `${environment.apiUrl}/api/projects`,

@@ -110,19 +110,19 @@
           </div>
         </mat-card-header>
         <mat-card-content>
-          <div class="task-list" *ngIf="recentTasks.length > 0; else noTasks">
+          <div class="task-list" *ngIf="recentTasks && recentTasks.length > 0; else noTasks">
             <div class="task-item" *ngFor="let task of recentTasks">
               <div class="task-info">
-                <h4>{{ task.title }}</h4>
-                <p>{{ task.description | truncate:80 }}</p>
+                <h4>{{ task.title || 'Untitled Task' }}</h4>
+                <p>{{ truncateText(task.description, 80) || 'No description available' }}</p>
                 <div class="task-meta">
-                  <span class="status-badge" [ngClass]="'status-' + task.status.toLowerCase().replace('_', '-')">
+                  <span class="status-badge" [ngClass]="'status-' + (task.status || 'unknown').toLowerCase().replace('_', '-')">
                     {{ getTaskStatusLabel(task.status) }}
                   </span>
-                  <span class="priority-badge" [ngClass]="'priority-' + task.priority.toLowerCase()">
+                  <span class="priority-badge" [ngClass]="'priority-' + (task.priority || 'medium').toLowerCase()">
                     {{ getTaskPriorityLabel(task.priority) }}
                   </span>
-                  <span class="task-date">{{ task.created_at | relativeTime }}</span>
+                  <span class="task-date">{{ getRelativeTime(task.created_at) }}</span>
                 </div>
               </div>
               <div class="task-avatar" *ngIf="task.assigned_to">
@@ -133,7 +133,7 @@
                   [matTooltip]="task.assigned_to.name">
                 <ng-template #taskAvatarFallback>
                   <div class="avatar-initials" [matTooltip]="task.assigned_to.name">
-                    {{ task.assigned_to.name.charAt(0).toUpperCase() }}
+                    {{ (task.assigned_to.name || 'U').charAt(0).toUpperCase() }}
                   </div>
                 </ng-template>
               </div>
@@ -165,26 +165,27 @@
           </div>
         </mat-card-header>
         <mat-card-content>
-          <div class="project-list" *ngIf="recentProjects.length > 0; else noProjects">
+          <div class="project-list" *ngIf="recentProjects && recentProjects.length > 0; else noProjects">
             <div class="project-item" *ngFor="let project of recentProjects">
               <div class="project-info">
-                <h4>{{ project.name }}</h4>
-                <p>{{ project.description | truncate:100 }}</p>
+                <h4>{{ project.name || 'Untitled Project' }}</h4>
+                <p>{{ truncateText(project.description, 100) || 'No description available' }}</p>
                 <div class="project-meta">
-                  <span class="status-badge" [ngClass]="'status-' + project.status.toLowerCase().replace('_', '-')">
+                  <span class="status-badge" [ngClass]="'status-' + (project.status || 'unknown').toLowerCase().replace('_', '-')">
                     {{ getProjectStatusLabel(project.status) }}
                   </span>
                   <span class="project-stats">
-                    {{ project.completed_tasks_count }}/{{ project.tasks_count }} tasks
+                    {{ project.completed_tasks_count || 0 }}/{{ project.tasks_count || 0 }} tasks
                   </span>
-                  <span class="project-date">{{ project.created_at | relativeTime }}</span>
+                  <span class="project-date">{{ getRelativeTime(project.created_at) }}</span>
                 </div>
               </div>
               <div class="project-progress">
                 <mat-progress-bar 
                   mode="determinate" 
-                  [value]="project.tasks_count > 0 ? (project.completed_tasks_count / project.tasks_count) * 100 : 0">
+                  [value]="calculateProgress(project.completed_tasks_count || 0, project.tasks_count || 0)">
                 </mat-progress-bar>
+                <span class="progress-text">{{ calculateProgress(project.completed_tasks_count || 0, project.tasks_count || 0) }}%</span>
               </div>
             </div>
           </div>
@@ -207,16 +208,62 @@
             <mat-icon>trending_up</mat-icon>
             Weekly Activity
           </mat-card-title>
+          <div class="card-actions">
+            <button mat-icon-button (click)="onRefreshData()" matTooltip="Refresh Data">
+              <mat-icon>refresh</mat-icon>
+            </button>
+          </div>
         </mat-card-header>
         <mat-card-content>
           <div class="chart-placeholder">
             <mat-icon>bar_chart</mat-icon>
             <p>Task completion chart would go here</p>
             <small>Chart integration coming soon...</small>
+            <div class="mock-stats">
+              <div class="mock-stat">
+                <strong>{{ completedTasksCount }}</strong>
+                <span>Completed This Week</span>
+              </div>
+              <div class="mock-stat">
+                <strong>{{ inProgressTasksCount }}</strong>
+                <span>In Progress</span>
+              </div>
+            </div>
           </div>
         </mat-card-content>
       </mat-card>
 
+    </div>
+
+    <!-- Additional Stats Row -->
+    <div class="additional-stats" *ngIf="totalProjectsCount > 0">
+      <mat-card class="content-card">
+        <mat-card-content>
+          <div class="stats-summary">
+            <div class="summary-item">
+              <mat-icon>folder</mat-icon>
+              <div class="summary-info">
+                <h3>{{ totalProjectsCount }}</h3>
+                <p>Total Projects</p>
+              </div>
+            </div>
+            <div class="summary-item">
+              <mat-icon>task_alt</mat-icon>
+              <div class="summary-info">
+                <h3>{{ recentTasks.length }}</h3>
+                <p>Recent Tasks</p>
+              </div>
+            </div>
+            <div class="summary-item">
+              <mat-icon>notifications_active</mat-icon>
+              <div class="summary-info">
+                <h3>{{ unreadNotificationsCount }}</h3>
+                <p>Unread Notifications</p>
+              </div>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
     </div>
   </div>
 </div>

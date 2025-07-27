@@ -92,8 +92,9 @@ export class AppComponent implements OnInit, OnDestroy {
     
     // Hide sidebar on auth pages and access denied page
     const hideSidebarRoutes = ['/auth', '/access-denied'];
-    this.showSidebar = this.isAuthenticated && 
-                     !hideSidebarRoutes.some(route => currentUrl.startsWith(route));
+    // this.showSidebar = this.isAuthenticated && 
+    //                  !hideSidebarRoutes.some(route => currentUrl.startsWith(route));
+    this.showSidebar = true;
   }
 
   onSidebarToggle(): void {
