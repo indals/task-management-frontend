@@ -1,7 +1,9 @@
+// src/app/features/calendar/calendar.module.ts
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
-import { SharedModule } from '../../shared/shared.module';
+
+// Import the standalone component instead of declaring it
 import { CalendarComponent } from './calendar.component';
 
 const routes = [
@@ -9,11 +11,13 @@ const routes = [
 ];
 
 @NgModule({
-  declarations: [CalendarComponent],
+  declarations: [
+    // ✅ REMOVED CalendarComponent from declarations since it's standalone
+  ],
   imports: [
     CommonModule,
-    SharedModule,
-    RouterModule.forChild(routes)
+    RouterModule.forChild(routes),
+    CalendarComponent // ✅ ADDED: Import the standalone component here
   ]
 })
 export class CalendarModule { }

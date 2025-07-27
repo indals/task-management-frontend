@@ -1,21 +1,15 @@
-// src/app/core/guards/anti-auth.guard.ts - Prevents authenticated users from accessing login/register
+// src/app/core/guards/anti-auth.guard.ts
 import { Injectable } from '@angular/core';
-import { 
-  CanActivate, 
-  Router, 
-  ActivatedRouteSnapshot, 
-  RouterStateSnapshot 
-} from '@angular/router';
+import { CanActivate, Router, ActivatedRouteSnapshot, RouterStateSnapshot } from '@angular/router';
 import { Observable } from 'rxjs';
-import { map, take } from 'rxjs/operators';
-
+import { map } from 'rxjs/operators';
 import { AuthService } from '../services/auth.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class AntiAuthGuard implements CanActivate {
-
+  
   constructor(
     private authService: AuthService,
     private router: Router
@@ -26,18 +20,19 @@ export class AntiAuthGuard implements CanActivate {
     state: RouterStateSnapshot
   ): Observable<boolean> | Promise<boolean> | boolean {
     
-    return this.authService.isAuthenticated$.pipe(
-      take(1),
-      map(isAuthenticated => {
-        if (isAuthenticated) {
-          // User is already logged in, redirect to dashboard or return URL
-          const returnUrl = route.queryParams['returnUrl'] || '/dashboard';
-          this.router.navigate([returnUrl]);
+    // Check if user is authenticated
+    return this.authService.currentUser$.pipe(
+      map(user => {
+        if (user) {
+          // User is logged in, redirect to dashboard
+          console.log('🔒 AntiAuthGuard: User is authenticated, redirecting to dashboard');
+          this.router.navigate(['/dashboard']);
           return false;
+        } else {
+          // User is not logged in, allow access to auth pages
+          console.log('✅ AntiAuthGuard: User not authenticated, allowing access to auth routes');
+          return true;
         }
-        
-        // User is not authenticated, allow access to login/register pages
-        return true;
       })
     );
   }
