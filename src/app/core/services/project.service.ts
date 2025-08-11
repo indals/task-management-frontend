@@ -60,6 +60,7 @@ export class ProjectService {
       .pipe(
         map(response => {
           if (response.success && response.data) {
+            console.log('Projects loaded:', response.data);
             return response.data;
           } else {
             throw new Error(response.message || 'Failed to load projects');
