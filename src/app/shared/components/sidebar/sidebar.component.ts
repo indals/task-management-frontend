@@ -77,7 +77,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
           route: '/tasks/create', 
           active: false, 
           hidden: false,
-          permissions: ['create_task'] 
+          // permissions: ['create_task'] 
         }
       ]
     },
@@ -88,7 +88,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
       active: false,
       badge: null,
       hidden: false,
-      permissions: ['view_all_projects', 'view_team_projects'],
+      // permissions: ['view_all_projects', 'view_team_projects'],
       children: [
         { 
           icon: 'list', 
@@ -96,7 +96,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
           route: '/projects', 
           active: false, 
           hidden: false,
-          permissions: ['view_all_projects', 'view_team_projects']
+          // permissions: ['view_all_projects', 'view_team_projects']
         },
         { 
           icon: 'add', 
@@ -115,7 +115,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
       active: false,
       badge: null,
       hidden: false,
-      permissions: ['manage_sprints', 'view_sprints']
+      // permissions: ['manage_sprints', 'view_sprints']
     },
     { 
       icon: 'group', 
@@ -124,7 +124,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
       active: false,
       badge: null,
       hidden: false,
-      permissions: ['manage_team', 'view_team_tasks']
+      // permissions: ['manage_team', 'view_team_tasks']
     },
     { 
       icon: 'schedule', 

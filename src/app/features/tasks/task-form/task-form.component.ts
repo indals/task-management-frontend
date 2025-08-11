@@ -62,8 +62,10 @@ export class TaskFormComponent implements OnInit, OnDestroy {
   }
 
   private checkEditMode(): void {
+    console.log('Checking edit mode...', this.route.snapshot.paramMap);
     const id = this.route.snapshot.paramMap.get('id');
     if (id && id !== 'new') {
+      console.log('Edit mode for task ID:', id);
       this.taskId = parseInt(id, 10);
       this.isEditMode = true;
       this.loadTask();
@@ -87,6 +89,7 @@ export class TaskFormComponent implements OnInit, OnDestroy {
     this.priorityOptions = this.enumService.getTaskPriorityOptions();
     this.statusOptions = this.enumService.getTaskStatusOptions();
     this.taskTypeOptions = this.enumService.getTaskTypeOptions();
+    console.log('Task Type Options:', this.taskTypeOptions);
     this.estimationUnitOptions = this.enumService.getEstimationUnitOptions();
 
     // If enums are not loaded yet, try loading them
@@ -98,6 +101,7 @@ export class TaskFormComponent implements OnInit, OnDestroy {
             this.priorityOptions = this.enumService.getTaskPriorityOptions();
             this.statusOptions = this.enumService.getTaskStatusOptions();
             this.taskTypeOptions = this.enumService.getTaskTypeOptions();
+            console.log('Task Type Options after loading:', this.taskTypeOptions);
             this.estimationUnitOptions = this.enumService.getEstimationUnitOptions();
           },
           error: (error) => {
@@ -163,7 +167,8 @@ export class TaskFormComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (response) => {
-          this.projects = response.data || [];
+          this.projects = response as any || [];
+          console.log('Projects loaded1:', this.projects);
         },
         error: (error) => {
           console.error('Error loading projects:', error);
@@ -172,6 +177,7 @@ export class TaskFormComponent implements OnInit, OnDestroy {
   }
 
   private loadSprints(projectId: number): void {
+    console.log('Loading sprints for project:', projectId);
     if (!projectId) {
       this.sprints = [];
       return;
@@ -247,6 +253,7 @@ export class TaskFormComponent implements OnInit, OnDestroy {
     this.taskForm.get('project_id')?.valueChanges
       .pipe(takeUntil(this.destroy$))
       .subscribe(projectId => {
+        console.log('Project changed:', projectId);
         if (projectId) {
           this.loadSprints(projectId);
         } else {
