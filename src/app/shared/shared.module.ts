@@ -54,6 +54,7 @@ import { TimeDurationPipe } from './pipes/time-duration.pipe';
 import { RelativeTimePipe } from './pipes/relative-time.pipe';
 import { TruncatePipe } from './pipes/truncate.pipe';
 import { SafeHtmlPipe } from './pipes/safe-html.pipe';
+import { NotFoundComponent } from './components/not-found/not-found.component';
 
 // Grouped Material modules
 const MATERIAL_MODULES = [
@@ -119,7 +120,8 @@ const CUSTOM_PIPES = [
   declarations: [
     ...CUSTOM_COMPONENTS,
     ...CUSTOM_DIRECTIVES,
-    ...CUSTOM_PIPES
+    ...CUSTOM_PIPES,
+    NotFoundComponent
   ],
   imports: [
     CommonModule,
@@ -135,6 +137,7 @@ const CUSTOM_PIPES = [
     FormsModule,
     ReactiveFormsModule,
     RouterModule,
+    NotFoundComponent,
 
     // Angular Material modules
     ...MATERIAL_MODULES,

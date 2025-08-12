@@ -1,4 +1,5 @@
-<div class="sidebar" [class.collapsed]="isCollapsed">
+<div class="sidebar" [class.collapsed]="isCollapsed" *ngIf="isAuthenticated">
+
   <!-- Sidebar Header -->
   <div class="sidebar-header">
     <div class="logo" [class.collapsed]="isCollapsed">
