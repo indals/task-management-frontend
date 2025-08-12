@@ -12,8 +12,19 @@
         <p>Join our task management platform</p>
       </div>
 
+      <!-- Loading Indicator -->
+      <div *ngIf="isLoading && !registerForm" class="loading-container">
+        <mat-spinner diameter="40"></mat-spinner>
+        <p>Loading registration form...</p>
+      </div>
+
       <!-- Register Form -->
-      <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" class="register-form">
+      <form 
+        *ngIf="registerForm" 
+        [formGroup]="registerForm" 
+        (ngSubmit)="onSubmit()" 
+        class="register-form"
+        novalidate>
         
         <!-- Error Alert -->
         <div class="error-alert" *ngIf="error">
@@ -31,7 +42,7 @@
             placeholder="Enter your full name"
             autocomplete="name">
           <mat-icon matSuffix>person</mat-icon>
-          <mat-error *ngIf="isFieldInvalid('name')">
+          <mat-error *ngIf="registerForm.get('name') && isFieldInvalid('name')">
             {{ getFieldError('name') }}
           </mat-error>
         </mat-form-field>
@@ -46,7 +57,7 @@
             placeholder="Enter your email"
             autocomplete="email">
           <mat-icon matSuffix>email</mat-icon>
-          <mat-error *ngIf="isFieldInvalid('email')">
+          <mat-error *ngIf="registerForm.get('email') && isFieldInvalid('email')">
             {{ getFieldError('email') }}
           </mat-error>
         </mat-form-field>
@@ -55,12 +66,14 @@
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>Role</mat-label>
           <mat-select formControlName="role">
-            <mat-option *ngFor="let role of roleOptions" [value]="role.value">
+            <mat-option 
+              *ngFor="let role of roleOptions; trackBy: trackByRoleValue" 
+              [value]="role.value">
               {{ role.label }}
             </mat-option>
           </mat-select>
           <mat-icon matSuffix>work</mat-icon>
-          <mat-error *ngIf="isFieldInvalid('role')">
+          <mat-error *ngIf="registerForm.get('role') && isFieldInvalid('role')">
             {{ getFieldError('role') }}
           </mat-error>
         </mat-form-field>
@@ -79,10 +92,11 @@
               mat-icon-button 
               matSuffix 
               type="button"
-              (click)="togglePasswordVisibility()">
+              (click)="togglePasswordVisibility()"
+              [attr.aria-label]="hidePassword ? 'Show password' : 'Hide password'">
               <mat-icon>{{ hidePassword ? 'visibility_off' : 'visibility' }}</mat-icon>
             </button>
-            <mat-error *ngIf="isFieldInvalid('password')">
+            <mat-error *ngIf="registerForm.get('password') && isFieldInvalid('password')">
               {{ getFieldError('password') }}
             </mat-error>
           </mat-form-field>
@@ -99,10 +113,11 @@
               mat-icon-button 
               matSuffix 
               type="button"
-              (click)="toggleConfirmPasswordVisibility()">
+              (click)="toggleConfirmPasswordVisibility()"
+              [attr.aria-label]="hideConfirmPassword ? 'Show password' : 'Hide password'">
               <mat-icon>{{ hideConfirmPassword ? 'visibility_off' : 'visibility' }}</mat-icon>
             </button>
-            <mat-error *ngIf="isFieldInvalid('confirmPassword')">
+            <mat-error *ngIf="registerForm.get('confirmPassword') && isFieldInvalid('confirmPassword')">
               {{ getFieldError('confirmPassword') }}
             </mat-error>
           </mat-form-field>
@@ -113,12 +128,14 @@
           <mat-form-field appearance="outline" class="timezone-field">
             <mat-label>Timezone</mat-label>
             <mat-select formControlName="timezone">
-              <mat-option *ngFor="let tz of getTimezoneOptions()" [value]="tz.value">
+              <mat-option 
+                *ngFor="let tz of getTimezoneOptions(); trackBy: trackByTimezoneValue" 
+                [value]="tz.value">
                 {{ tz.label }}
               </mat-option>
             </mat-select>
             <mat-icon matSuffix>schedule</mat-icon>
-            <mat-error *ngIf="isFieldInvalid('timezone')">
+            <mat-error *ngIf="registerForm.get('timezone') && isFieldInvalid('timezone')">
               {{ getFieldError('timezone') }}
             </mat-error>
           </mat-form-field>
@@ -131,9 +148,10 @@
               formControlName="daily_work_hours"
               min="1"
               max="24"
+              step="1"
               placeholder="8">
             <mat-icon matSuffix>access_time</mat-icon>
-            <mat-error *ngIf="isFieldInvalid('daily_work_hours')">
+            <mat-error *ngIf="registerForm.get('daily_work_hours') && isFieldInvalid('daily_work_hours')">
               {{ getFieldError('daily_work_hours') }}
             </mat-error>
           </mat-form-field>
@@ -143,10 +161,12 @@
         <div class="terms-section">
           <mat-checkbox formControlName="agreedToTerms" class="terms-checkbox">
             I agree to the 
-            <a href="#" target="_blank">Terms of Service</a> and 
-            <a href="#" target="_blank">Privacy Policy</a>
+            <a href="/terms" target="_blank" rel="noopener noreferrer">Terms of Service</a> and 
+            <a href="/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy</a>
           </mat-checkbox>
-          <div class="terms-error" *ngIf="isFieldInvalid('agreedToTerms')">
+          <div 
+            class="terms-error" 
+            *ngIf="registerForm.get('agreedToTerms') && isFieldInvalid('agreedToTerms')">
             {{ getFieldError('agreedToTerms') }}
           </div>
         </div>
@@ -157,10 +177,13 @@
           color="primary" 
           type="submit"
           class="register-button full-width"
-          [disabled]="isLoading || registerForm.invalid">
-          <mat-spinner diameter="20" *ngIf="isLoading"></mat-spinner>
-          <span *ngIf="!isLoading">Create Account</span>
-          <span *ngIf="isLoading">Creating Account...</span>
+          [disabled]="isLoading || !registerForm || registerForm.invalid">
+          
+          <div class="button-content" [class.loading]="isLoading">
+            <mat-spinner diameter="20" *ngIf="isLoading"></mat-spinner>
+            <span *ngIf="!isLoading">Create Account</span>
+            <span *ngIf="isLoading">Creating Account...</span>
+          </div>
         </button>
 
         <!-- Divider -->
@@ -181,6 +204,17 @@
         </div>
 
       </form>
+
+      <!-- Fallback if form fails to load -->
+      <div *ngIf="!registerForm && !isLoading" class="form-error">
+        <mat-icon>warning</mat-icon>
+        <h3>Unable to load registration form</h3>
+        <p>There was an issue loading the form. Please try refreshing the page.</p>
+        <button mat-raised-button color="primary" (click)="onLoginClick()">
+          Go to Login
+        </button>
+      </div>
+
     </mat-card>
   </div>
 </div>

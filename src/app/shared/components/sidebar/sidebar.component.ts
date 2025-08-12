@@ -1,5 +1,5 @@
 // src/app/shared/components/sidebar/sidebar.component.ts - Enhanced with auth state
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, Output, EventEmitter } from '@angular/core';
 import { Router, NavigationEnd } from '@angular/router';
 import { Subject } from 'rxjs';
 import { takeUntil, filter } from 'rxjs/operators';
@@ -43,6 +43,9 @@ interface MenuItem {
 })
 export class SidebarComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
+  
+  // 🔧 NEW: Output event to notify parent component of toggle
+  @Output() sidebarToggle = new EventEmitter<boolean>();
   
   // 🔧 FIXED: Add authentication state tracking
   currentUser: User | null = null;
@@ -290,6 +293,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
     // Set initial sidebar state on mobile
     if (this.isMobile()) {
       this.isCollapsed = true;
+      this.sidebarToggle.emit(true); // Emit initial state
     }
   }
 
@@ -432,6 +436,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
       // Collapse sidebar on mobile after navigation
       if (this.isMobile()) {
         this.isCollapsed = true;
+        this.sidebarToggle.emit(true);
       }
     }
   }
@@ -452,11 +457,15 @@ export class SidebarComponent implements OnInit, OnDestroy {
     // Collapse sidebar on mobile after navigation
     if (this.isMobile()) {
       this.isCollapsed = true;
+      this.sidebarToggle.emit(true);
     }
   }
 
+  // 🔧 ENHANCED: Toggle sidebar and emit event to parent
   toggleSidebar(): void {
     this.isCollapsed = !this.isCollapsed;
+    this.sidebarToggle.emit(this.isCollapsed); // Emit to parent component
+    console.log('Sidebar toggled, collapsed:', this.isCollapsed);
   }
 
   onLogout(): void {

@@ -1,8 +1,8 @@
 import { Component, OnInit, OnDestroy, AfterViewInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, AbstractControl } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
-import { Subject, of } from 'rxjs';
-import { takeUntil, catchError, delay } from 'rxjs/operators';
+import { Subject, of, timer } from 'rxjs';
+import { takeUntil, catchError, delay, timeout } from 'rxjs/operators';
 
 import { AuthService } from '../../../core/services/auth.service';
 import { EnumService } from '../../../core/services/enum.service';
@@ -40,47 +40,84 @@ export class RegisterComponent implements OnInit, OnDestroy, AfterViewInit {
       route: !!this.route
     });
     
-    try {
-      this.registerForm = this.createForm();
-      console.log('✅ Form created successfully');
-    } catch (error) {
-      console.error('❌ Error creating form:', error);
-      // Create a minimal form as fallback
-      this.registerForm = this.formBuilder.group({
-        name: [''],
-        email: [''],
-        password: [''],
-        confirmPassword: [''],
-        role: ['DEVELOPER'],
-        timezone: ['UTC'],
-        daily_work_hours: [8],
-        agreedToTerms: [false]
-      });
-    }
+    // Create form immediately in constructor
+    this.registerForm = this.createForm();
+    console.log('✅ Form created successfully');
   }
 
   ngOnInit(): void {
     console.log('🔧 RegisterComponent ngOnInit called');
     
+    // Wrap everything in try-catch and use setTimeout to prevent blocking
+    setTimeout(() => {
+      this.initializeComponent();
+    }, 0);
+  }
+
+  private async initializeComponent(): Promise<void> {
     try {
       // Get return URL from route parameters or default to dashboard
       this.returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/dashboard';
-      console.log('🔧 Register component initialized with returnUrl:', this.returnUrl);
+      console.log('🔧 Return URL set to:', this.returnUrl);
       
-      // Check if already logged in
-      if (this.authService && this.authService.isLoggedIn && this.authService.isLoggedIn()) {
-        console.log('🔄 User already logged in, redirecting...');
-        this.router.navigate([this.returnUrl]);
-        return;
-      }
-
-      // Load role options
+      // Check if already logged in (with timeout to prevent hanging)
+      await this.checkAuthenticationStatus();
+      
+      // Load role options (non-blocking)
       this.loadRoleOptions();
 
-      // Setup loading subscription with error handling
-      if (this.authService && this.authService.loading$) {
+      // Setup loading subscription with timeout
+      this.setupLoadingSubscription();
+      
+      console.log('✅ RegisterComponent initialization completed successfully');
+    } catch (error) {
+      console.error('❌ Error in component initialization:', error);
+      // Continue with default setup even if initialization fails
+      this.setFallbackRoleOptions();
+    }
+  }
+
+  private async checkAuthenticationStatus(): Promise<void> {
+    try {
+      // Add timeout to prevent hanging if authService is stuck
+      const isLoggedIn = await Promise.race([
+        new Promise<boolean>((resolve) => {
+          try {
+            if (this.authService && typeof this.authService.isLoggedIn === 'function') {
+              resolve(this.authService.isLoggedIn());
+            } else {
+              resolve(false);
+            }
+          } catch (error) {
+            console.error('❌ Error checking auth status:', error);
+            resolve(false);
+          }
+        }),
+        new Promise<boolean>((resolve) => setTimeout(() => resolve(false), 1000)) // 1 second timeout
+      ]);
+
+      if (isLoggedIn) {
+        console.log('🔄 User already logged in, redirecting...');
+        this.router.navigate([this.returnUrl]);
+      }
+    } catch (error) {
+      console.error('❌ Error checking authentication status:', error);
+      // Continue with component initialization even if auth check fails
+    }
+  }
+
+  private setupLoadingSubscription(): void {
+    try {
+      if (this.authService?.loading$) {
         this.authService.loading$
-          .pipe(takeUntil(this.destroy$))
+          .pipe(
+            takeUntil(this.destroy$),
+            timeout(5000), // 5 second timeout
+            catchError(error => {
+              console.error('❌ Loading subscription error:', error);
+              return of(false); // Return default loading state
+            })
+          )
           .subscribe({
             next: (loading) => {
               console.log('🔧 Loading state changed:', loading);
@@ -88,13 +125,12 @@ export class RegisterComponent implements OnInit, OnDestroy, AfterViewInit {
             },
             error: (error) => {
               console.error('❌ Loading subscription error:', error);
+              this.isLoading = false;
             }
           });
       }
-      
-      console.log('✅ RegisterComponent ngOnInit completed successfully');
     } catch (error) {
-      console.error('❌ Error in ngOnInit:', error);
+      console.error('❌ Error setting up loading subscription:', error);
     }
   }
 
@@ -102,11 +138,11 @@ export class RegisterComponent implements OnInit, OnDestroy, AfterViewInit {
     console.log('🔧 RegisterComponent ngAfterViewInit called');
     
     // Add a small delay to ensure DOM is ready
-    setTimeout(() => {
+    timer(100).subscribe(() => {
       console.log('🔧 View should be rendered now');
       console.log('🔧 Form element exists:', !!document.querySelector('form'));
       console.log('🔧 Register card exists:', !!document.querySelector('.register-card'));
-    }, 100);
+    });
   }
 
   ngOnDestroy(): void {
@@ -118,21 +154,36 @@ export class RegisterComponent implements OnInit, OnDestroy, AfterViewInit {
   private createForm(): FormGroup {
     console.log('🔧 Creating form...');
     
-    const form = this.formBuilder.group({
-      name: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(100)]],
-      email: ['', [Validators.required, Validators.email]],
-      password: ['', [Validators.required, Validators.minLength(8)]],
-      confirmPassword: ['', [Validators.required]],
-      role: ['DEVELOPER', [Validators.required]],
-      timezone: ['UTC', [Validators.required]],
-      daily_work_hours: [8, [Validators.required, Validators.min(1), Validators.max(24)]],
-      agreedToTerms: [false, [Validators.requiredTrue]]
-    }, {
-      validators: [this.passwordMatchValidator.bind(this)]
-    });
-    
-    console.log('✅ Form created with controls:', Object.keys(form.controls));
-    return form;
+    try {
+      const form = this.formBuilder.group({
+        name: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(100)]],
+        email: ['', [Validators.required, Validators.email]],
+        password: ['', [Validators.required, Validators.minLength(8)]],
+        confirmPassword: ['', [Validators.required]],
+        role: ['DEVELOPER', [Validators.required]],
+        timezone: ['UTC', [Validators.required]],
+        daily_work_hours: [8, [Validators.required, Validators.min(1), Validators.max(24)]],
+        agreedToTerms: [false, [Validators.requiredTrue]]
+      }, {
+        validators: [this.passwordMatchValidator.bind(this)]
+      });
+      
+      console.log('✅ Form created with controls:', Object.keys(form.controls));
+      return form;
+    } catch (error) {
+      console.error('❌ Error creating form:', error);
+      // Return minimal form as fallback
+      return this.formBuilder.group({
+        name: [''],
+        email: [''],
+        password: [''],
+        confirmPassword: [''],
+        role: ['DEVELOPER'],
+        timezone: ['UTC'],
+        daily_work_hours: [8],
+        agreedToTerms: [false]
+      });
+    }
   }
 
   // Password match validator
@@ -159,28 +210,39 @@ export class RegisterComponent implements OnInit, OnDestroy, AfterViewInit {
       // Set fallback options first
       this.setFallbackRoleOptions();
       
-      // Then try to get from enum service if available
-      if (this.enumService && typeof this.enumService.getUserRoleOptions === 'function') {
-        const enumOptions = this.enumService.getUserRoleOptions();
-        
-        if (enumOptions && Array.isArray(enumOptions) && enumOptions.length > 0) {
-          const allowedRoles = [
-            'DEVELOPER',
-            'SENIOR_DEVELOPER', 
-            'QA_ENGINEER',
-            'DEVOPS_ENGINEER',
-            'UI_UX_DESIGNER',
-            'BUSINESS_ANALYST'
-          ];
-          
-          this.roleOptions = enumOptions.filter(role => allowedRoles.includes(role.value));
-          console.log('✅ Role options loaded from enum service:', this.roleOptions.length);
-        } else {
-          console.log('⚠️ No valid role options from enum service, using fallback');
-        }
-      } else {
-        console.log('⚠️ EnumService not available, using fallback role options');
-      }
+      // Then try to get from enum service if available (with timeout)
+      Promise.race([
+        new Promise<void>((resolve, reject) => {
+          try {
+            if (this.enumService && typeof this.enumService.getUserRoleOptions === 'function') {
+              const enumOptions = this.enumService.getUserRoleOptions();
+              
+              if (enumOptions && Array.isArray(enumOptions) && enumOptions.length > 0) {
+                const allowedRoles = [
+                  'DEVELOPER',
+                  'SENIOR_DEVELOPER', 
+                  'QA_ENGINEER',
+                  'DEVOPS_ENGINEER',
+                  'UI_UX_DESIGNER',
+                  'BUSINESS_ANALYST'
+                ];
+                
+                this.roleOptions = enumOptions.filter(role => allowedRoles.includes(role.value));
+                console.log('✅ Role options loaded from enum service:', this.roleOptions.length);
+              }
+            }
+            resolve();
+          } catch (error) {
+            reject(error);
+          }
+        }),
+        new Promise<void>((_, reject) => 
+          setTimeout(() => reject(new Error('Timeout')), 2000)
+        )
+      ]).catch(error => {
+        console.log('⚠️ Could not load role options from enum service:', error.message);
+        // Fallback options are already set
+      });
       
     } catch (error) {
       console.error('❌ Error loading role options:', error);
@@ -203,20 +265,10 @@ export class RegisterComponent implements OnInit, OnDestroy, AfterViewInit {
   onSubmit(): void {
     console.log('🔄 Form submission started');
     console.log('🔧 Form valid:', this.registerForm.valid);
-    console.log('🔧 Form value:', this.registerForm.value);
-    console.log('🔧 Form errors:', this.registerForm.errors);
 
     if (this.registerForm.invalid) {
       console.log('❌ Form is invalid, marking fields as touched');
       this.markFormGroupTouched(this.registerForm);
-      
-      // Log individual field errors
-      Object.keys(this.registerForm.controls).forEach(key => {
-        const control = this.registerForm.get(key);
-        if (control?.invalid) {
-          console.log(`❌ Field '${key}' errors:`, control.errors);
-        }
-      });
       return;
     }
 
@@ -234,13 +286,7 @@ export class RegisterComponent implements OnInit, OnDestroy, AfterViewInit {
       daily_work_hours: Number(formValue.daily_work_hours)
     };
 
-    console.log('🔄 Attempting registration with:', {
-      name: registerData.name,
-      email: registerData.email,
-      role: registerData.role,
-      timezone: registerData.timezone,
-      daily_work_hours: registerData.daily_work_hours
-    });
+    console.log('🔄 Attempting registration...');
 
     // Check if authService exists and has register method
     if (!this.authService || typeof this.authService.register !== 'function') {
@@ -251,16 +297,26 @@ export class RegisterComponent implements OnInit, OnDestroy, AfterViewInit {
     }
 
     this.authService.register(registerData)
-      .pipe(takeUntil(this.destroy$))
+      .pipe(
+        takeUntil(this.destroy$),
+        timeout(10000), // 10 second timeout
+        catchError(error => {
+          console.error('❌ Registration error:', error);
+          return of(null);
+        })
+      )
       .subscribe({
         next: (response) => {
-          console.log('✅ Registration successful:', response);
           this.isLoading = false;
-          // Auto-login after successful registration
-          this.autoLogin(registerData.email!, registerData.password);
+          if (response) {
+            console.log('✅ Registration successful:', response);
+            this.autoLogin(registerData.email!, registerData.password);
+          } else {
+            this.error = 'Registration failed. Please try again.';
+          }
         },
         error: (error) => {
-          console.error('❌ Registration failed:', error);
+          console.error('❌ Registration subscription error:', error);
           this.isLoading = false;
           this.error = this.getErrorMessage(error);
         }
@@ -291,6 +347,7 @@ export class RegisterComponent implements OnInit, OnDestroy, AfterViewInit {
     this.authService.login({ email, password })
       .pipe(
         takeUntil(this.destroy$),
+        timeout(10000), // 10 second timeout
         catchError(error => {
           console.error('❌ Auto-login failed:', error);
           return of(null);
@@ -325,9 +382,15 @@ export class RegisterComponent implements OnInit, OnDestroy, AfterViewInit {
   onLoginClick(): void {
     console.log('🔄 Navigating to login page...');
     
-    this.router.navigate(['/auth/login'], {
-      queryParams: { returnUrl: this.returnUrl }
-    });
+    try {
+      this.router.navigate(['/auth/login'], {
+        queryParams: { returnUrl: this.returnUrl }
+      });
+    } catch (error) {
+      console.error('❌ Navigation error:', error);
+      // Fallback: navigate without query params
+      this.router.navigate(['/auth/login']);
+    }
   }
 
   togglePasswordVisibility(): void {
@@ -435,4 +498,13 @@ export class RegisterComponent implements OnInit, OnDestroy, AfterViewInit {
       { value: 'Australia/Sydney', label: 'Australian Eastern Time (UTC+10)' }
     ];
   }
+
+  // TrackBy functions for performance optimization
+trackByRoleValue(index: number, item: DropdownOption): string {
+  return item.value;
+}
+
+trackByTimezoneValue(index: number, item: { value: string; label: string }): string {
+  return item.value;
+}
 }

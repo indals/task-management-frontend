@@ -12,8 +12,19 @@
         <p>Sign in to your account to continue</p>
       </div>
 
+      <!-- Loading Indicator -->
+      <div *ngIf="isLoading && !loginForm" class="loading-container">
+        <mat-spinner diameter="40"></mat-spinner>
+        <p>Loading login form...</p>
+      </div>
+
       <!-- Login Form -->
-      <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="login-form">
+      <form 
+        *ngIf="loginForm" 
+        [formGroup]="loginForm" 
+        (ngSubmit)="onSubmit()" 
+        class="login-form"
+        novalidate>
         
         <!-- Error Alert -->
         <div class="error-alert" *ngIf="error">
@@ -31,7 +42,7 @@
             placeholder="Enter your email"
             autocomplete="email">
           <mat-icon matSuffix>email</mat-icon>
-          <mat-error *ngIf="isFieldInvalid('email')">
+          <mat-error *ngIf="loginForm.get('email') && isFieldInvalid('email')">
             {{ getFieldError('email') }}
           </mat-error>
         </mat-form-field>
@@ -50,11 +61,11 @@
             matSuffix 
             type="button"
             (click)="togglePasswordVisibility()"
-            [attr.aria-label]="'Hide password'"
-            [attr.aria-pressed]="hidePassword">
+            [attr.aria-label]="hidePassword ? 'Show password' : 'Hide password'"
+            [attr.aria-pressed]="!hidePassword">
             <mat-icon>{{ hidePassword ? 'visibility_off' : 'visibility' }}</mat-icon>
           </button>
-          <mat-error *ngIf="isFieldInvalid('password')">
+          <mat-error *ngIf="loginForm.get('password') && isFieldInvalid('password')">
             {{ getFieldError('password') }}
           </mat-error>
         </mat-form-field>
@@ -76,10 +87,13 @@
           color="primary" 
           type="submit"
           class="login-button full-width"
-          [disabled]="isLoading">
-          <mat-spinner diameter="20" *ngIf="isLoading"></mat-spinner>
-          <span *ngIf="!isLoading">Sign In</span>
-          <span *ngIf="isLoading">Signing In...</span>
+          [disabled]="isLoading || !loginForm || loginForm.invalid">
+          
+          <div class="button-content" [class.loading]="isLoading">
+            <mat-spinner diameter="20" *ngIf="isLoading"></mat-spinner>
+            <span *ngIf="!isLoading">Sign In</span>
+            <span *ngIf="isLoading">Signing In...</span>
+          </div>
         </button>
 
         <!-- Divider -->
@@ -100,6 +114,17 @@
         </div>
 
       </form>
+
+      <!-- Fallback if form fails to load -->
+      <div *ngIf="!loginForm && !isLoading" class="form-error">
+        <mat-icon>warning</mat-icon>
+        <h3>Unable to load login form</h3>
+        <p>There was an issue loading the form. Please try refreshing the page.</p>
+        <button mat-raised-button color="primary" (click)="onRegisterClick()">
+          Create Account Instead
+        </button>
+      </div>
+
     </mat-card>
   </div>
 </div>

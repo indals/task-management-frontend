@@ -1,4 +1,7 @@
-<header class="app-header">
+<!-- 🔧 FIXED: Added dynamic classes for sidebar state -->
+<header class="app-header" 
+        [class.sidebar-collapsed]="sidebarCollapsed" 
+        [class.sidebar-expanded]="!sidebarCollapsed">
   <div class="header-content">
     
     <!-- Left Section: Search -->
@@ -126,6 +129,7 @@
                 *ngFor="let notification of notifications; trackBy: trackByNotificationId"
                 [class.unread]="!notification.read"
                 (click)="onNotificationItemClick(notification)"
+                (keydown)="onNotificationKeyDown($event, notification)"
                 role="button"
                 tabindex="0"
                 [attr.aria-label]="notification.message">
