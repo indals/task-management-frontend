@@ -7,16 +7,19 @@
 </div>
 
 <!-- Main App Layout -->
-<div class="app-container" [class.with-sidebar]="showSidebar">
+<div class="app-container" 
+     [class.with-sidebar]="showSidebar"
+     [class.sidebar-expanded]="showSidebar && !sidebarCollapsed"
+     [class.sidebar-collapsed]="showSidebar && sidebarCollapsed">
   
   <!-- Sidebar -->
-  <app-sidebar *ngIf="showSidebar"></app-sidebar>
+  <app-sidebar *ngIf="showSidebar" (sidebarToggle)="onSidebarToggle($event)"></app-sidebar>
   
   <!-- Main Content Area -->
   <div class="main-content" [class.with-sidebar]="showSidebar">
     
     <!-- Header (only show when authenticated and not on auth pages) -->
-    <app-header *ngIf="showSidebar"></app-header>
+    <app-header *ngIf="showSidebar" [sidebarCollapsed]="sidebarCollapsed"></app-header>
     
     <!-- Router Outlet -->
     <div class="content-wrapper" [class.with-header]="showSidebar">

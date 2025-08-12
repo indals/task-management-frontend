@@ -1,14 +1,22 @@
-// Global app styles
+// Global app styles - FIXED VERSION
 .app-container {
   min-height: 100vh;
   background-color: #f8f9fa;
   transition: all 0.3s ease;
+  margin-left: 0; // Remove fixed margin
 
+  // Dynamic margin based on sidebar state
   &.with-sidebar {
-    margin-left: 280px;
+    &.sidebar-expanded {
+      margin-left: 280px; // Full sidebar width
+    }
+    
+    &.sidebar-collapsed {
+      margin-left: 64px; // Collapsed sidebar width
+    }
 
     @media (max-width: 768px) {
-      margin-left: 0;
+      margin-left: 0; // No margin on mobile
     }
   }
 }
@@ -30,6 +38,7 @@
   flex: 1;
   padding: 0;
   overflow-x: hidden;
+  transition: all 0.3s ease; // Add transition
 
   &.with-header {
     padding-top: 64px; // Height of header
@@ -114,7 +123,10 @@
 @media (max-width: 768px) {
   .app-container {
     &.with-sidebar {
-      margin-left: 0;
+      &.sidebar-expanded,
+      &.sidebar-collapsed {
+        margin-left: 0;
+      }
     }
   }
 

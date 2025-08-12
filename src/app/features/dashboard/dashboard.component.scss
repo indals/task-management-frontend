@@ -740,3 +740,279 @@ app-loading {
   background: #f5f5f5;
   color: #757575;
 }
+
+
+
+// Add these additional styles to dashboard.component.scss for better responsiveness
+
+.dashboard-container {
+  padding: 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+  transition: all 0.3s ease; // Smooth transition when sidebar toggles
+
+  @media (max-width: 768px) {
+    padding: 1rem;
+  }
+  
+  // Better spacing when sidebar is collapsed
+  .app-container.sidebar-collapsed & {
+    margin-left: 0; // Reset any inherited margins
+    max-width: none; // Allow full width utilization
+  }
+  
+  // Full width utilization when sidebar is collapsed
+  .app-container.sidebar-collapsed & {
+    .welcome-section,
+    .stats-section,
+    .content-grid,
+    .additional-stats {
+      transition: all 0.3s ease;
+    }
+  }
+}
+
+// Enhanced content grid responsiveness
+.content-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: auto auto;
+  gap: 1.5rem;
+  transition: all 0.3s ease;
+
+  @media (max-width: 1024px) {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  // Better layout when sidebar is collapsed - more space available
+  .app-container.sidebar-collapsed & {
+    @media (min-width: 1025px) {
+      grid-template-columns: 1fr 1fr 1fr; // 3 columns when more space
+    }
+  }
+}
+
+// Stats grid improvements
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  transition: all 0.3s ease;
+
+  @media (max-width: 480px) {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  // Utilize extra space when sidebar is collapsed
+  .app-container.sidebar-collapsed & {
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    
+    @media (min-width: 1200px) {
+      grid-template-columns: repeat(5, 1fr); // 5 columns on large screens
+    }
+  }
+}
+
+// Welcome section improvements
+.welcome-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 12px;
+  color: white;
+  transition: all 0.3s ease;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    gap: 1rem;
+    text-align: center;
+  }
+  
+  // Enhanced spacing when sidebar is collapsed
+  .app-container.sidebar-collapsed & {
+    padding: 2rem; // More padding when more space available
+    
+    .welcome-text h1 {
+      font-size: 2.2rem; // Larger title
+    }
+  }
+}
+
+// Chart card full width optimization
+.content-card.chart-card {
+  grid-column: 1 / -1;
+  transition: all 0.3s ease;
+
+  @media (max-width: 1024px) {
+    grid-column: auto;
+  }
+  
+  // When sidebar is collapsed and we have 3 columns
+  .app-container.sidebar-collapsed & {
+    @media (min-width: 1025px) {
+      grid-column: 1 / -1; // Still span all columns
+    }
+  }
+}
+
+// Error container responsive improvements
+.error-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+  transition: all 0.3s ease;
+
+  .error-card {
+    text-align: center;
+    padding: 2rem;
+    max-width: 400px;
+    width: 100%;
+    transition: all 0.3s ease;
+
+    // Better spacing when more room available
+    .app-container.sidebar-collapsed & {
+      max-width: 500px;
+      padding: 2.5rem;
+    }
+
+    mat-icon {
+      font-size: 48px;
+      width: 48px;
+      height: 48px;
+      margin-bottom: 1rem;
+      
+      .app-container.sidebar-collapsed & {
+        font-size: 56px;
+        width: 56px;
+        height: 56px;
+      }
+    }
+
+    p {
+      color: #666;
+      margin-bottom: 1.5rem;
+      font-size: 1rem;
+      line-height: 1.5;
+      
+      .app-container.sidebar-collapsed & {
+        font-size: 1.1rem;
+      }
+    }
+
+    button {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin: 0 auto;
+    }
+  }
+}
+
+// Loading state improvements
+app-loading {
+  display: block;
+  min-height: 400px;
+  transition: all 0.3s ease;
+  
+  .app-container.sidebar-collapsed & {
+    min-height: 500px; // More height when more space
+  }
+}
+
+// Mobile specific improvements
+@media (max-width: 768px) {
+  .dashboard-container {
+    padding: 0.5rem;
+    
+    .welcome-section {
+      margin-bottom: 1.5rem;
+      padding: 1rem;
+    }
+    
+    .stats-section {
+      margin-bottom: 1.5rem;
+    }
+    
+    .content-grid {
+      gap: 1rem;
+    }
+    
+    .additional-stats {
+      margin-top: 1rem;
+    }
+  }
+  
+  // Ensure mobile layout ignores sidebar state
+  .app-container.sidebar-collapsed .dashboard-container,
+  .app-container.sidebar-expanded .dashboard-container {
+    margin-left: 0;
+    padding: 0.5rem;
+  }
+}
+
+// Large screen optimizations when sidebar is collapsed
+@media (min-width: 1400px) {
+  .app-container.sidebar-collapsed .dashboard-container {
+    max-width: 1600px; // Wider on large screens
+    
+    .welcome-section {
+      padding: 2.5rem;
+    }
+    
+    .stats-grid {
+      gap: 2rem;
+    }
+    
+    .content-grid {
+      gap: 2rem;
+      grid-template-columns: repeat(3, 1fr); // Always 3 columns on very large screens
+    }
+  }
+}
+
+// Animation improvements
+@keyframes expandContent {
+  from {
+    max-width: calc(100vw - 280px);
+  }
+  to {
+    max-width: calc(100vw - 64px);
+  }
+}
+
+@keyframes contractContent {
+  from {
+    max-width: calc(100vw - 64px);
+  }
+  to {
+    max-width: calc(100vw - 280px);
+  }
+}
+
+// Apply animations when sidebar state changes
+.app-container.sidebar-collapsed .dashboard-container {
+  animation: expandContent 0.3s ease-out;
+}
+
+.app-container.sidebar-expanded .dashboard-container {
+  animation: contractContent 0.3s ease-out;
+}
+
+// Prevent animations on reduced motion preference
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-container,
+  .content-grid,
+  .stats-grid,
+  .welcome-section,
+  .content-card,
+  .error-container {
+    transition: none;
+    animation: none;
+  }
+}

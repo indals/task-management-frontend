@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { Subject } from 'rxjs';
@@ -19,6 +19,9 @@ import { ClickOutsideDirective } from '../../directives/click-outside.directive'
 })
 export class HeaderComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
+  
+  // 🔧 ADDED: Input to receive sidebar state from parent
+  @Input() sidebarCollapsed = false;
   
   currentUser: User | null = null;
   unreadNotificationCount = 0;

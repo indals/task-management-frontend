@@ -1,4 +1,6 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+// Add this to your app.component.ts for better responsive handling
+
+import { Component, OnInit, OnDestroy, HostListener } from '@angular/core';
 import { Router, NavigationEnd } from '@angular/router';
 import { Subject } from 'rxjs';
 import { takeUntil, filter } from 'rxjs/operators';
@@ -20,6 +22,7 @@ export class AppComponent implements OnInit, OnDestroy {
   isAuthenticated = false;
   isLoading = false;
   showSidebar = true;
+  sidebarCollapsed = false;
 
   constructor(
     private authService: AuthService,
@@ -32,11 +35,29 @@ export class AppComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.initializeApp();
     this.setupSubscriptions();
+    this.initializeSidebarState();
   }
 
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
+  }
+
+  // 🔧 NEW: Handle window resize for responsive behavior
+  @HostListener('window:resize', ['$event'])
+  onResize(event: Event): void {
+    const target = event.target as Window;
+    const isMobile = target.innerWidth <= 768;
+    
+    // Auto-collapse sidebar on mobile, expand on desktop
+    if (isMobile && !this.sidebarCollapsed) {
+      this.sidebarCollapsed = true;
+      console.log('Auto-collapsed sidebar for mobile view');
+    } else if (!isMobile && this.sidebarCollapsed && target.innerWidth > 1024) {
+      // Auto-expand on large screens (optional behavior)
+      // this.sidebarCollapsed = false;
+      // console.log('Auto-expanded sidebar for desktop view');
+    }
   }
 
   private initializeApp(): void {
@@ -87,6 +108,24 @@ export class AppComponent implements OnInit, OnDestroy {
       });
   }
 
+  // 🔧 ENHANCED: Better initialization with saved state
+  private initializeSidebarState(): void {
+    // Check if user has a saved preference
+    const savedState = localStorage.getItem('sidebar-collapsed');
+    
+    if (savedState !== null) {
+      this.sidebarCollapsed = JSON.parse(savedState);
+    } else {
+      // Default: collapse on mobile, expand on desktop
+      this.sidebarCollapsed = window.innerWidth <= 768;
+    }
+    
+    console.log('Initialized sidebar state:', { 
+      collapsed: this.sidebarCollapsed, 
+      screenWidth: window.innerWidth 
+    });
+  }
+
   private updateSidebarVisibility(url?: string): void {
     const currentUrl = url || this.router.url;
     
@@ -97,8 +136,33 @@ export class AppComponent implements OnInit, OnDestroy {
     this.showSidebar = true;
   }
 
-  onSidebarToggle(): void {
-    // This method can be called from child components if needed
-    this.showSidebar = !this.showSidebar;
+  // 🔧 ENHANCED: Save sidebar state and handle toggle
+  onSidebarToggle(collapsed: boolean): void {
+    this.sidebarCollapsed = collapsed;
+    
+    // Save user preference
+    localStorage.setItem('sidebar-collapsed', JSON.stringify(collapsed));
+    
+    console.log('App component: Sidebar toggled, collapsed:', collapsed);
+  }
+
+  // Manual sidebar toggle (if needed)
+  toggleSidebar(): void {
+    this.sidebarCollapsed = !this.sidebarCollapsed;
+    
+    // Save user preference
+    localStorage.setItem('sidebar-collapsed', JSON.stringify(this.sidebarCollapsed));
+    
+    console.log('App component: Sidebar manually toggled, collapsed:', this.sidebarCollapsed);
+  }
+
+  // 🔧 NEW: Helper method to get current screen size info
+  getScreenInfo(): { isMobile: boolean; isTablet: boolean; isDesktop: boolean } {
+    const width = window.innerWidth;
+    return {
+      isMobile: width <= 768,
+      isTablet: width > 768 && width <= 1024,
+      isDesktop: width > 1024
+    };
   }
 }
