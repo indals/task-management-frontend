@@ -1,12 +1,17 @@
 .register-container {
-  min-height: 100vh;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  min-height: 100vh; /* Changed from height: 100vh */
   display: flex;
   align-items: center;
   justify-content: center;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  padding: 1rem;
+  padding: 2rem 1rem; /* Increased top/bottom padding */
+  z-index: 1000;
+  overflow-y: auto; /* Added to allow scrolling if needed */
 }
-
 .register-card-wrapper {
   width: 100%;
   max-width: 500px;
