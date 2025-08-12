@@ -1,34 +1,13 @@
 import { NgModule } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
+// import { CommonModule } from '@angular/core';
 
 import { SharedModule } from '../../shared/shared.module';
+import { AuthRoutingModule } from './auth-routing.module'; // ← Import this
 
 // Components
 import { LoginComponent } from './login/login.component';
 import { RegisterComponent } from './register/register.component';
 import { ProfileComponent } from './profile/profile.component';
-
-// 🔧 FIXED: Simplified routing configuration
-const routes = [
-  {
-    path: '',
-    redirectTo: 'login',
-    pathMatch: 'full' as const 
-  },
-  {
-    path: 'login',
-    component: LoginComponent
-  },
-  {
-    path: 'register',
-    component: RegisterComponent
-  },
-  {
-    path: 'profile',
-    component: ProfileComponent
-  }
-];
 
 @NgModule({
   declarations: [
@@ -37,9 +16,8 @@ const routes = [
     ProfileComponent
   ],
   imports: [
-    CommonModule,
     SharedModule,
-    RouterModule.forChild(routes)
+    AuthRoutingModule // ← Use this instead of RouterModule.forChild
   ]
 })
 export class AuthModule { }

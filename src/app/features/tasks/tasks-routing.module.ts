@@ -12,7 +12,7 @@ const routes: Routes = [
     canActivate: [AuthGuard]
   },
   {
-    path: 'new',
+    path: 'create',
     component: TaskFormComponent,
     canActivate: [AuthGuard]
   },

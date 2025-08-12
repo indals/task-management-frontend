@@ -1,20 +1,26 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
+import { LoginComponent } from './login/login.component';
+import { RegisterComponent } from './register/register.component';
+import { ProfileComponent } from './profile/profile.component';
 
-// 🔧 FIXED: Removed standalone component imports - using module-declared components
 const routes: Routes = [
   {
     path: '',
     redirectTo: 'login',
     pathMatch: 'full'
   },
-  {
-    path: 'login',
-    loadChildren: () => import('./auth.module').then(m => m.AuthModule)
+  { 
+    path: 'login', 
+    component: LoginComponent 
+  },
+  { 
+    path: 'register', 
+    component: RegisterComponent 
   },
   {
-    path: 'register', 
-    loadChildren: () => import('./auth.module').then(m => m.AuthModule)
+    path: 'profile',
+    component: ProfileComponent
   }
 ];
 
@@ -22,4 +28,4 @@ const routes: Routes = [
   imports: [RouterModule.forChild(routes)],
   exports: [RouterModule]
 })
-export class AuthRoutingModule { }
+export class AuthRoutingModule {}
