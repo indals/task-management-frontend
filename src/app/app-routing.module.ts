@@ -156,7 +156,7 @@ export const routes: Routes = [
 @NgModule({
   imports: [RouterModule.forRoot(routes, {
     // 🔧 ENHANCED ROUTING CONFIGURATION
-    enableTracing: true, // Set to true for debugging routes (disabled for production)
+    enableTracing: false, // Set to true for debugging routes (disabled for production)
     preloadingStrategy: 'preload' as any, // Preload lazy-loaded modules
     scrollPositionRestoration: 'top', // Scroll to top on route change
     anchorScrolling: 'enabled', // Enable fragment scrolling

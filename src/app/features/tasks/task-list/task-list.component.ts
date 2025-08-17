@@ -6,6 +6,7 @@ import { Task } from '../../../core/models/task.model';
 import { TaskService } from '../../../core/services/task.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { EnumService } from '../../../core/services/enum.service';
+import { ActivatedRoute } from '@angular/router';  // Add this line
 
 @Component({
   selector: 'app-task-list',
@@ -14,7 +15,7 @@ import { EnumService } from '../../../core/services/enum.service';
 })
 export class TaskListComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
-  
+
   tasks: Task[] = [];
   filteredTasks: Task[] = [];
   filterStatus: string = 'all';
@@ -22,10 +23,10 @@ export class TaskListComponent implements OnInit, OnDestroy {
   isLoading: boolean = false;
   errorMessage: string | null = null;
   currentUserId: number = 0;
-  
+
   // Add view mode and columns for different layouts
   viewMode: 'list' | 'grid' | 'kanban' = 'list';
-  
+
   // 🔧 FIXED: Updated status columns to match API enum values
   statusColumns = [
     { status: 'BACKLOG', label: 'Backlog', color: '#6b7280' },
@@ -37,7 +38,7 @@ export class TaskListComponent implements OnInit, OnDestroy {
     { status: 'BLOCKED', label: 'Blocked', color: '#dc2626' },
     { status: 'CANCELLED', label: 'Cancelled', color: '#ef4444' }
   ];
-  
+
   // 🔧 FIXED: Updated status options to match API
   statusOptions = [
     { value: 'all', label: 'All' },
@@ -56,18 +57,76 @@ export class TaskListComponent implements OnInit, OnDestroy {
     private taskService: TaskService,
     private authService: AuthService,
     private enumService: EnumService,
-    public router: Router
+    public router: Router,
+    private route: ActivatedRoute,
+
   ) { }
 
   ngOnInit(): void {
+    if (!this.authService.isLoggedIn()) {
+      this.router.navigate(['/auth/login']);
+      return;
+    }
     this.getCurrentUser();
-    this.loadTasks();
+    // this.loadTasks();
+    this.determineTaskType();
   }
 
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
   }
+
+
+  private determineTaskType(): void {
+    const currentRoute = this.route.snapshot.routeConfig?.path;
+
+    switch (currentRoute) {
+      case 'my-tasks':
+        this.loadMyTasks();
+        break;
+      case 'overdue':
+        this.loadOverdueTasks();
+        break;
+      default:
+        this.loadAllTasks();  // Load all tasks for '/tasks' route
+        break;
+    }
+  }
+
+  loadAllTasks(): void {  // Change method name from loadTasks to loadAllTasks
+    this.isLoading = true;
+    this.errorMessage = null;
+
+    // Remove assigned_to_id filter for all tasks
+    const filters = {
+      // assigned_to_id: this.currentUserId,  // Remove this line
+      page: 1,
+      per_page: 50,
+      sort_by: 'created_at',
+      sort_order: 'desc' as 'desc'
+    };
+
+    this.taskService.getTasks(filters)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (response) => {
+          console.log('Tasks response:', response);
+          // Handle paginated response format
+          this.tasks = Array.isArray(response.data) ? response.data : [];
+          this.applyFilters();
+          this.isLoading = false;
+        },
+        error: (error) => {
+          console.error('Error loading tasks:', error);
+          this.errorMessage = this.getErrorMessage(error);
+          this.tasks = [];
+          this.applyFilters();
+          this.isLoading = false;
+        }
+      });
+  }
+  // ... rest of the method stays the same
 
   // 🔧 FIXED: Get current user ID properly
   private getCurrentUser(): void {
@@ -123,9 +182,9 @@ export class TaskListComponent implements OnInit, OnDestroy {
         }
       });
   }
-  
+
   refreshTasks(): void {
-    this.loadTasks();
+    this.determineTaskType();  // Change from this.loadTasks() to this.determineTaskType()
   }
 
   applyFilters(): void {
@@ -170,7 +229,7 @@ export class TaskListComponent implements OnInit, OnDestroy {
   // 🔧 FIXED: Use proper API method for delete
   deleteTask(taskId: number, event: Event): void {
     event.stopPropagation();
-    
+
     if (confirm('Are you sure you want to delete this task?')) {
       this.taskService.deleteTask(taskId)
         .pipe(takeUntil(this.destroy$))
@@ -236,12 +295,12 @@ export class TaskListComponent implements OnInit, OnDestroy {
   // Get relative time for task creation
   getRelativeTime(dateString: string): string {
     if (!dateString) return '';
-    
+
     const date = new Date(dateString);
     const now = new Date();
     const diffTime = now.getTime() - date.getTime();
     const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-    
+
     if (diffDays === 0) {
       const diffHours = Math.floor(diffTime / (1000 * 60 * 60));
       if (diffHours === 0) {
@@ -264,16 +323,16 @@ export class TaskListComponent implements OnInit, OnDestroy {
     if (error?.error?.success === false) {
       return error.error.message || 'Failed to load tasks';
     }
-    
+
     // Handle legacy error format
     if (error?.error?.message) {
       return error.error.message;
     }
-    
+
     if (error?.message) {
       return error.message;
     }
-    
+
     return 'An unexpected error occurred while loading tasks';
   }
 
@@ -315,7 +374,7 @@ export class TaskListComponent implements OnInit, OnDestroy {
   // 🔧 NEW: Quick actions for tasks
   markTaskAsComplete(taskId: number, event: Event): void {
     event.stopPropagation();
-    
+
     const updateData = { status: 'DONE' };
     this.taskService.updateTask(taskId, updateData)
       .pipe(takeUntil(this.destroy$))
@@ -336,9 +395,9 @@ export class TaskListComponent implements OnInit, OnDestroy {
 
   assignTaskToMe(taskId: number, event: Event): void {
     event.stopPropagation();
-    
+
     if (!this.currentUserId) return;
-    
+
     const assignData = { assigned_to_id: this.currentUserId };
     this.taskService.assignTask(taskId, assignData)
       .pipe(takeUntil(this.destroy$))

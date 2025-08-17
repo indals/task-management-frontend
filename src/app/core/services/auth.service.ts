@@ -261,7 +261,29 @@ export class AuthService {
   }
 
   isLoggedIn(): boolean {
+    const token = this.getToken();
+    if (!token) {
+      return false;
+    }
+    
+    // Check if token is expired
+    if (this.isTokenExpired(token)) {
+      this.logout();
+      return false;
+    }
+    
     return this.isAuthenticatedSubject.value;
+  }
+
+  private isTokenExpired(token: string): boolean {
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const currentTime = Math.floor(Date.now() / 1000);
+      return payload.exp < currentTime;
+    } catch (error) {
+      console.error('Error parsing token:', error);
+      return true; // Consider invalid tokens as expired
+    }
   }
 
   getCurrentUserValue(): User | null {

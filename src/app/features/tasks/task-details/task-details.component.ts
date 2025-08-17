@@ -35,6 +35,7 @@ export class TaskDetailsComponent implements OnInit, OnDestroy {
   ) { }
 
   ngOnInit(): void {
+    debugger
     this.loadTaskDetails();
   }
 
@@ -49,6 +50,7 @@ export class TaskDetailsComponent implements OnInit, OnDestroy {
 
     // Get task ID from route
     const taskId = this.getTaskIdFromRoute();
+    console.log('🔧 Task ID from route:', taskId);
     if (!taskId) {
       this.error = 'Invalid task ID';
       this.loading = false;

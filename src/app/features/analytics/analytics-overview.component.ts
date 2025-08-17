@@ -7,6 +7,7 @@ import { AnalyticsService } from '../../core/services/analytics.service';
 import { AuthService } from '../../core/services/auth.service';
 import { TaskService } from '../../core/services/task.service';
 import { ProjectService } from '../../core/services/project.service';
+import { Router } from '@angular/router';
 
 interface AnalyticsCard {
   title: string;
@@ -603,10 +604,15 @@ export class AnalyticsOverviewComponent implements OnInit, OnDestroy {
     private analyticsService: AnalyticsService,
     private authService: AuthService,
     private taskService: TaskService,
-    private projectService: ProjectService
+    private projectService: ProjectService,
+    private router: Router
   ) {}
 
   ngOnInit(): void {
+    if (!this.authService.isLoggedIn()) {
+      this.router.navigate(['/auth/login']);
+      return;
+    }
     this.loadAnalyticsData();
   }
 

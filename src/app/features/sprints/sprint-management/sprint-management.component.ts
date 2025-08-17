@@ -4,43 +4,23 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subject, forkJoin } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
+import { CdkDragDrop, moveItemInArray, transferArrayItem } from '@angular/cdk/drag-drop';
+
+// Updated imports to match your models
 import { Task } from '../../../core/models/task.model';
 import { Project } from '../../../core/models/project.model';
 import { User } from '../../../core/models/user.model';
+import { Sprint, BurndownData, SprintBurndown } from '../../../core/models/sprint.model';
 import { TaskService } from '../../../core/services/task.service';
 import { ProjectService } from '../../../core/services/project.service';
+import { SprintService } from '../../../core/services/sprint.service';
 import { AuthService } from '../../../core/services/auth.service';
 
-// Sprint interfaces (would typically be in models folder)
-export interface Sprint {
-  id: number;
-  name: string;
-  description: string;
-  status: 'PLANNED' | 'ACTIVE' | 'COMPLETED' | 'CANCELLED';
-  project_id: number;
-  start_date: string;
-  end_date: string;
-  goal: string;
-  capacity_hours: number;
-  velocity_points: number;
-  tasks_count: number;
-  completed_tasks: number;
-  remaining_points: number;
-  created_at: string;
-  updated_at: string;
-}
-
+// Enhanced SprintTask interface to match your needs
 export interface SprintTask extends Task {
-  story_points: number;
-  sprint_id: number | null;
-  in_sprint: boolean;
-}
-
-export interface BurndownDataPoint {
-  date: string;
-  remaining_points: number;
-  ideal_remaining: number;
-  completed_points: number;
+  story_points?: number;
+  sprint_id?: number | null;
+  in_sprint?: boolean;
 }
 
 @Component({
@@ -57,7 +37,8 @@ export class SprintManagementComponent implements OnInit, OnDestroy {
   sprints: Sprint[] = [];
   sprintTasks: SprintTask[] = [];
   backlogTasks: SprintTask[] = [];
-  burndownData: BurndownDataPoint[] = [];
+  filteredBacklogTasks: SprintTask[] = [];
+  burndownData: BurndownData[] = [];
   currentUser: User | null = null;
 
   // UI State
@@ -65,13 +46,15 @@ export class SprintManagementComponent implements OnInit, OnDestroy {
   errorMessage: string | null = null;
   showCreateSprintModal = false;
   showEditSprintModal = false;
-  activeTab: 'board' | 'backlog' | 'burndown' | 'sprints' = 'board';
+  selectedTabIndex = 0;
+  backlogSearchTerm = '';
 
-  // Forms - Fixed: Removed duplicate declaration
+  // Forms
   createSprintForm: FormGroup;
   editSprintForm: FormGroup;
+  editingSprintId: number | null = null;
 
-  // Sprint Board Columns
+  // Sprint Board Columns - Updated status names
   sprintColumns = [
     { status: 'BACKLOG', title: 'Sprint Backlog', limit: null },
     { status: 'TODO', title: 'To Do', limit: 5 },
@@ -81,36 +64,26 @@ export class SprintManagementComponent implements OnInit, OnDestroy {
     { status: 'DONE', title: 'Done', limit: null }
   ];
 
-  // Sprint Status Options
-  sprintStatusOptions = [
-    { value: 'PLANNED', label: 'Planned', color: '#6b7280' },
-    { value: 'ACTIVE', label: 'Active', color: '#10b981' },
-    { value: 'COMPLETED', label: 'Completed', color: '#3b82f6' },
-    { value: 'CANCELLED', label: 'Cancelled', color: '#ef4444' }
-  ];
-
   constructor(
     private route: ActivatedRoute,
     private router: Router,
     private fb: FormBuilder,
     private taskService: TaskService,
     private projectService: ProjectService,
+    private sprintService: SprintService,
     private authService: AuthService
   ) {
-    // Fixed: Proper form initialization
     this.createSprintForm = this.initializeSprintForm();
     this.editSprintForm = this.initializeSprintForm();
   }
 
   ngOnInit(): void {
-    // Get current user
     this.authService.currentUser$.pipe(
       takeUntil(this.destroy$)
     ).subscribe(user => {
       this.currentUser = user;
     });
 
-    // Get project ID from route
     this.route.params.pipe(
       takeUntil(this.destroy$)
     ).subscribe(params => {
@@ -126,16 +99,13 @@ export class SprintManagementComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
-  // Fixed: Renamed method to avoid duplicate
   private initializeSprintForm(): FormGroup {
     return this.fb.group({
       name: ['', [Validators.required, Validators.minLength(3)]],
       description: [''],
-      start_date: ['', [Validators.required]],
-      end_date: ['', [Validators.required]],
-      goal: ['', [Validators.required]],
-      capacity_hours: [40, [Validators.required, Validators.min(1)]],
-      velocity_points: [21, [Validators.required, Validators.min(1)]]
+      start_date: [''],
+      end_date: [''],
+      goal: ['']
     });
   }
 
@@ -145,14 +115,15 @@ export class SprintManagementComponent implements OnInit, OnDestroy {
 
     forkJoin({
       project: this.projectService.getProjectById(projectId),
-      sprints: this.getProjectSprints(projectId),
+      sprints: this.sprintService.getSprintsByProject(projectId),
       tasks: this.taskService.getAllTasks({ project_id: projectId })
     }).subscribe({
       next: (data: any) => {
         this.project = data.project;
-        this.sprints = data.sprints;
-        this.processSprintTasks(Array.isArray(data.tasks) ? data.tasks : [data.tasks]);
+        this.sprints = data.sprints || [];
+        this.processSprintTasks(Array.isArray(data.tasks) ? data.tasks : []);
         this.findCurrentSprint();
+        this.loadBurndownData();
         this.isLoading = false;
       },
       error: (error) => {
@@ -162,97 +133,56 @@ export class SprintManagementComponent implements OnInit, OnDestroy {
     });
   }
 
-  private getProjectSprints(projectId: number): Promise<Sprint[]> {
-    // Mock API call - replace with actual sprint service
-    return new Promise(resolve => {
-      setTimeout(() => {
-        resolve([
-          {
-            id: 1,
-            name: 'Sprint 1 - Foundation',
-            description: 'Setting up the basic foundation and core features',
-            status: 'COMPLETED',
-            project_id: projectId,
-            start_date: '2024-01-01',
-            end_date: '2024-01-14',
-            goal: 'Establish project foundation and core architecture',
-            capacity_hours: 80,
-            velocity_points: 25,
-            tasks_count: 8,
-            completed_tasks: 8,
-            remaining_points: 0,
-            created_at: '2023-12-20',
-            updated_at: '2024-01-14'
-          },
-          {
-            id: 2,
-            name: 'Sprint 2 - Core Features',
-            description: 'Implementing core business logic and user features',
-            status: 'ACTIVE',
-            project_id: projectId,
-            start_date: '2024-01-15',
-            end_date: '2024-01-28',
-            goal: 'Complete core user functionality and business logic',
-            capacity_hours: 80,
-            velocity_points: 28,
-            tasks_count: 10,
-            completed_tasks: 6,
-            remaining_points: 12,
-            created_at: '2024-01-10',
-            updated_at: '2024-01-25'
-          }
-        ]);
-      }, 500);
-    });
-  }
-
   private processSprintTasks(tasks: Task[]): void {
-    // Convert tasks to sprint tasks and separate sprint vs backlog
     this.sprintTasks = [];
     this.backlogTasks = [];
 
     tasks.forEach(task => {
       const sprintTask: SprintTask = {
         ...task,
-        story_points: Math.floor(Math.random() * 8) + 1, // Mock story points
-        sprint_id: Math.random() > 0.6 ? (this.currentSprint?.id || null) : null,
-        in_sprint: false
+        story_points: (task as any).story_points || Math.floor(Math.random() * 8) + 1,
+        sprint_id: (task as any).sprint_id || null,
+        in_sprint: !!(task as any).sprint_id
       };
 
-      if (sprintTask.sprint_id) {
-        sprintTask.in_sprint = true;
+      if (sprintTask.sprint_id === this.currentSprint?.id) {
         this.sprintTasks.push(sprintTask);
-      } else {
+      } else if (!sprintTask.sprint_id) {
         this.backlogTasks.push(sprintTask);
       }
     });
 
-    this.generateBurndownData();
+    this.filteredBacklogTasks = [...this.backlogTasks];
   }
 
-  // Fixed: Proper type annotation for newStatus
-  moveTaskToColumn(taskId: number, newStatus: string): void {
-    const task = this.sprintTasks.find(t => t.id === taskId);
-    if (task) {
-      // Fixed: Cast to proper status type
-      task.status = newStatus as Task['status'];
-      // Mock API call to update task status
-      this.updateSprintStats();
-    }
-  }
-
-  // Rest of the methods remain the same...
   private findCurrentSprint(): void {
     this.currentSprint = this.sprints.find(s => s.status === 'ACTIVE') || null;
   }
 
-  private generateBurndownData(): void {
+  private loadBurndownData(): void {
+    if (!this.currentSprint) {
+      this.burndownData = [];
+      return;
+    }
+
+    this.sprintService.getSprintBurndown(this.currentSprint.id).subscribe({
+      next: (burndown: SprintBurndown) => {
+        this.burndownData = burndown.burndown_data || [];
+      },
+      error: (error) => {
+        console.warn('Could not load burndown data:', error);
+        this.generateMockBurndownData();
+      }
+    });
+  }
+
+  private generateMockBurndownData(): void {
     if (!this.currentSprint) return;
 
-    const startDate = new Date(this.currentSprint.start_date);
-    const endDate = new Date(this.currentSprint.end_date);
+    const startDate = new Date(this.currentSprint.start_date || Date.now());
+    const endDate = new Date(this.currentSprint.end_date || Date.now());
     const totalDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
-    const totalPoints = this.currentSprint.velocity_points;
+    const totalPoints = this.currentSprint.total_story_points || 0;
 
     this.burndownData = [];
     
@@ -264,26 +194,302 @@ export class SprintManagementComponent implements OnInit, OnDestroy {
 
       this.burndownData.push({
         date: currentDate.toISOString().split('T')[0],
-        remaining_points: Math.round(actualRemaining),
-        ideal_remaining: Math.round(idealRemaining),
-        completed_points: Math.round(totalPoints - actualRemaining)
+        remaining_story_points: Math.round(actualRemaining),
+        ideal_remaining_story_points: Math.round(idealRemaining),
+        completed_story_points: Math.round(totalPoints - actualRemaining),
+        remaining_hours: Math.round(actualRemaining * 2), // Mock hours
+        ideal_remaining_hours: Math.round(idealRemaining * 2),
+        completed_hours: Math.round((totalPoints - actualRemaining) * 2)
       });
     }
   }
 
-  // Additional helper methods
+  // Updated helper methods to work with new model structure
+  getSprintProgress(sprint: Sprint): number {
+    if (!sprint.total_story_points) return 0;
+    return Math.round((sprint.completed_story_points / sprint.total_story_points) * 100);
+  }
+
+  getDaysRemaining(endDate: string | undefined): number {
+    if (!endDate) return 0;
+    const end = new Date(endDate);
+    const now = new Date();
+    const diffTime = end.getTime() - now.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return Math.max(0, diffDays);
+  }
+
+  getTasksByStatus(status: string): SprintTask[] {
+    return this.sprintTasks.filter(task => task.status === status);
+  }
+
+  // Task Management
+  onTaskDrop(event: CdkDragDrop<SprintTask[]>): void {
+    if (event.previousContainer === event.container) {
+      moveItemInArray(event.container.data, event.previousIndex, event.currentIndex);
+    } else {
+      transferArrayItem(
+        event.previousContainer.data,
+        event.container.data,
+        event.previousIndex,
+        event.currentIndex
+      );
+
+      // Update task status
+      const task = event.container.data[event.currentIndex];
+      const newStatus = event.container.id;
+      this.moveTaskToColumn(task.id, newStatus);
+    }
+  }
+
+  moveTaskToColumn(taskId: number, newStatus: string): void {
+    const task = this.sprintTasks.find(t => t.id === taskId);
+    if (task) {
+      const updateData = { status: newStatus };
+      
+      this.taskService.updateTask(taskId, updateData).subscribe({
+        next: (updatedTask) => {
+          task.status = updatedTask.status;
+          this.updateSprintStats();
+        },
+        error: (error) => {
+          console.error('Failed to update task status:', error);
+          // Revert the UI change
+          this.loadProjectData(this.project?.id || 0);
+        }
+      });
+    }
+  }
+
+  addTaskToSprint(task: SprintTask): void {
+    if (!this.currentSprint) return;
+
+    this.sprintService.addTaskToSprint(this.currentSprint.id, task.id).subscribe({
+      next: () => {
+        // Move task from backlog to sprint
+        const index = this.backlogTasks.findIndex(t => t.id === task.id);
+        if (index !== -1) {
+          const sprintTask = { ...this.backlogTasks[index], sprint_id: this.currentSprint!.id, in_sprint: true };
+          this.sprintTasks.push(sprintTask);
+          this.backlogTasks.splice(index, 1);
+          this.filterBacklogTasks();
+          this.updateSprintStats();
+        }
+      },
+      error: (error) => {
+        console.error('Failed to add task to sprint:', error);
+      }
+    });
+  }
+
+  removeTaskFromSprint(task: SprintTask): void {
+    if (!this.currentSprint) return;
+
+    this.sprintService.removeTaskFromSprint(this.currentSprint.id, task.id).subscribe({
+      next: () => {
+        // Move task from sprint to backlog
+        const index = this.sprintTasks.findIndex(t => t.id === task.id);
+        if (index !== -1) {
+          const backlogTask = { ...this.sprintTasks[index], sprint_id: null, in_sprint: false };
+          this.backlogTasks.push(backlogTask);
+          this.sprintTasks.splice(index, 1);
+          this.filterBacklogTasks();
+          this.updateSprintStats();
+        }
+      },
+      error: (error) => {
+        console.error('Failed to remove task from sprint:', error);
+      }
+    });
+  }
+
+  // Sprint Management
+  openCreateSprintModal(): void {
+    this.createSprintForm.reset();
+    this.showCreateSprintModal = true;
+  }
+
+  closeCreateSprintModal(): void {
+    this.showCreateSprintModal = false;
+  }
+
+  createSprint(): void {
+    if (this.createSprintForm.invalid || !this.project) return;
+
+    const formData = this.createSprintForm.value;
+    const sprintData = {
+      ...formData,
+      project_id: this.project.id
+    };
+
+    this.sprintService.createSprint(sprintData).subscribe({
+      next: (sprint) => {
+        this.sprints.unshift(sprint);
+        this.closeCreateSprintModal();
+        // If this is the first sprint, make it current
+        if (!this.currentSprint && sprint.status === 'ACTIVE') {
+          this.currentSprint = sprint;
+        }
+      },
+      error: (error) => {
+        console.error('Failed to create sprint:', error);
+      }
+    });
+  }
+
+  openEditSprintModal(sprint: Sprint): void {
+    this.editingSprintId = sprint.id;
+    this.editSprintForm.patchValue({
+      name: sprint.name,
+      description: sprint.description,
+      start_date: sprint.start_date,
+      end_date: sprint.end_date,
+      goal: sprint.goal
+    });
+    this.showEditSprintModal = true;
+  }
+
+  closeEditSprintModal(): void {
+    this.showEditSprintModal = false;
+    this.editingSprintId = null;
+  }
+
+  updateSprint(): void {
+    if (this.editSprintForm.invalid || !this.editingSprintId) return;
+
+    const formData = this.editSprintForm.value;
+    
+    this.sprintService.updateSprint(this.editingSprintId, formData).subscribe({
+      next: (updatedSprint) => {
+        const index = this.sprints.findIndex(s => s.id === this.editingSprintId);
+        if (index !== -1) {
+          this.sprints[index] = updatedSprint;
+          if (this.currentSprint?.id === this.editingSprintId) {
+            this.currentSprint = updatedSprint;
+          }
+        }
+        this.closeEditSprintModal();
+      },
+      error: (error) => {
+        console.error('Failed to update sprint:', error);
+      }
+    });
+  }
+
+  startSprint(sprint: Sprint): void {
+    this.sprintService.startSprint(sprint.id).subscribe({
+      next: (updatedSprint) => {
+        const index = this.sprints.findIndex(s => s.id === sprint.id);
+        if (index !== -1) {
+          this.sprints[index] = updatedSprint;
+        }
+        // Set as current sprint if it's now active
+        if (updatedSprint.status === 'ACTIVE') {
+          this.currentSprint = updatedSprint;
+        }
+      },
+      error: (error) => {
+        console.error('Failed to start sprint:', error);
+      }
+    });
+  }
+
+  completeSprint(sprint: Sprint): void {
+    this.sprintService.completeSprint(sprint.id).subscribe({
+      next: (updatedSprint) => {
+        const index = this.sprints.findIndex(s => s.id === sprint.id);
+        if (index !== -1) {
+          this.sprints[index] = updatedSprint;
+        }
+        // Clear current sprint if it was completed
+        if (this.currentSprint?.id === sprint.id) {
+          this.currentSprint = null;
+          this.findCurrentSprint(); // Look for another active sprint
+        }
+      },
+      error: (error) => {
+        console.error('Failed to complete sprint:', error);
+      }
+    });
+  }
+
+  deleteSprint(sprint: Sprint): void {
+    if (confirm(`Are you sure you want to delete "${sprint.name}"?`)) {
+      this.sprintService.deleteSprint(sprint.id).subscribe({
+        next: () => {
+          this.sprints = this.sprints.filter(s => s.id !== sprint.id);
+          if (this.currentSprint?.id === sprint.id) {
+            this.currentSprint = null;
+            this.findCurrentSprint();
+          }
+        },
+        error: (error) => {
+          console.error('Failed to delete sprint:', error);
+        }
+      });
+    }
+  }
+
+  // UI Helper Methods
+  filterBacklogTasks(): void {
+    if (!this.backlogSearchTerm.trim()) {
+      this.filteredBacklogTasks = [...this.backlogTasks];
+    } else {
+      const searchTerm = this.backlogSearchTerm.toLowerCase();
+      this.filteredBacklogTasks = this.backlogTasks.filter(task =>
+        task.title.toLowerCase().includes(searchTerm) ||
+        task.description?.toLowerCase().includes(searchTerm)
+      );
+    }
+  }
+
+  truncateText(text: string, maxLength: number): string {
+    return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
+  }
+
+  formatDateRange(startDate?: string, endDate?: string): string {
+    if (!startDate || !endDate) return 'No dates set';
+    
+    const start = new Date(startDate).toLocaleDateString();
+    const end = new Date(endDate).toLocaleDateString();
+    return `${start} - ${end}`;
+  }
+
+  onTabChange(event: any): void {
+    this.selectedTabIndex = event.index;
+  }
+
+  refreshData(): void {
+    if (this.project) {
+      this.loadProjectData(this.project.id);
+    }
+  }
+
+  editTask(task: SprintTask): void {
+    // Navigate to task edit or open task modal
+    console.log('Edit task:', task);
+  }
+
+  editSprint(sprint: Sprint): void {
+    this.openEditSprintModal(sprint);
+  }
+
   private updateSprintStats(): void {
     if (!this.currentSprint) return;
 
-    const sprintTasksCount = this.sprintTasks.length;
-    const completedTasksCount = this.sprintTasks.filter(t => t.status === 'DONE').length;
-    const remainingPoints = this.sprintTasks
-      .filter(t => t.status !== 'DONE')
-      .reduce((sum, task) => sum + task.story_points, 0);
+    // Recalculate sprint statistics
+    const totalTasks = this.sprintTasks.length;
+    const completedTasks = this.sprintTasks.filter(t => t.status === 'DONE').length;
+    const totalPoints = this.sprintTasks.reduce((sum, task) => sum + (task.story_points || 0), 0);
+    const completedPoints = this.sprintTasks
+      .filter(t => t.status === 'DONE')
+      .reduce((sum, task) => sum + (task.story_points || 0), 0);
 
-    this.currentSprint.tasks_count = sprintTasksCount;
-    this.currentSprint.completed_tasks = completedTasksCount;
-    this.currentSprint.remaining_points = remainingPoints;
+    // Update current sprint object
+    this.currentSprint.tasks_count = totalTasks;
+    this.currentSprint.completed_tasks_count = completedTasks;
+    this.currentSprint.total_story_points = totalPoints;
+    this.currentSprint.completed_story_points = completedPoints;
   }
 
   private getErrorMessage(error: any): string {
@@ -294,34 +500,5 @@ export class SprintManagementComponent implements OnInit, OnDestroy {
       return error.message;
     }
     return 'An unexpected error occurred';
-  }
-
-  // Placeholder methods for template
-  createSprint(): void {
-    console.log('Create sprint');
-  }
-
-  editSprint(sprint: Sprint): void {
-    console.log('Edit sprint:', sprint);
-  }
-
-  deleteSprint(sprint: Sprint): void {
-    console.log('Delete sprint:', sprint);
-  }
-
-  startSprint(sprint: Sprint): void {
-    console.log('Start sprint:', sprint);
-  }
-
-  completeSprint(sprint: Sprint): void {
-    console.log('Complete sprint:', sprint);
-  }
-
-  addTaskToSprint(task: SprintTask): void {
-    console.log('Add task to sprint:', task);
-  }
-
-  removeTaskFromSprint(task: SprintTask): void {
-    console.log('Remove task from sprint:', task);
   }
 }

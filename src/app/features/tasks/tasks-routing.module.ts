@@ -12,6 +12,16 @@ const routes: Routes = [
     canActivate: [AuthGuard]
   },
   {
+    path: 'my-tasks',           // Add this line
+    component: TaskListComponent, // Add this line
+    canActivate: [AuthGuard]    // Add this line
+  },                            // Add this line
+  {
+    path: 'overdue',            // Add this line
+    component: TaskListComponent, // Add this line
+    canActivate: [AuthGuard]    // Add this line
+  },                            // Add this line
+  {
     path: 'create',
     component: TaskFormComponent,
     canActivate: [AuthGuard]

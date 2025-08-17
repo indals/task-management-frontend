@@ -1,1 +1,484 @@
-<p>sprint-management works!</p>
+
+<!-- <div class="sprint-management-container">
+  
+ 
+  <app-loading *ngIf="isLoading" message="Loading sprint data..."></app-loading>
+  
+ 
+  <div class="error-container" *ngIf="errorMessage && !isLoading">
+    <mat-card class="error-card">
+      <mat-card-content>
+        <mat-icon color="warn">error</mat-icon>
+        <p>{{ errorMessage }}</p>
+        <button mat-raised-button color="primary" (click)="refreshData()">
+          <mat-icon>refresh</mat-icon>
+          Retry
+        </button>
+      </mat-card-content>
+    </mat-card>
+  </div>
+
+  <div class="sprint-content" *ngIf="!isLoading && !errorMessage">
+    
+   
+    <div class="sprint-header">
+      <div class="header-info">
+        <h1>
+          <mat-icon>track_changes</mat-icon>
+          Sprint Management
+        </h1>
+        <p *ngIf="project">{{ project.name }} - Sprint Planning & Execution</p>
+      </div>
+      <div class="header-actions">
+        <button mat-raised-button color="primary" (click)="openCreateSprintModal()">
+          <mat-icon>add</mat-icon>
+          New Sprint
+        </button>
+        <button mat-stroked-button (click)="refreshData()">
+          <mat-icon>refresh</mat-icon>
+          Refresh
+        </button>
+      </div>
+    </div>
+
+
+    <mat-card class="current-sprint-card" *ngIf="currentSprint">
+      <mat-card-header>
+        <mat-card-title>
+          <span class="sprint-status-badge" [ngClass]="'status-' + currentSprint.status.toLowerCase()">
+            {{ currentSprint.status }}
+          </span>
+          {{ currentSprint.name }}
+        </mat-card-title>
+        <mat-card-subtitle>{{ currentSprint.description }}</mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="sprint-stats">
+          <div class="stat-item">
+            <mat-icon>assignment</mat-icon>
+            <div class="stat-info">
+              <span class="stat-value">{{ currentSprint.completed_tasks_count }}/{{ currentSprint.tasks_count }}</span>
+              <span class="stat-label">Tasks</span>
+            </div>
+          </div>
+          <div class="stat-item">
+            <mat-icon>trending_down</mat-icon>
+            <div class="stat-info">
+              <span class="stat-value">{{ currentSprint.total_story_points - currentSprint.completed_story_points }}</span>
+              <span class="stat-label">Points Left</span>
+            </div>
+          </div>
+          <div class="stat-item">
+            <mat-icon>speed</mat-icon>
+            <div class="stat-info">
+              <span class="stat-value">{{ currentSprint.total_story_points }}</span>
+              <span class="stat-label">Total Points</span>
+            </div>
+          </div>
+          <div class="stat-item">
+            <mat-icon>schedule</mat-icon>
+            <div class="stat-info">
+              <span class="stat-value">{{ getDaysRemaining(currentSprint.end_date) }}</span>
+              <span class="stat-label">Days Left</span>
+            </div>
+          </div>
+        </div>
+        <div class="sprint-progress">
+          <mat-progress-bar 
+            mode="determinate" 
+            [value]="getSprintProgress(currentSprint)">
+          </mat-progress-bar>
+          <span class="progress-text">{{ getSprintProgress(currentSprint) }}% Complete</span>
+        </div>
+      </mat-card-content>
+      <mat-card-actions>
+        <button mat-button (click)="editSprint(currentSprint)">
+          <mat-icon>edit</mat-icon>
+          Edit
+        </button>
+        <button mat-button color="accent" (click)="completeSprint(currentSprint)" 
+                *ngIf="currentSprint.status === 'ACTIVE'">
+          <mat-icon>check_circle</mat-icon>
+          Complete Sprint
+        </button>
+      </mat-card-actions>
+    </mat-card>
+
+
+    <mat-tab-group [(selectedIndex)]="selectedTabIndex" (selectedTabChange)="onTabChange($event)">
+      
+
+      <mat-tab label="Sprint Board">
+        <div class="tab-content">
+          <div class="sprint-board" *ngIf="currentSprint">
+            <div class="board-column" *ngFor="let column of sprintColumns">
+              <div class="column-header">
+                <h3>{{ column.title }}</h3>
+                <span class="task-count">{{ getTasksByStatus(column.status).length }}</span>
+                <span class="column-limit" *ngIf="column.limit">/{{ column.limit }}</span>
+              </div>
+              <div class="column-content" 
+                   cdkDropList 
+                   [cdkDropListData]="getTasksByStatus(column.status)"
+                   (cdkDropListDropped)="onTaskDrop($event)"
+                   [id]="column.status"
+                   [cdkDropListConnectedTo]="sprintColumns.map(c => c.status)">
+                
+                <div class="task-card" 
+                     *ngFor="let task of getTasksByStatus(column.status)"
+                     cdkDrag>
+                  <div class="task-header">
+                    <span class="task-id">#{{ task.id }}</span>
+                    <span class="story-points">{{ task.story_points }}pt</span>
+                  </div>
+                  <h4 class="task-title">{{ task.title }}</h4>
+                  <p class="task-description">{{ truncateText(task.description || '', 80) }}</p>
+                  <div class="task-footer">
+                    <span class="priority-badge" [ngClass]="'priority-' + (task.priority || 'medium').toLowerCase()">
+                      {{ task.priority || 'Medium' }}
+                    </span>
+                    <div class="task-assignee" *ngIf="task.assigned_to">
+                      <img *ngIf="task.assigned_to.avatar_url; else avatarFallback" 
+                           [src]="task.assigned_to.avatar_url" 
+                           [alt]="task.assigned_to.name"
+                           class="assignee-avatar">
+                      <ng-template #avatarFallback>
+                        <div class="avatar-initials">
+                          {{ (task.assigned_to.name || 'U').charAt(0).toUpperCase() }}
+                        </div>
+                      </ng-template>
+                    </div>
+                    <button mat-icon-button 
+                            class="remove-task-btn"
+                            (click)="removeTaskFromSprint(task)"
+                            matTooltip="Remove from sprint">
+                      <mat-icon>remove_circle_outline</mat-icon>
+                    </button>
+                  </div>
+                </div>
+                
+
+                <div class="empty-column" *ngIf="getTasksByStatus(column.status).length === 0">
+                  <mat-icon>inbox</mat-icon>
+                  <p>No tasks in {{ column.title.toLowerCase() }}</p>
+                </div>
+                
+              </div>
+            </div>
+          </div>
+          
+
+          <div class="no-sprint-message" *ngIf="!currentSprint">
+            <mat-icon>track_changes</mat-icon>
+            <h3>No Active Sprint</h3>
+            <p>Create a new sprint or start an existing one to begin sprint management.</p>
+            <button mat-raised-button color="primary" (click)="openCreateSprintModal()">
+              Create First Sprint
+            </button>
+          </div>
+        </div>
+      </mat-tab>
+
+
+      <mat-tab label="Product Backlog">
+        <div class="tab-content">
+          <div class="backlog-section">
+            <div class="section-header">
+              <h3>Product Backlog</h3>
+              <div class="section-actions">
+                <mat-form-field appearance="outline" class="search-field">
+                  <mat-label>Search backlog...</mat-label>
+                  <input matInput [(ngModel)]="backlogSearchTerm" (input)="filterBacklogTasks()">
+                  <mat-icon matSuffix>search</mat-icon>
+                </mat-form-field>
+              </div>
+            </div>
+            
+            <div class="backlog-list">
+              <div class="backlog-item" 
+                   *ngFor="let task of filteredBacklogTasks" 
+                   cdkDrag
+                   [cdkDragData]="task">
+                <div class="item-content">
+                  <div class="item-header">
+                    <span class="task-id">#{{ task.id }}</span>
+                    <span class="story-points">{{ task.story_points }}pt</span>
+                  </div>
+                  <h4>{{ task.title }}</h4>
+                  <p>{{ truncateText(task.description || '', 120) }}</p>
+                  <div class="item-meta">
+                    <span class="priority-badge" [ngClass]="'priority-' + (task.priority || 'medium').toLowerCase()">
+                      {{ task.priority || 'Medium' }}
+                    </span>
+                    <span class="task-type">{{ task.task_type || 'Story' }}</span>
+                  </div>
+                </div>
+                <div class="item-actions">
+                  <button mat-icon-button (click)="addTaskToSprint(task)" 
+                          [disabled]="!currentSprint"
+                          matTooltip="Add to current sprint">
+                    <mat-icon>add_circle</mat-icon>
+                  </button>
+                  <button mat-icon-button (click)="editTask(task)" matTooltip="Edit task">
+                    <mat-icon>edit</mat-icon>
+                  </button>
+                </div>
+              </div>
+
+              <div class="empty-backlog" *ngIf="filteredBacklogTasks.length === 0 && backlogTasks.length > 0">
+                <mat-icon>search_off</mat-icon>
+                <p>No tasks match your search</p>
+              </div>
+
+              <div class="empty-backlog" *ngIf="backlogTasks.length === 0">
+                <mat-icon>assignment</mat-icon>
+                <p>No backlog items found</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </mat-tab>
+
+
+      <mat-tab label="Burndown Chart">
+        <div class="tab-content">
+          <div class="burndown-section">
+            <div class="section-header">
+              <h3>Sprint Burndown Chart</h3>
+              <div class="chart-legend">
+                <div class="legend-item">
+                  <div class="legend-color ideal"></div>
+                  <span>Ideal Burndown</span>
+                </div>
+                <div class="legend-item">
+                  <div class="legend-color actual"></div>
+                  <span>Actual Burndown</span>
+                </div>
+              </div>
+            </div>
+            
+            <div class="burndown-chart" *ngIf="currentSprint && burndownData.length > 0">
+   
+              <div class="chart-placeholder">
+                <mat-icon>trending_down</mat-icon>
+                <p>Burndown Chart</p>
+                <div class="chart-stats">
+                  <div class="chart-stat">
+                    <strong>{{ currentSprint.total_story_points }}</strong>
+                    <span>Total Points</span>
+                  </div>
+                  <div class="chart-stat">
+                    <strong>{{ currentSprint.total_story_points - currentSprint.completed_story_points }}</strong>
+                    <span>Remaining</span>
+                  </div>
+                  <div class="chart-stat">
+                    <strong>{{ currentSprint.completed_story_points }}</strong>
+                    <span>Completed</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+
+            <div class="no-chart-data" *ngIf="!currentSprint || burndownData.length === 0">
+              <mat-icon>trending_down</mat-icon>
+              <h3>No Burndown Data</h3>
+              <p>Start a sprint to track burndown progress.</p>
+            </div>
+          </div>
+        </div>
+      </mat-tab>
+
+
+      <mat-tab label="All Sprints">
+        <div class="tab-content">
+          <div class="sprints-section">
+            <div class="section-header">
+              <h3>Project Sprints</h3>
+              <button mat-raised-button color="primary" (click)="openCreateSprintModal()">
+                <mat-icon>add</mat-icon>
+                New Sprint
+              </button>
+            </div>
+            
+            <div class="sprints-list">
+              <mat-card class="sprint-card" *ngFor="let sprint of sprints">
+                <mat-card-header>
+                  <mat-card-title>
+                    <span class="sprint-status-badge" [ngClass]="'status-' + sprint.status.toLowerCase()">
+                      {{ sprint.status }}
+                    </span>
+                    {{ sprint.name }}
+                  </mat-card-title>
+                  <mat-card-subtitle>
+                    {{ formatDateRange(sprint.start_date, sprint.end_date) }}
+                  </mat-card-subtitle>
+                </mat-card-header>
+                <mat-card-content>
+                  <p>{{ sprint.description }}</p>
+                  <div class="sprint-metrics">
+                    <div class="metric">
+                      <span class="metric-value">{{ sprint.completed_tasks_count }}/{{ sprint.tasks_count }}</span>
+                      <span class="metric-label">Tasks</span>
+                    </div>
+                    <div class="metric">
+                      <span class="metric-value">{{ sprint.completed_story_points }}/{{ sprint.total_story_points }}</span>
+                      <span class="metric-label">Points</span>
+                    </div>
+                  </div>
+                </mat-card-content>
+                <mat-card-actions>
+                  <button mat-button (click)="editSprint(sprint)">
+                    <mat-icon>edit</mat-icon>
+                    Edit
+                  </button>
+                  <button mat-button color="primary" (click)="startSprint(sprint)" 
+                          *ngIf="sprint.status === 'PLANNING'">
+                    <mat-icon>play_arrow</mat-icon>
+                    Start
+                  </button>
+                  <button mat-button color="accent" (click)="completeSprint(sprint)" 
+                          *ngIf="sprint.status === 'ACTIVE'">
+                    <mat-icon>check_circle</mat-icon>
+                    Complete
+                  </button>
+                  <button mat-button color="warn" (click)="deleteSprint(sprint)" 
+                          *ngIf="sprint.status === 'PLANNING'">
+                    <mat-icon>delete</mat-icon>
+                    Delete
+                  </button>
+                </mat-card-actions>
+              </mat-card>
+              
+
+              <div class="empty-sprints" *ngIf="sprints.length === 0">
+                <mat-icon>track_changes</mat-icon>
+                <h3>No Sprints Yet</h3>
+                <p>Create your first sprint to start managing your project iterations.</p>
+                <button mat-raised-button color="primary" (click)="openCreateSprintModal()">
+                  Create First Sprint
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </mat-tab>
+    </mat-tab-group>
+  </div>
+</div> -->
+
+<!-- Create Sprint Modal -->
+<!-- <div class="modal-backdrop" *ngIf="showCreateSprintModal" (click)="closeCreateSprintModal()">
+  <mat-card class="modal-card" (click)="$event.stopPropagation()">
+    <mat-card-header>
+      <mat-card-title>Create New Sprint</mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      <form [formGroup]="createSprintForm" class="sprint-form">
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Sprint Name</mat-label>
+          <input matInput formControlName="name" placeholder="e.g., Sprint 1 - Foundation">
+          <mat-error *ngIf="createSprintForm.get('name')?.hasError('required')">
+            Sprint name is required
+          </mat-error>
+          <mat-error *ngIf="createSprintForm.get('name')?.hasError('minlength')">
+            Sprint name must be at least 3 characters
+          </mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Description</mat-label>
+          <textarea matInput formControlName="description" rows="3" 
+                    placeholder="Describe the sprint goals and objectives"></textarea>
+        </mat-form-field>
+
+        <div class="form-row">
+          <mat-form-field appearance="outline">
+            <mat-label>Start Date</mat-label>
+            <input matInput [matDatepicker]="startPicker" formControlName="start_date">
+            <mat-datepicker-toggle matSuffix [for]="startPicker"></mat-datepicker-toggle>
+            <mat-datepicker #startPicker></mat-datepicker>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>End Date</mat-label>
+            <input matInput [matDatepicker]="endPicker" formControlName="end_date">
+            <mat-datepicker-toggle matSuffix [for]="endPicker"></mat-datepicker-toggle>
+            <mat-datepicker #endPicker></mat-datepicker>
+          </mat-form-field>
+        </div>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Sprint Goal</mat-label>
+          <input matInput formControlName="goal" 
+                 placeholder="What should this sprint achieve?">
+        </mat-form-field>
+      </form>
+    </mat-card-content>
+    <mat-card-actions>
+      <button mat-button (click)="closeCreateSprintModal()">Cancel</button>
+      <button mat-raised-button color="primary" 
+              (click)="createSprint()" 
+              [disabled]="createSprintForm.invalid">
+        Create Sprint
+      </button>
+    </mat-card-actions>
+  </mat-card>
+</div> -->
+
+<!-- Edit Sprint Modal -->
+<!-- <div class="modal-backdrop" *ngIf="showEditSprintModal" (click)="closeEditSprintModal()">
+  <mat-card class="modal-card" (click)="$event.stopPropagation()">
+    <mat-card-header>
+      <mat-card-title>Edit Sprint</mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      <form [formGroup]="editSprintForm" class="sprint-form">
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Sprint Name</mat-label>
+          <input matInput formControlName="name">
+          <mat-error *ngIf="editSprintForm.get('name')?.hasError('required')">
+            Sprint name is required
+          </mat-error>
+          <mat-error *ngIf="editSprintForm.get('name')?.hasError('minlength')">
+            Sprint name must be at least 3 characters
+          </mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Description</mat-label>
+          <textarea matInput formControlName="description" rows="3"></textarea>
+        </mat-form-field>
+
+        <div class="form-row">
+          <mat-form-field appearance="outline">
+            <mat-label>Start Date</mat-label>
+            <input matInput [matDatepicker]="editStartPicker" formControlName="start_date">
+            <mat-datepicker-toggle matSuffix [for]="editStartPicker"></mat-datepicker-toggle>
+            <mat-datepicker #editStartPicker></mat-datepicker>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>End Date</mat-label>
+            <input matInput [matDatepicker]="editEndPicker" formControlName="end_date">
+            <mat-datepicker-toggle matSuffix [for]="editEndPicker"></mat-datepicker-toggle>
+            <mat-datepicker #editEndPicker></mat-datepicker>
+          </mat-form-field>
+        </div>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Sprint Goal</mat-label>
+          <input matInput formControlName="goal">
+        </mat-form-field>
+      </form>
+    </mat-card-content>
+    <mat-card-actions>
+      <button mat-button (click)="closeEditSprintModal()">Cancel</button>
+      <button mat-raised-button color="primary" 
+              (click)="updateSprint()" 
+              [disabled]="editSprintForm.invalid">
+        Update Sprint
+      </button>
+    </mat-card-actions>
+  </mat-card>
+</div> -->

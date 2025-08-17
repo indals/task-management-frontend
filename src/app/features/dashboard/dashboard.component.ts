@@ -2,6 +2,7 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Subject, forkJoin, combineLatest } from 'rxjs';
 import { takeUntil, map, catchError } from 'rxjs/operators';
 import { of } from 'rxjs';
+import { Router } from '@angular/router';
 
 import { AuthService } from '../../core/services/auth.service';
 import { TaskService } from '../../core/services/task.service';
@@ -17,7 +18,7 @@ import { User, Task, Project } from '../../core/models';
 })
 export class DashboardComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
-  
+
   currentUser: User | null = null;
   recentTasks: Task[] = [];
   recentProjects: Project[] = [];
@@ -26,7 +27,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   completedTasksCount = 0;
   totalProjectsCount = 0;
   unreadNotificationsCount = 0;
-  
+
   isLoading = false;
   error: string | null = null;
 
@@ -48,10 +49,17 @@ export class DashboardComponent implements OnInit, OnDestroy {
     private taskService: TaskService,
     private projectService: ProjectService,
     private notificationService: NotificationService,
-    private enumService: EnumService
-  ) {}
+    private enumService: EnumService,
+    private router: Router
+  ) { }
 
   ngOnInit(): void {
+
+    console.log('login data', this.authService.isLoggedIn())
+    if (!this.authService.isLoggedIn()) {
+      this.router.navigate(['/auth/login']);
+      return;
+    }
     this.setupSubscriptions();
     this.loadDashboardData();
   }
@@ -86,11 +94,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
     // 🔧 FIXED: Use forkJoin to load all data simultaneously and handle errors properly
     const dashboardData$ = forkJoin({
       // Recent tasks - limit to 5 most recent
-      recentTasks: this.taskService.getTasks({ 
-        page: 1, 
-        per_page: 5, 
-        sort_by: 'created_at', 
-        sort_order: 'desc' 
+      recentTasks: this.taskService.getTasks({
+        page: 1,
+        per_page: 5,
+        sort_by: 'created_at',
+        sort_order: 'desc'
       }).pipe(
         map(response => response.data),
         catchError(error => {
@@ -209,7 +217,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     //     task.status === 'DEPLOYED'
     //   ).length;
     // }
-    
+
     // Otherwise return 0 (you might want to make a separate API call if needed)
     return 0;
   }
@@ -295,16 +303,16 @@ export class DashboardComponent implements OnInit, OnDestroy {
   // 🔧 NEW: Helper method to format relative time
   getRelativeTime(date: string | Date): string {
     if (!date) return '';
-    
+
     const now = new Date();
     const past = new Date(date);
     const diffInSeconds = Math.floor((now.getTime() - past.getTime()) / 1000);
-    
+
     if (diffInSeconds < 60) return 'Just now';
     if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} minutes ago`;
     if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} hours ago`;
     if (diffInSeconds < 2592000) return `${Math.floor(diffInSeconds / 86400)} days ago`;
-    
+
     return past.toLocaleDateString();
   }
 
