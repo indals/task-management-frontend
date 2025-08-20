@@ -1,5 +1,5 @@
 /* ============================
-   MODERN LOADING COMPONENT
+   MODERN LOADING COMPONENT - FIXED
    ============================ */
 
 .loading-container {
@@ -8,10 +8,10 @@
   align-items: center;
   justify-content: center;
   min-height: 200px;
-  padding: var(--spacing-8);
+  padding: 2rem; // was var(--spacing-8)
   position: relative;
-  background: linear-gradient(135deg, var(--gray-50), var(--white));
-  border-radius: var(--radius-2xl);
+  background: linear-gradient(135deg, #f9fafb, #ffffff); // was var(--gray-50), var(--white)
+  border-radius: 1.5rem; // was var(--radius-2xl)
   overflow: hidden;
 
   /* Glass morphism background */
@@ -37,7 +37,7 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: var(--spacing-6);
+    gap: 1.5rem; // was var(--spacing-6)
   }
 }
 
@@ -61,19 +61,19 @@
     animation: spinnerRotate 2s linear infinite;
 
     &:nth-child(1) {
-      border-top-color: var(--primary-500);
+      border-top-color: #6366f1; // was var(--primary-500)
       animation-duration: 1.5s;
     }
 
     &:nth-child(2) {
-      border-right-color: var(--primary-400);
+      border-right-color: #818cf8; // was var(--primary-400)
       animation-duration: 2s;
       animation-direction: reverse;
       transform: scale(0.8);
     }
 
     &:nth-child(3) {
-      border-bottom-color: var(--primary-300);
+      border-bottom-color: #a5b4fc; // was var(--primary-300)
       animation-duration: 2.5s;
       transform: scale(0.6);
     }
@@ -92,7 +92,7 @@
     left: 50%;
     width: 100%;
     height: 100%;
-    background: radial-gradient(circle, var(--primary-100) 0%, transparent 70%);
+    background: radial-gradient(circle, #e0e7ff 0%, transparent 70%); // was var(--primary-100)
     border-radius: 50%;
     transform: translate(-50%, -50%);
     animation: spinnerGlow 2s ease-in-out infinite;
@@ -118,13 +118,13 @@
 .loading-text {
   display: flex;
   align-items: center;
-  gap: var(--spacing-2);
+  gap: 0.5rem; // was var(--spacing-2)
 
   .loading-message {
-    font-size: var(--text-lg);
-    font-weight: var(--font-semibold);
-    color: var(--gray-700);
-    background: linear-gradient(135deg, var(--gray-700), var(--gray-900));
+    font-size: 1.125rem; // was var(--text-lg)
+    font-weight: 600; // was var(--font-semibold)
+    color: #374151; // was var(--gray-700)
+    background: linear-gradient(135deg, #374151, #111827); // was var(--gray-700), var(--gray-900)
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -132,12 +132,12 @@
 
   .loading-dots {
     display: flex;
-    gap: var(--spacing-1);
+    gap: 0.25rem; // was var(--spacing-1)
 
     .dot {
       width: 6px;
       height: 6px;
-      background: linear-gradient(135deg, var(--primary-500), var(--primary-600));
+      background: linear-gradient(135deg, #6366f1, #4f46e5); // was var(--primary-500), var(--primary-600)
       border-radius: 50%;
       animation: dotBounce 1.5s ease-in-out infinite;
 
@@ -166,21 +166,21 @@
 .progress-bar {
   width: 200px;
   height: 4px;
-  background-color: var(--gray-200);
-  border-radius: var(--radius-lg);
+  background-color: #e5e7eb; // was var(--gray-200)
+  border-radius: 0.5rem; // was var(--radius-lg)
   overflow: hidden;
   position: relative;
 
   .progress-fill {
     height: 100%;
     background: linear-gradient(90deg, 
-      var(--primary-500), 
-      var(--primary-600), 
-      var(--primary-500)
-    );
+      #6366f1, 
+      #4f46e5, 
+      #6366f1
+    ); // was var(--primary-500), var(--primary-600), var(--primary-500)
     background-size: 200% 100%;
-    border-radius: var(--radius-lg);
-    transition: width var(--transition-normal);
+    border-radius: 0.5rem; // was var(--radius-lg)
+    transition: width 0.3s ease; // was var(--transition-normal)
     animation: progressShimmer 2s ease-in-out infinite;
   }
 
@@ -196,8 +196,8 @@
 
 .loading-details {
   small {
-    color: var(--gray-500);
-    font-size: var(--text-sm);
+    color: #6b7280; // was var(--gray-500)
+    font-size: 0.875rem; // was var(--text-sm)
     font-style: italic;
     opacity: 0.8;
     animation: detailsFade 3s ease-in-out infinite;
@@ -226,7 +226,7 @@
     position: absolute;
     width: 4px;
     height: 4px;
-    background: linear-gradient(135deg, var(--primary-300), var(--primary-400));
+    background: linear-gradient(135deg, #a5b4fc, #818cf8); // was var(--primary-300), var(--primary-400)
     border-radius: 50%;
     animation: particleFloat 6s ease-in-out infinite;
 
@@ -288,7 +288,7 @@
 .loading-container {
   &.small {
     min-height: 120px;
-    padding: var(--spacing-4);
+    padding: 1rem; // was var(--spacing-4)
 
     .main-spinner {
       width: 40px;
@@ -296,7 +296,7 @@
     }
 
     .loading-text .loading-message {
-      font-size: var(--text-base);
+      font-size: 1rem; // was var(--text-base)
     }
 
     .progress-bar {
@@ -306,7 +306,7 @@
 
   &.large {
     min-height: 300px;
-    padding: var(--spacing-12);
+    padding: 3rem; // was var(--spacing-12)
 
     .main-spinner {
       width: 120px;
@@ -314,7 +314,7 @@
     }
 
     .loading-text .loading-message {
-      font-size: var(--text-2xl);
+      font-size: 1.5rem; // was var(--text-2xl)
     }
 
     .progress-bar {
@@ -334,7 +334,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: var(--z-modal);
+  z-index: 1000; // was var(--z-modal)
   background: linear-gradient(135deg, 
     rgba(255, 255, 255, 0.95), 
     rgba(249, 250, 251, 0.9)
@@ -357,7 +357,7 @@
 
 @media (prefers-color-scheme: dark) {
   .loading-container {
-    background: linear-gradient(135deg, var(--gray-800), var(--gray-900));
+    background: linear-gradient(135deg, #1f2937, #111827); // was var(--gray-800), var(--gray-900)
 
     &::before {
       background: linear-gradient(135deg, 
@@ -367,19 +367,19 @@
     }
 
     .loading-text .loading-message {
-      color: var(--gray-200);
-      background: linear-gradient(135deg, var(--gray-200), var(--white));
+      color: #e5e7eb; // was var(--gray-200)
+      background: linear-gradient(135deg, #e5e7eb, #ffffff); // was var(--gray-200), var(--white)
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
     }
 
     .loading-details small {
-      color: var(--gray-400);
+      color: #9ca3af; // was var(--gray-400)
     }
 
     .progress-bar {
-      background-color: var(--gray-700);
+      background-color: #374151; // was var(--gray-700)
     }
 
     &.overlay {
@@ -404,7 +404,7 @@
 
 @media (max-width: 768px) {
   .loading-container {
-    padding: var(--spacing-6);
+    padding: 1.5rem; // was var(--spacing-6)
 
     .main-spinner {
       width: 60px;
@@ -412,7 +412,7 @@
     }
 
     .loading-text .loading-message {
-      font-size: var(--text-base);
+      font-size: 1rem; // was var(--text-base)
     }
 
     .progress-bar {

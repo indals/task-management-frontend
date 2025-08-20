@@ -6,7 +6,7 @@ import { Subject } from 'rxjs';
 import { takeUntil, filter } from 'rxjs/operators';
 
 import { AuthService } from './core/services/auth.service';
-import { LoadingService } from './core/interceptors/loading.interceptor';
+// import { LoadingService } from './core/interceptors/loading.interceptor';
 import { EnumService } from './core/services/enum.service';
 import { NotificationService } from './core/services/notification.service';
 
@@ -20,13 +20,13 @@ export class AppComponent implements OnInit, OnDestroy {
   
   title = 'Task Management System';
   isAuthenticated = false;
-  isLoading = false;
+  // isLoading = false;
   showSidebar = true;
   sidebarCollapsed = false;
 
   constructor(
     private authService: AuthService,
-    private loadingService: LoadingService,
+    // private loadingService: LoadingService,
     private enumService: EnumService,
     private notificationService: NotificationService,
     private router: Router
@@ -91,11 +91,11 @@ export class AppComponent implements OnInit, OnDestroy {
       });
 
     // Loading state
-    this.loadingService.loading$
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(isLoading => {
-        this.isLoading = isLoading;
-      });
+    // this.loadingService.loading$
+    //   .pipe(takeUntil(this.destroy$))
+    //   .subscribe(isLoading => {
+    //     this.isLoading = isLoading;
+    //   });
 
     // Router events for sidebar visibility
     this.router.events

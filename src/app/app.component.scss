@@ -1,27 +1,26 @@
-// Global app styles - FIXED VERSION
+// app.component.scss - CLEANED VERSION (removed global loader styles)
+
 .app-container {
   min-height: 100vh;
   background-color: #f8f9fa;
   transition: all 0.3s ease;
-  margin-left: 0; // Remove fixed margin
+  margin-left: 0;
 
-  // Dynamic margin based on sidebar state
   &.with-sidebar {
     &.sidebar-expanded {
-      margin-left: 280px; // Full sidebar width
+      margin-left: 280px;
     }
     
     &.sidebar-collapsed {
-      margin-left: 64px; // Collapsed sidebar width
+      margin-left: 64px;
     }
 
     @media (max-width: 768px) {
-      margin-left: 0; // No margin on mobile
+      margin-left: 0;
     }
   }
 }
 
-// Main content area
 .main-content {
   min-height: 100vh;
   display: flex;
@@ -33,15 +32,14 @@
   }
 }
 
-// Content wrapper
 .content-wrapper {
   flex: 1;
   padding: 0;
   overflow-x: hidden;
-  transition: all 0.3s ease; // Add transition
+  transition: all 0.3s ease;
 
   &.with-header {
-    padding-top: 64px; // Height of header
+    padding-top: 64px;
   }
 
   @media (max-width: 768px) {
@@ -53,37 +51,7 @@
   }
 }
 
-// Global loading overlay
-.global-loading {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  z-index: 9999;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  .loading-backdrop {
-    background: rgba(255, 255, 255, 0.9);
-    backdrop-filter: blur(4px);
-    border-radius: 12px;
-    padding: 2rem;
-    text-align: center;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-
-    mat-spinner {
-      margin: 0 auto 1rem;
-    }
-
-    p {
-      margin: 0;
-      color: #666;
-      font-weight: 500;
-    }
-  }
-}
+// REMOVED: .global-loading styles completely
 
 // PWA Update notification
 .pwa-update {
@@ -147,11 +115,6 @@
     background-color: #121212;
     color: #ffffff;
   }
-
-  .global-loading .loading-backdrop {
-    background: rgba(18, 18, 18, 0.9);
-    color: #ffffff;
-  }
 }
 
 // High contrast mode
@@ -173,7 +136,6 @@
 
 // Print styles
 @media print {
-  .global-loading,
   .pwa-update {
     display: none !important;
   }
