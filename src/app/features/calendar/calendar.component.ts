@@ -1,9 +1,10 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { Subject } from 'rxjs';
-import { takeUntil, finalize } from 'rxjs/operators';
+import { takeUntil, finalize, catchError } from 'rxjs/operators';
+import { of } from 'rxjs';
 
 // Angular Material Imports
 import { MatCardModule } from '@angular/material/card';
@@ -17,6 +18,7 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatDialogModule, MatDialog } from '@angular/material/dialog';
 import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatSnackBarModule, MatSnackBar } from '@angular/material/snack-bar';
 
 // Core Services and Models
 import { TaskService } from '../../core/services/task.service';
@@ -34,12 +36,11 @@ interface CalendarDay {
   taskCount: number;
 }
 
-interface TaskCalendarEvent {
-  task: Task;
-  startTime?: string;
-  endTime?: string;
-  position?: number;
-  duration?: number;
+interface FilterOptions {
+  showMyTasks: boolean;
+  showCompleted: boolean;
+  priorities: string[];
+  statuses: string[];
 }
 
 @Component({
@@ -58,10 +59,11 @@ interface TaskCalendarEvent {
     MatChipsModule,
     MatMenuModule,
     MatDialogModule,
-    MatCheckboxModule
+    MatCheckboxModule,
+    MatSnackBarModule
   ],
   templateUrl: './calendar.component.html',
-  styleUrls: ['./calendar.component.scss']
+  styleUrls: ['./calendar.component.css']
 })
 export class CalendarComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
@@ -82,18 +84,17 @@ export class CalendarComponent implements OnInit, OnDestroy {
   error: string | null = null;
   
   // Calendar Constants
-  dayHeaders = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-  dayHeadersShort = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-  timeSlots = Array.from({ length: 24 }, (_, i) => i);
-  monthNames = [
+  readonly dayHeaders = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  readonly dayHeadersShort = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  readonly timeSlots = Array.from({ length: 24 }, (_, i) => i);
+  readonly monthNames = [
     'January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December'
   ];
 
   // Filter Options
-  filterOptions = {
+  filterOptions: FilterOptions = {
     showMyTasks: true,
-    showAllTasks: false,
     showCompleted: false,
     priorities: ['HIGH', 'MEDIUM', 'LOW'],
     statuses: ['TODO', 'IN_PROGRESS', 'IN_REVIEW']
@@ -103,7 +104,9 @@ export class CalendarComponent implements OnInit, OnDestroy {
     private taskService: TaskService,
     private authService: AuthService,
     private router: Router,
-    private dialog: MatDialog
+    private dialog: MatDialog,
+    private snackBar: MatSnackBar,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
@@ -117,55 +120,101 @@ export class CalendarComponent implements OnInit, OnDestroy {
   }
 
   private setupSubscriptions(): void {
-    // Current user subscription
     this.authService.currentUser$
       .pipe(takeUntil(this.destroy$))
-      .subscribe(user => {
-        this.currentUser = user;
-        this.loadTasks(); // Reload tasks when user changes
+      .subscribe({
+        next: (user) => {
+          this.currentUser = user;
+          if (user) {
+            this.loadTasks();
+          } else {
+            this.tasks = [];
+            this.generateCalendar();
+          }
+        },
+        error: (error) => {
+          console.error('Auth error:', error);
+          this.showError('Authentication error occurred');
+        }
       });
   }
 
   private loadInitialData(): void {
-    this.loadTasks();
     this.generateCalendar();
+    if (this.currentUser) {
+      this.loadTasks();
+    }
   }
 
   loadTasks(): void {
-    if (!this.currentUser) return;
+    if (!this.currentUser) {
+      console.warn('No current user, skipping task load');
+      return;
+    }
 
-    this.loading = true;
+    this.setLoading(true);
     this.error = null;
 
-    // Create date range for current month/week view
     const { startDate, endDate } = this.getDateRange();
     
-    const filters = {
-      start_date: startDate.toISOString().split('T')[0],
-      end_date: endDate.toISOString().split('T')[0],
-      ...(this.filterOptions.showMyTasks ? { assigned_to_id: this.currentUser.id } : {}),
-      ...(this.filterOptions.priorities.length > 0 ? { priority: this.filterOptions.priorities.join(',') } : {}),
-      ...(this.filterOptions.statuses.length > 0 ? { status: this.filterOptions.statuses.join(',') } : {})
-    };
+    const filters = this.buildFilters(startDate, endDate);
 
     this.taskService.getTasks(filters)
       .pipe(
         takeUntil(this.destroy$),
-        finalize(() => this.loading = false)
+        catchError((error) => {
+          console.error('Error loading tasks:', error);
+          this.showError('Failed to load tasks. Please try again.');
+          return of({ data: [], total: 0 }); // Return empty result
+        }),
+        finalize(() => this.setLoading(false))
       )
       .subscribe({
         next: (response) => {
           this.tasks = response.data || [];
           this.generateCalendar();
-          console.log('Calendar: Tasks loaded successfully', this.tasks.length);
-        },
-        error: (error) => {
-          console.error('Calendar: Error loading tasks:', error);
-          this.error = 'Failed to load tasks. Please try again.';
-          this.tasks = [];
-          this.generateCalendar();
+          console.log(`Calendar: Loaded ${this.tasks.length} tasks`);
         }
       });
+  }
+
+  private buildFilters(startDate: Date, endDate: Date): any {
+    const filters: any = {
+      start_date: this.formatDateForAPI(startDate),
+      end_date: this.formatDateForAPI(endDate)
+    };
+
+    if (this.filterOptions.showMyTasks && this.currentUser) {
+      filters.assigned_to_id = this.currentUser.id;
+    }
+
+    if (this.filterOptions.priorities.length > 0) {
+      filters.priority = this.filterOptions.priorities.join(',');
+    }
+
+    if (!this.filterOptions.showCompleted) {
+      filters.status = this.filterOptions.statuses.join(',');
+    }
+
+    return filters;
+  }
+
+  private formatDateForAPI(date: Date): string {
+    return date.toISOString().split('T')[0];
+  }
+
+  private setLoading(loading: boolean): void {
+    this.loading = loading;
+    this.cdr.detectChanges();
+  }
+
+  private showError(message: string): void {
+    this.error = message;
+    this.snackBar.open(message, 'Close', {
+      duration: 5000,
+      horizontalPosition: 'end',
+      verticalPosition: 'top'
+    });
   }
 
   private getDateRange(): { startDate: Date; endDate: Date } {
@@ -177,16 +226,14 @@ export class CalendarComponent implements OnInit, OnDestroy {
       const month = this.currentDate.getMonth();
       
       startDate = new Date(year, month, 1);
-      startDate.setDate(startDate.getDate() - startDate.getDay()); // Start of week
+      startDate = new Date(startDate.getTime() - (startDate.getDay() * 24 * 60 * 60 * 1000));
       
       endDate = new Date(year, month + 1, 0);
-      endDate.setDate(endDate.getDate() + (6 - endDate.getDay())); // End of week
+      endDate = new Date(endDate.getTime() + ((6 - endDate.getDay()) * 24 * 60 * 60 * 1000));
     } else if (this.viewMode === 'week') {
-      startDate = new Date(this.currentDate);
-      startDate.setDate(startDate.getDate() - startDate.getDay());
-      
-      endDate = new Date(startDate);
-      endDate.setDate(endDate.getDate() + 6);
+      const dayOfWeek = this.currentDate.getDay();
+      startDate = new Date(this.currentDate.getTime() - (dayOfWeek * 24 * 60 * 60 * 1000));
+      endDate = new Date(startDate.getTime() + (6 * 24 * 60 * 60 * 1000));
     } else { // day view
       startDate = new Date(this.currentDate);
       endDate = new Date(this.currentDate);
@@ -196,16 +243,21 @@ export class CalendarComponent implements OnInit, OnDestroy {
   }
 
   generateCalendar(): void {
-    switch (this.viewMode) {
-      case 'month':
-        this.generateMonthView();
-        break;
-      case 'week':
-        this.generateWeekView();
-        break;
-      case 'day':
-        this.generateDayView();
-        break;
+    try {
+      switch (this.viewMode) {
+        case 'month':
+          this.generateMonthView();
+          break;
+        case 'week':
+          this.generateWeekView();
+          break;
+        case 'day':
+          this.generateDayView();
+          break;
+      }
+    } catch (error) {
+      console.error('Error generating calendar:', error);
+      this.showError('Error generating calendar view');
     }
   }
 
@@ -215,6 +267,7 @@ export class CalendarComponent implements OnInit, OnDestroy {
     
     const firstDay = new Date(year, month, 1);
     const lastDay = new Date(year, month + 1, 0);
+    
     const startDate = new Date(firstDay);
     startDate.setDate(startDate.getDate() - firstDay.getDay());
     
@@ -295,9 +348,12 @@ export class CalendarComponent implements OnInit, OnDestroy {
 
   private getOverdueTasksForDate(date: Date): Task[] {
     const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
     return this.tasks.filter(task => {
       if (!task.due_date || task.status === 'DONE') return false;
       const taskDate = new Date(task.due_date);
+      taskDate.setHours(0, 0, 0, 0);
       return taskDate < today && this.isSameDate(taskDate, date);
     });
   }
@@ -313,75 +369,103 @@ export class CalendarComponent implements OnInit, OnDestroy {
 
   // Navigation Methods
   previousPeriod(): void {
+    const newDate = new Date(this.currentDate);
+    
     switch (this.viewMode) {
       case 'month':
-        this.currentDate.setMonth(this.currentDate.getMonth() - 1);
+        newDate.setMonth(newDate.getMonth() - 1);
         break;
       case 'week':
-        this.currentDate.setDate(this.currentDate.getDate() - 7);
+        newDate.setDate(newDate.getDate() - 7);
         break;
       case 'day':
-        this.currentDate.setDate(this.currentDate.getDate() - 1);
+        newDate.setDate(newDate.getDate() - 1);
         break;
     }
+    
+    this.currentDate = newDate;
     this.loadTasks();
   }
 
   nextPeriod(): void {
+    const newDate = new Date(this.currentDate);
+    
     switch (this.viewMode) {
       case 'month':
-        this.currentDate.setMonth(this.currentDate.getMonth() + 1);
+        newDate.setMonth(newDate.getMonth() + 1);
         break;
       case 'week':
-        this.currentDate.setDate(this.currentDate.getDate() + 7);
+        newDate.setDate(newDate.getDate() + 7);
         break;
       case 'day':
-        this.currentDate.setDate(this.currentDate.getDate() + 1);
+        newDate.setDate(newDate.getDate() + 1);
         break;
     }
+    
+    this.currentDate = newDate;
     this.loadTasks();
   }
 
   goToToday(): void {
     this.currentDate = new Date();
+    this.selectedDay = null;
     this.loadTasks();
   }
 
   onViewModeChange(): void {
     this.selectedDay = null;
     this.generateCalendar();
+    this.loadTasks(); // Reload tasks for new view range
   }
 
   // Selection Methods
   selectDay(day: CalendarDay): void {
-    // Clear previous selection
-    this.calendarDays.forEach(d => d.isSelected = false);
-    this.weekDays.forEach(d => d.isSelected = false);
+    // Clear previous selections
+    [...this.calendarDays, ...this.weekDays].forEach(d => d.isSelected = false);
     
     // Set new selection
     day.isSelected = true;
-    this.selectedDay = day;
+    this.selectedDay = { ...day }; // Create a copy to avoid reference issues
     
     console.log('Selected day:', day.date.toDateString(), 'Tasks:', day.tasks.length);
   }
 
   // Task Actions
   viewTaskDetails(task: Task): void {
+    if (!task?.id) {
+      this.showError('Invalid task selected');
+      return;
+    }
+    
     console.log('Viewing task details:', task.title);
-    this.router.navigate(['/tasks', task.id]);
+    this.router.navigate(['/tasks', task.id]).catch(err => {
+      console.error('Navigation error:', err);
+      this.showError('Failed to navigate to task details');
+    });
   }
 
   createTask(date?: Date): void {
     const taskDate = date || this.selectedDay?.date || new Date();
     this.router.navigate(['/tasks/create'], {
       queryParams: { 
-        due_date: taskDate.toISOString().split('T')[0] 
+        due_date: this.formatDateForAPI(taskDate)
       }
+    }).catch(err => {
+      console.error('Navigation error:', err);
+      this.showError('Failed to navigate to create task');
     });
   }
 
   editTask(task: Task): void {
-    this.router.navigate(['/tasks', task.id, 'edit']);
+    if (!task?.id) {
+      this.showError('Invalid task selected');
+      return;
+    }
+    
+    this.router.navigate(['/tasks', task.id, 'edit']).catch(err => {
+      console.error('Navigation error:', err);
+      this.showError('Failed to navigate to edit task');
+    });
   }
 
   // Filter Methods
@@ -390,11 +474,15 @@ export class CalendarComponent implements OnInit, OnDestroy {
       case 'myTasks':
         this.filterOptions.showMyTasks = !this.filterOptions.showMyTasks;
         break;
-      case 'allTasks':
-        this.filterOptions.showAllTasks = !this.filterOptions.showAllTasks;
-        break;
       case 'completed':
         this.filterOptions.showCompleted = !this.filterOptions.showCompleted;
+        if (this.filterOptions.showCompleted) {
+          // Include completed status when showing completed tasks
+          this.filterOptions.statuses = ['TODO', 'IN_PROGRESS', 'IN_REVIEW', 'DONE'];
+        } else {
+          // Exclude completed status when not showing completed tasks
+          this.filterOptions.statuses = ['TODO', 'IN_PROGRESS', 'IN_REVIEW'];
+        }
         break;
     }
     this.loadTasks();
@@ -402,67 +490,65 @@ export class CalendarComponent implements OnInit, OnDestroy {
 
   // Utility Methods
   getFormattedDate(): string {
-    switch (this.viewMode) {
-      case 'month':
-        return `${this.monthNames[this.currentDate.getMonth()]} ${this.currentDate.getFullYear()}`;
-      case 'week':
-        const startOfWeek = new Date(this.currentDate);
-        startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
-        const endOfWeek = new Date(startOfWeek);
-        endOfWeek.setDate(endOfWeek.getDate() + 6);
-        return `${startOfWeek.toLocaleDateString()} - ${endOfWeek.toLocaleDateString()}`;
-      case 'day':
-        return this.currentDate.toLocaleDateString('en-US', { 
-          weekday: 'long', 
-          year: 'numeric', 
-          month: 'long', 
-          day: 'numeric' 
-        });
-      default:
-        return '';
+    try {
+      switch (this.viewMode) {
+        case 'month':
+          return `${this.monthNames[this.currentDate.getMonth()]} ${this.currentDate.getFullYear()}`;
+        case 'week':
+          const startOfWeek = new Date(this.currentDate);
+          startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
+          const endOfWeek = new Date(startOfWeek);
+          endOfWeek.setDate(endOfWeek.getDate() + 6);
+          return `${startOfWeek.toLocaleDateString()} - ${endOfWeek.toLocaleDateString()}`;
+        case 'day':
+          return this.currentDate.toLocaleDateString('en-US', { 
+            weekday: 'long', 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric' 
+          });
+        default:
+          return '';
+      }
+    } catch (error) {
+      console.error('Error formatting date:', error);
+      return 'Invalid Date';
     }
   }
 
   getTaskPriorityColor(priority: string): string {
-    switch (priority) {
-      case 'HIGH': return '#f44336';
-      case 'MEDIUM': return '#ff9800';
-      case 'LOW': return '#4caf50';
-      default: return '#757575';
-    }
+    const colors = {
+      'HIGH': '#f44336',
+      'MEDIUM': '#ff9800',
+      'LOW': '#4caf50'
+    };
+    return colors[priority as keyof typeof colors] || '#757575';
   }
 
   getTaskStatusColor(status: string): string {
-    switch (status) {
-      case 'TODO': return '#2196f3';
-      case 'IN_PROGRESS': return '#ff9800';
-      case 'IN_REVIEW': return '#9c27b0';
-      case 'TESTING': return '#607d8b';
-      case 'DONE': return '#4caf50';
-      case 'BLOCKED': return '#f44336';
-      default: return '#757575';
-    }
-  }
-
-  hasTasksOnDate(date: Date): boolean {
-    return this.getTasksForDate(date).length > 0;
-  }
-
-  getTasksCountForDate(date: Date): number {
-    return this.getTasksForDate(date).length;
+    const colors = {
+      'TODO': '#2196f3',
+      'IN_PROGRESS': '#ff9800',
+      'IN_REVIEW': '#9c27b0',
+      'TESTING': '#607d8b',
+      'DONE': '#4caf50',
+      'BLOCKED': '#f44336'
+    };
+    return colors[status as keyof typeof colors] || '#757575';
   }
 
   // Track by functions for performance
   trackByDay(index: number, day: CalendarDay): string {
-    return day.date.toDateString();
+    return `${day.date.toDateString()}-${day.taskCount}`;
   }
 
-  trackByTask(index: number, task: Task): number {
-    return task.id;
+  trackByTask(index: number, task: Task): number | string {
+    return task.id || index;
   }
 
   // Refresh data
   refreshTasks(): void {
+    if (this.loading) return; // Prevent multiple simultaneous requests
     this.loadTasks();
   }
 }

@@ -1,23 +1,22 @@
 // src/app/features/calendar/calendar.module.ts
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { RouterModule, Routes } from '@angular/router';
 
-// Import the standalone component instead of declaring it
-import { CalendarComponent } from './calendar.component';
-
-const routes = [
-  { path: '', component: CalendarComponent }
+// Since CalendarComponent is standalone, we only need to define routes
+const routes: Routes = [
+  { 
+    path: '', 
+    loadComponent: () => import('./calendar.component').then(m => m.CalendarComponent),
+    title: 'Calendar - Task Management'
+  }
 ];
 
 @NgModule({
-  declarations: [
-    // ✅ REMOVED CalendarComponent from declarations since it's standalone
-  ],
   imports: [
     CommonModule,
-    RouterModule.forChild(routes),
-    CalendarComponent // ✅ ADDED: Import the standalone component here
-  ]
+    RouterModule.forChild(routes)
+  ],
+  exports: [RouterModule]
 })
 export class CalendarModule { }

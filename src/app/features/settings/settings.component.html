@@ -6,7 +6,7 @@
       <mat-icon>settings</mat-icon>
       Settings
     </h1>
-    <p>Customize your experience and preferences</p>
+    <p>Customize your experience and manage your preferences</p>
   </div>
 
   <!-- Settings Tabs -->
@@ -15,7 +15,7 @@
     <!-- General Settings -->
     <mat-tab label="General">
       <div class="tab-content">
-        <form [formGroup]="generalForm" (ngSubmit)="saveGeneralSettings()">
+        <form [formGroup]="generalForm" (ngSubmit)="saveGeneralSettings()" novalidate>
           
           <!-- Appearance Section -->
           <mat-card class="settings-section">
@@ -24,6 +24,9 @@
                 <mat-icon>palette</mat-icon>
                 Appearance
               </mat-card-title>
+              <mat-card-subtitle>
+                Customize the look and feel of your interface
+              </mat-card-subtitle>
             </mat-card-header>
             <mat-card-content>
               <div class="settings-row">
@@ -31,36 +34,50 @@
                   <mat-label>Theme</mat-label>
                   <mat-select formControlName="theme">
                     <mat-option value="light">
-                      <mat-icon>light_mode</mat-icon>
-                      Light
+                      <div class="option-content">
+                        <mat-icon>light_mode</mat-icon>
+                        <span>Light Mode</span>
+                      </div>
                     </mat-option>
                     <mat-option value="dark">
-                      <mat-icon>dark_mode</mat-icon>
-                      Dark
+                      <div class="option-content">
+                        <mat-icon>dark_mode</mat-icon>
+                        <span>Dark Mode</span>
+                      </div>
                     </mat-option>
                     <mat-option value="auto">
-                      <mat-icon>auto_mode</mat-icon>
-                      Auto (System)
+                      <div class="option-content">
+                        <mat-icon>auto_mode</mat-icon>
+                        <span>System Default</span>
+                      </div>
                     </mat-option>
                   </mat-select>
+                  <mat-hint>Choose your preferred color scheme</mat-hint>
                 </mat-form-field>
 
                 <mat-form-field appearance="outline">
                   <mat-label>Default View</mat-label>
                   <mat-select formControlName="defaultView">
                     <mat-option value="list">
-                      <mat-icon>view_list</mat-icon>
-                      List View
+                      <div class="option-content">
+                        <mat-icon>view_list</mat-icon>
+                        <span>List View</span>
+                      </div>
                     </mat-option>
                     <mat-option value="grid">
-                      <mat-icon>view_module</mat-icon>
-                      Grid View
+                      <div class="option-content">
+                        <mat-icon>view_module</mat-icon>
+                        <span>Grid View</span>
+                      </div>
                     </mat-option>
                     <mat-option value="kanban">
-                      <mat-icon>view_kanban</mat-icon>
-                      Kanban Board
+                      <div class="option-content">
+                        <mat-icon>view_kanban</mat-icon>
+                        <span>Kanban Board</span>
+                      </div>
                     </mat-option>
                   </mat-select>
+                  <mat-hint>Your preferred layout for viewing content</mat-hint>
                 </mat-form-field>
               </div>
             </mat-card-content>
@@ -73,18 +90,47 @@
                 <mat-icon>language</mat-icon>
                 Localization
               </mat-card-title>
+              <mat-card-subtitle>
+                Set your language, timezone, and regional preferences
+              </mat-card-subtitle>
             </mat-card-header>
             <mat-card-content>
               <div class="settings-row">
                 <mat-form-field appearance="outline">
                   <mat-label>Language</mat-label>
                   <mat-select formControlName="language">
-                    <mat-option value="en">English</mat-option>
-                    <mat-option value="es">Español</mat-option>
-                    <mat-option value="fr">Français</mat-option>
-                    <mat-option value="de">Deutsch</mat-option>
-                    <mat-option value="hi">हिन्दी</mat-option>
+                    <mat-option value="en">
+                      <div class="option-content">
+                        <span class="flag">🇺🇸</span>
+                        <span>English</span>
+                      </div>
+                    </mat-option>
+                    <mat-option value="es">
+                      <div class="option-content">
+                        <span class="flag">🇪🇸</span>
+                        <span>Español</span>
+                      </div>
+                    </mat-option>
+                    <mat-option value="fr">
+                      <div class="option-content">
+                        <span class="flag">🇫🇷</span>
+                        <span>Français</span>
+                      </div>
+                    </mat-option>
+                    <mat-option value="de">
+                      <div class="option-content">
+                        <span class="flag">🇩🇪</span>
+                        <span>Deutsch</span>
+                      </div>
+                    </mat-option>
+                    <mat-option value="hi">
+                      <div class="option-content">
+                        <span class="flag">🇮🇳</span>
+                        <span>हिन्दी</span>
+                      </div>
+                    </mat-option>
                   </mat-select>
+                  <mat-hint>Select your preferred language</mat-hint>
                 </mat-form-field>
 
                 <mat-form-field appearance="outline">
@@ -94,6 +140,7 @@
                       {{ tz.label }}
                     </mat-option>
                   </mat-select>
+                  <mat-hint>Used for scheduling and timestamps</mat-hint>
                 </mat-form-field>
               </div>
 
@@ -101,11 +148,12 @@
                 <mat-form-field appearance="outline">
                   <mat-label>Date Format</mat-label>
                   <mat-select formControlName="dateFormat">
-                    <mat-option value="MM/DD/YYYY">MM/DD/YYYY</mat-option>
-                    <mat-option value="DD/MM/YYYY">DD/MM/YYYY</mat-option>
-                    <mat-option value="YYYY-MM-DD">YYYY-MM-DD</mat-option>
+                    <mat-option value="MM/DD/YYYY">MM/DD/YYYY (US)</mat-option>
+                    <mat-option value="DD/MM/YYYY">DD/MM/YYYY (UK)</mat-option>
+                    <mat-option value="YYYY-MM-DD">YYYY-MM-DD (ISO)</mat-option>
                     <mat-option value="DD MMM YYYY">DD MMM YYYY</mat-option>
                   </mat-select>
+                  <mat-hint>How dates are displayed throughout the app</mat-hint>
                 </mat-form-field>
 
                 <mat-form-field appearance="outline">
@@ -114,6 +162,7 @@
                     <mat-option value="12h">12 Hour (AM/PM)</mat-option>
                     <mat-option value="24h">24 Hour</mat-option>
                   </mat-select>
+                  <mat-hint>Choose your time display format</mat-hint>
                 </mat-form-field>
               </div>
 
@@ -121,18 +170,34 @@
                 <mat-form-field appearance="outline">
                   <mat-label>Week Starts On</mat-label>
                   <mat-select formControlName="weekStartDay">
-                    <mat-option value="sunday">Sunday</mat-option>
-                    <mat-option value="monday">Monday</mat-option>
+                    <mat-option value="sunday">
+                      <div class="option-content">
+                        <mat-icon>today</mat-icon>
+                        <span>Sunday</span>
+                      </div>
+                    </mat-option>
+                    <mat-option value="monday">
+                      <div class="option-content">
+                        <mat-icon>today</mat-icon>
+                        <span>Monday</span>
+                      </div>
+                    </mat-option>
                   </mat-select>
+                  <mat-hint>First day of the week in calendars</mat-hint>
                 </mat-form-field>
               </div>
             </mat-card-content>
           </mat-card>
 
           <div class="form-actions">
-            <button mat-raised-button color="primary" type="submit" [disabled]="generalForm.invalid || isGeneralLoading">
+            <button mat-raised-button 
+                    color="primary" 
+                    type="submit" 
+                    [disabled]="generalForm.invalid || isGeneralLoading"
+                    [class.loading-state]="isGeneralLoading">
               <mat-spinner diameter="20" *ngIf="isGeneralLoading"></mat-spinner>
               <span *ngIf="!isGeneralLoading">Save Changes</span>
+              <span *ngIf="isGeneralLoading">Saving...</span>
             </button>
           </div>
         </form>
@@ -142,7 +207,7 @@
     <!-- Notifications -->
     <mat-tab label="Notifications">
       <div class="tab-content">
-        <form [formGroup]="notificationsForm" (ngSubmit)="saveNotificationSettings()">
+        <form [formGroup]="notificationsForm" (ngSubmit)="saveNotificationSettings()" novalidate>
           
           <mat-card class="settings-section">
             <mat-card-header>
@@ -151,12 +216,12 @@
                 Notification Preferences
               </mat-card-title>
               <mat-card-subtitle>
-                Choose how you want to be notified about updates
+                Control how and when you receive notifications
               </mat-card-subtitle>
             </mat-card-header>
             <mat-card-content>
               
-              <!-- Email & Push Notifications -->
+              <!-- Delivery Methods -->
               <div class="notification-group">
                 <h3>Delivery Methods</h3>
                 <mat-slide-toggle formControlName="emailNotifications">
@@ -164,7 +229,7 @@
                     <mat-icon>email</mat-icon>
                     <div>
                       <strong>Email Notifications</strong>
-                      <p>Receive notifications via email</p>
+                      <p>Receive important updates and alerts via email</p>
                     </div>
                   </div>
                 </mat-slide-toggle>
@@ -174,7 +239,7 @@
                     <mat-icon>notifications_active</mat-icon>
                     <div>
                       <strong>Push Notifications</strong>
-                      <p>Receive browser push notifications</p>
+                      <p>Get instant browser notifications (requires permission)</p>
                     </div>
                   </div>
                 </mat-slide-toggle>
@@ -188,7 +253,7 @@
                     <mat-icon>alarm</mat-icon>
                     <div>
                       <strong>Task Reminders</strong>
-                      <p>Get reminded about upcoming tasks</p>
+                      <p>Get reminded about upcoming and overdue tasks</p>
                     </div>
                   </div>
                 </mat-slide-toggle>
@@ -198,7 +263,7 @@
                     <mat-icon>update</mat-icon>
                     <div>
                       <strong>Project Updates</strong>
-                      <p>Notifications about project changes</p>
+                      <p>Notifications when projects you're involved in change</p>
                     </div>
                   </div>
                 </mat-slide-toggle>
@@ -208,7 +273,7 @@
                     <mat-icon>schedule</mat-icon>
                     <div>
                       <strong>Deadline Alerts</strong>
-                      <p>Alerts for approaching deadlines</p>
+                      <p>Advanced warnings for approaching deadlines</p>
                     </div>
                   </div>
                 </mat-slide-toggle>
@@ -218,7 +283,7 @@
                     <mat-icon>alternate_email</mat-icon>
                     <div>
                       <strong>Team Mentions</strong>
-                      <p>When someone mentions you in comments</p>
+                      <p>When team members mention you in comments or discussions</p>
                     </div>
                   </div>
                 </mat-slide-toggle>
@@ -232,7 +297,7 @@
                     <mat-icon>today</mat-icon>
                     <div>
                       <strong>Daily Digest</strong>
-                      <p>Summary of your daily activities</p>
+                      <p>End-of-day summary of your activities and pending tasks</p>
                     </div>
                   </div>
                 </mat-slide-toggle>
@@ -242,7 +307,7 @@
                     <mat-icon>date_range</mat-icon>
                     <div>
                       <strong>Weekly Report</strong>
-                      <p>Weekly productivity summary</p>
+                      <p>Comprehensive weekly productivity and achievement summary</p>
                     </div>
                   </div>
                 </mat-slide-toggle>
@@ -252,9 +317,14 @@
           </mat-card>
 
           <div class="form-actions">
-            <button mat-raised-button color="primary" type="submit" [disabled]="notificationsForm.invalid || isNotificationsLoading">
+            <button mat-raised-button 
+                    color="primary" 
+                    type="submit" 
+                    [disabled]="notificationsForm.invalid || isNotificationsLoading"
+                    [class.loading-state]="isNotificationsLoading">
               <mat-spinner diameter="20" *ngIf="isNotificationsLoading"></mat-spinner>
               <span *ngIf="!isNotificationsLoading">Save Notification Settings</span>
+              <span *ngIf="isNotificationsLoading">Saving...</span>
             </button>
           </div>
         </form>
@@ -264,16 +334,16 @@
     <!-- Privacy -->
     <mat-tab label="Privacy">
       <div class="tab-content">
-        <form [formGroup]="privacyForm" (ngSubmit)="savePrivacySettings()">
+        <form [formGroup]="privacyForm" (ngSubmit)="savePrivacySettings()" novalidate>
           
           <mat-card class="settings-section">
             <mat-card-header>
               <mat-card-title>
                 <mat-icon>privacy_tip</mat-icon>
-                Privacy & Data
+                Privacy & Data Control
               </mat-card-title>
               <mat-card-subtitle>
-                Control your privacy and data sharing preferences
+                Manage your privacy settings and control how your data is used
               </mat-card-subtitle>
             </mat-card-header>
             <mat-card-content>
@@ -285,8 +355,8 @@
                     <div class="radio-content">
                       <mat-icon>public</mat-icon>
                       <div>
-                        <strong>Public</strong>
-                        <p>Your profile is visible to everyone</p>
+                        <strong>Public Profile</strong>
+                        <p>Your profile is visible to everyone in the organization</p>
                       </div>
                     </div>
                   </mat-radio-button>
@@ -294,8 +364,8 @@
                     <div class="radio-content">
                       <mat-icon>group</mat-icon>
                       <div>
-                        <strong>Team Only</strong>
-                        <p>Only team members can see your profile</p>
+                        <strong>Team Members Only</strong>
+                        <p>Only members of your teams can view your profile</p>
                       </div>
                     </div>
                   </mat-radio-button>
@@ -303,8 +373,8 @@
                     <div class="radio-content">
                       <mat-icon>lock</mat-icon>
                       <div>
-                        <strong>Private</strong>
-                        <p>Your profile is private</p>
+                        <strong>Private Profile</strong>
+                        <p>Your profile is completely private and hidden from others</p>
                       </div>
                     </div>
                   </mat-radio-button>
@@ -318,7 +388,7 @@
                     <mat-icon>track_changes</mat-icon>
                     <div>
                       <strong>Activity Tracking</strong>
-                      <p>Allow tracking of your app usage for insights</p>
+                      <p>Allow tracking of your app usage to provide personalized insights</p>
                     </div>
                   </div>
                 </mat-slide-toggle>
@@ -327,8 +397,8 @@
                   <div class="toggle-content">
                     <mat-icon>analytics</mat-icon>
                     <div>
-                      <strong>Analytics</strong>
-                      <p>Help improve the app with anonymous usage data</p>
+                      <strong>Usage Analytics</strong>
+                      <p>Help improve the app with anonymous usage statistics</p>
                     </div>
                   </div>
                 </mat-slide-toggle>
@@ -337,8 +407,8 @@
                   <div class="toggle-content">
                     <mat-icon>share</mat-icon>
                     <div>
-                      <strong>Data Sharing</strong>
-                      <p>Share aggregated data with third parties</p>
+                      <strong>Third-Party Data Sharing</strong>
+                      <p>Allow sharing of aggregated, anonymized data with trusted partners</p>
                     </div>
                   </div>
                 </mat-slide-toggle>
@@ -347,8 +417,8 @@
                   <div class="toggle-content">
                     <mat-icon>campaign</mat-icon>
                     <div>
-                      <strong>Marketing Emails</strong>
-                      <p>Receive promotional emails and updates</p>
+                      <strong>Marketing Communications</strong>
+                      <p>Receive promotional emails, feature updates, and product news</p>
                     </div>
                   </div>
                 </mat-slide-toggle>
@@ -358,9 +428,14 @@
           </mat-card>
 
           <div class="form-actions">
-            <button mat-raised-button color="primary" type="submit" [disabled]="privacyForm.invalid || isPrivacyLoading">
+            <button mat-raised-button 
+                    color="primary" 
+                    type="submit" 
+                    [disabled]="privacyForm.invalid || isPrivacyLoading"
+                    [class.loading-state]="isPrivacyLoading">
               <mat-spinner diameter="20" *ngIf="isPrivacyLoading"></mat-spinner>
               <span *ngIf="!isPrivacyLoading">Save Privacy Settings</span>
+              <span *ngIf="isPrivacyLoading">Saving...</span>
             </button>
           </div>
         </form>
@@ -370,16 +445,16 @@
     <!-- Security -->
     <mat-tab label="Security">
       <div class="tab-content">
-        <form [formGroup]="securityForm" (ngSubmit)="saveSecuritySettings()">
+        <form [formGroup]="securityForm" (ngSubmit)="saveSecuritySettings()" novalidate>
           
           <mat-card class="settings-section">
             <mat-card-header>
               <mat-card-title>
                 <mat-icon>security</mat-icon>
-                Security Settings
+                Security & Access Control
               </mat-card-title>
               <mat-card-subtitle>
-                Manage your account security and access
+                Secure your account and manage access permissions
               </mat-card-subtitle>
             </mat-card-header>
             <mat-card-content>
@@ -391,7 +466,7 @@
                     <mat-icon>verified_user</mat-icon>
                     <div>
                       <strong>Two-Factor Authentication</strong>
-                      <p>Add an extra layer of security to your account</p>
+                      <p>Add an extra layer of security with SMS or authenticator app verification</p>
                     </div>
                   </div>
                 </mat-slide-toggle>
@@ -400,14 +475,21 @@
                   <mat-form-field appearance="outline">
                     <mat-label>Session Timeout</mat-label>
                     <mat-select formControlName="sessionTimeout">
+                      <mat-option [value]="5">5 minutes</mat-option>
                       <mat-option [value]="15">15 minutes</mat-option>
                       <mat-option [value]="30">30 minutes</mat-option>
                       <mat-option [value]="60">1 hour</mat-option>
                       <mat-option [value]="240">4 hours</mat-option>
                       <mat-option [value]="480">8 hours</mat-option>
-                      <mat-option [value]="0">Never</mat-option>
+                      <mat-option [value]="0">Never timeout</mat-option>
                     </mat-select>
-                    <mat-hint>Automatically log out after inactivity</mat-hint>
+                    <mat-hint>Automatically log out after period of inactivity</mat-hint>
+                    <mat-error *ngIf="securityForm.get('sessionTimeout')?.hasError('min')">
+                      Minimum timeout is 5 minutes
+                    </mat-error>
+                    <mat-error *ngIf="securityForm.get('sessionTimeout')?.hasError('max')">
+                      Maximum timeout is 8 hours
+                    </mat-error>
                   </mat-form-field>
                 </div>
               </div>
@@ -419,7 +501,7 @@
                     <mat-icon>login</mat-icon>
                     <div>
                       <strong>Login Notifications</strong>
-                      <p>Get notified of new login attempts</p>
+                      <p>Get notified via email when someone logs into your account</p>
                     </div>
                   </div>
                 </mat-slide-toggle>
@@ -429,30 +511,47 @@
                     <mat-icon>api</mat-icon>
                     <div>
                       <strong>API Access</strong>
-                      <p>Allow third-party applications to access your data</p>
+                      <p>Allow third-party applications to access your data via API tokens</p>
                     </div>
                   </div>
                 </mat-slide-toggle>
               </div>
 
               <div class="security-actions">
-                <h3>Account Actions</h3>
+                <h3>Account Management</h3>
                 <div class="action-buttons">
-                  <button mat-raised-button color="accent" type="button" (click)="changePassword()">
+                  <button mat-raised-button 
+                          color="accent" 
+                          type="button" 
+                          (click)="changePassword()"
+                          class="action-button">
                     <mat-icon>lock_reset</mat-icon>
-                    Change Password
+                    <span>Change Password</span>
                   </button>
-                  <button mat-raised-button type="button" (click)="viewLoginHistory()">
+                  
+                  <button mat-raised-button 
+                          type="button" 
+                          (click)="viewLoginHistory()"
+                          class="action-button">
                     <mat-icon>history</mat-icon>
-                    Login History
+                    <span>Login History</span>
                   </button>
-                  <button mat-raised-button type="button" (click)="downloadData()">
+                  
+                  <button mat-raised-button 
+                          type="button" 
+                          (click)="downloadData()"
+                          class="action-button">
                     <mat-icon>file_download</mat-icon>
-                    Download My Data
+                    <span>Export My Data</span>
                   </button>
-                  <button mat-raised-button color="warn" type="button" (click)="deleteAccount()">
+                  
+                  <button mat-raised-button 
+                          color="warn" 
+                          type="button" 
+                          (click)="deleteAccount()"
+                          class="action-button danger-button">
                     <mat-icon>delete_forever</mat-icon>
-                    Delete Account
+                    <span>Delete Account</span>
                   </button>
                 </div>
               </div>
@@ -461,9 +560,14 @@
           </mat-card>
 
           <div class="form-actions">
-            <button mat-raised-button color="primary" type="submit" [disabled]="securityForm.invalid || isSecurityLoading">
+            <button mat-raised-button 
+                    color="primary" 
+                    type="submit" 
+                    [disabled]="securityForm.invalid || isSecurityLoading"
+                    [class.loading-state]="isSecurityLoading">
               <mat-spinner diameter="20" *ngIf="isSecurityLoading"></mat-spinner>
               <span *ngIf="!isSecurityLoading">Save Security Settings</span>
+              <span *ngIf="isSecurityLoading">Saving...</span>
             </button>
           </div>
         </form>
@@ -473,8 +577,8 @@
   </mat-tab-group>
 
   <!-- Success Message -->
-  <div class="success-message" *ngIf="successMessage">
+  <div class="success-message" *ngIf="successMessage" [@fadeInOut]>
     <mat-icon>check_circle</mat-icon>
-    {{ successMessage }}
+    <span>{{ successMessage }}</span>
   </div>
 </div>

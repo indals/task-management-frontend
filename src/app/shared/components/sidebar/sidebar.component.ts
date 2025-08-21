@@ -160,7 +160,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
       active: false,
       badge: null,
       hidden: false,
-      permissions: ['view_analytics']
+      // permissions: ['view_analytics']
     },
     { 
       icon: 'bar_chart', 
@@ -169,7 +169,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
       active: false,
       badge: null,
       hidden: false,
-      permissions: ['view_analytics'],
+      // permissions: ['view_analytics'],
       children: [
         { 
           icon: 'trending_up', 
@@ -177,7 +177,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
           route: '/reports/performance', 
           active: false, 
           hidden: false,
-          permissions: ['view_analytics']
+          // permissions: ['view_analytics']
         },
         { 
           icon: 'pie_chart', 
@@ -185,7 +185,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
           route: '/reports/projects', 
           active: false, 
           hidden: false,
-          permissions: ['view_analytics']
+          // permissions: ['view_analytics']
         },
         { 
           icon: 'timeline', 
