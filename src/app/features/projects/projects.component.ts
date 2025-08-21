@@ -43,10 +43,12 @@ export class ProjectsComponent implements OnInit {
   viewMode: 'grid' | 'list' = 'grid';
   searchTerm = '';
   statusFilter = '';
+  isLoading: boolean = false;
 
   constructor(private router: Router, private projectService: ProjectService) {}
 
   ngOnInit() {
+    this.isLoading = true;
     this.loadProjects();
   }
 
@@ -134,7 +136,7 @@ export class ProjectsComponent implements OnInit {
 //   }
 
 loadProjects() {
-    this.loading = true;
+    this.isLoading = true;
 
     this.projectService.getProjects().subscribe({
       next: (response: any) => {
@@ -172,11 +174,11 @@ loadProjects() {
         });
 
         this.filteredProjects = [...this.projects];
-        this.loading = false;
+        this.isLoading = false;
       },
       error: (error: any) => {
         console.error('Error loading projects:', error);
-        this.loading = false;
+        this.isLoading = false;
       }
     });
 }

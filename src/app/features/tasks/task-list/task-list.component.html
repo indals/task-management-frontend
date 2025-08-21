@@ -14,12 +14,8 @@
     {{ errorMessage }}
   </div>
 
-  <!-- Loading Spinner -->
-  <div *ngIf="isLoading" class="loading-container">
-    <div class="spinner"></div>
-    <p>Loading tasks...</p>
-  </div>
-
+<!-- Loading Spinner -->
+<app-loading *ngIf="isLoading" message="Loading tasks..." size="large"></app-loading>
   <!-- View Mode Toggle -->
   <div class="view-controls" *ngIf="!isLoading">
     <div class="view-toggle">

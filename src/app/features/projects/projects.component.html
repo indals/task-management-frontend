@@ -69,10 +69,12 @@
       </div>
 
       <!-- Loading State -->
-      <div class="loading" *ngIf="loading">
+      <!-- <div class="loading" *ngIf="loading">
         <div class="spinner"></div>
         <p>Loading projects...</p>
-      </div>
+      </div> -->
+      <!-- Loading Spinner -->
+    <app-loading *ngIf="isLoading" message="Loading projects..." size="normal"></app-loading>
 
       <!-- Projects Grid View -->
       <div class="projects-grid" *ngIf="!loading && viewMode === 'grid' && filteredProjects.length > 0">
