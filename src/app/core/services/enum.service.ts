@@ -40,7 +40,7 @@ export class EnumService {
       .pipe(
         map(response => {
           if (response.success && response.data) {
-            console.log('Enums loaded successfully:', response.data);
+            // console.log('Enums loaded successfully:', response.data);
             return response.data;
           } else {
             throw new Error(response.message || 'Failed to load enums');

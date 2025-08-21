@@ -64,7 +64,7 @@ export class AppComponent implements OnInit, OnDestroy {
     // Initialize enum service (loads all dropdown data)
     this.enumService.loadAllEnums().subscribe({
       next: (enums) => {
-        console.log('✅ Enums loaded successfully');
+        // console.log('✅ Enums loaded successfully');
       },
       error: (error) => {
         console.error('❌ Failed to load enums:', error);
@@ -120,10 +120,10 @@ export class AppComponent implements OnInit, OnDestroy {
       this.sidebarCollapsed = window.innerWidth <= 768;
     }
     
-    console.log('Initialized sidebar state:', { 
-      collapsed: this.sidebarCollapsed, 
-      screenWidth: window.innerWidth 
-    });
+    // console.log('Initialized sidebar state:', { 
+    //   collapsed: this.sidebarCollapsed, 
+    //   screenWidth: window.innerWidth 
+    // });
   }
 
   private updateSidebarVisibility(url?: string): void {

@@ -80,7 +80,7 @@ export class ReportsComponent implements OnInit {
     this.analyticsService.getTaskCompletionRate(this.selectedPeriod).subscribe({
       next: (data) => {
         this.taskCompletionData = data;
-        console.log('Task Completion Data:', this.taskCompletionData);
+        // console.log('Task Completion Data:', this.taskCompletionData);
         this.updateReportData();
       },
       error: (err) => {
@@ -199,7 +199,7 @@ private loadProjectReports() {
   }
 
   exportReport() {
-    console.log('Exporting report...');
+    // console.log('Exporting report...');
     // Implement export functionality here
     // You can generate PDF, Excel, or CSV
   }

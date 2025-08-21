@@ -131,10 +131,10 @@ export class LoadingInterceptor implements HttpInterceptor {
   private handleResponse(request: HttpRequest<any>, response: HttpResponse<any>): void {
     // Log response details in development
     if (!this.isProduction()) {
-      console.group(`📡 HTTP Response: ${request.method} ${request.url}`);
-      console.log('Status:', response.status);
-      console.log('Response Time:', this.getResponseTime(request));
-      console.log('Response Size:', this.getResponseSize(response));
+      // console.group(`📡 HTTP Response: ${request.method} ${request.url}`);
+      // console.log('Status:', response.status);
+      // console.log('Response Time:', this.getResponseTime(request));
+      // console.log('Response Size:', this.getResponseSize(response));
       console.groupEnd();
     }
 
@@ -147,22 +147,22 @@ export class LoadingInterceptor implements HttpInterceptor {
 
     // Handle authentication responses
     if (url.includes('/auth/login') && response.status === 200) {
-      console.log('✅ Login successful');
+      // console.log('✅ Login successful');
     }
 
     // Handle creation responses
     if (request.method === 'POST' && response.status === 201) {
-      console.log('✅ Resource created successfully');
+      // console.log('✅ Resource created successfully');
     }
 
     // Handle update responses
     if ((request.method === 'PUT' || request.method === 'PATCH') && response.status === 200) {
-      console.log('✅ Resource updated successfully');
+      // console.log('✅ Resource updated successfully');
     }
 
     // Handle deletion responses
     if (request.method === 'DELETE' && response.status === 200) {
-      console.log('✅ Resource deleted successfully');
+      // console.log('✅ Resource deleted successfully');
     }
   }
 

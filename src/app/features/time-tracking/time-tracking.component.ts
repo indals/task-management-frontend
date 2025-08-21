@@ -712,7 +712,7 @@ export class TimeTrackingComponent implements OnInit, OnDestroy {
     // Find most productive day
     const maxLog = this.dailyTimeLogs.reduce((max, log) => 
       log.totalMinutes > max.totalMinutes ? log : max, this.dailyTimeLogs[0]);
-    console.log('Most productive day:', maxLog);
+    // console.log('Most productive day:', maxLog);
     this.weeklyStats.mostProductiveDay = new Date(maxLog.date).toLocaleDateString('en', { weekday: 'long' });
     
     // Calculate project breakdown
@@ -812,7 +812,7 @@ export class TimeTrackingComponent implements OnInit, OnDestroy {
   }
 
   editTimeEntry(entry: TimeEntry): void {
-    console.log('Edit time entry:', entry);
+    // console.log('Edit time entry:', entry);
     // TODO: Implement edit functionality
   }
 
@@ -830,7 +830,7 @@ export class TimeTrackingComponent implements OnInit, OnDestroy {
   }
 
   exportTimesheet(): void {
-    console.log('Export timesheet');
+    // console.log('Export timesheet');
     // TODO: Implement export functionality
   }
 

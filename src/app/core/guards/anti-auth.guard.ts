@@ -25,12 +25,12 @@ export class AntiAuthGuard implements CanActivate {
       map(user => {
         if (user) {
           // User is logged in, redirect to dashboard
-          console.log('🔒 AntiAuthGuard: User is authenticated, redirecting to dashboard');
+          // console.log('🔒 AntiAuthGuard: User is authenticated, redirecting to dashboard');
           this.router.navigate(['/dashboard']);
           return false;
         } else {
           // User is not logged in, allow access to auth pages
-          console.log('✅ AntiAuthGuard: User not authenticated, allowing access to auth routes');
+          // console.log('✅ AntiAuthGuard: User not authenticated, allowing access to auth routes');
           return true;
         }
       })

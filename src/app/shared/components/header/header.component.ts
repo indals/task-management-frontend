@@ -52,7 +52,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe(user => {
         this.currentUser = user;
-        console.log('Header: Current user updated:', user);
+        // console.log('Header: Current user updated:', user);
       });
 
     // Notification count subscription
@@ -60,7 +60,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe(count => {
         this.unreadNotificationCount = count;
-        console.log('Header: Unread notification count:', count);
+        // console.log('Header: Unread notification count:', count);
       });
 
     // Loading state subscription
@@ -75,7 +75,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
     // Load notification summary on component init
     this.notificationService.getNotificationSummary().subscribe({
       next: (summary) => {
-        console.log('Notification summary loaded:', summary);
+        // console.log('Notification summary loaded:', summary);
       },
       error: (error) => {
         console.error('Failed to load notification summary:', error);
@@ -85,7 +85,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
 
   onSearch(): void {
     if (this.searchQuery.trim()) {
-      console.log('Searching for:', this.searchQuery);
+      // console.log('Searching for:', this.searchQuery);
       // Navigate to search results
       this.router.navigate(['/search'], { 
         queryParams: { q: this.searchQuery } 
@@ -106,7 +106,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
     this.notificationService.getNotifications(true).subscribe({
       next: (notifications) => {
         this.notifications = notifications.slice(0, 5); // Show only recent 5
-        console.log('Recent notifications loaded:', this.notifications);
+        // console.log('Recent notifications loaded:', this.notifications);
       },
       error: (error) => {
         console.error('Failed to load notifications:', error);
@@ -147,7 +147,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
 
     this.notificationService.markAllAsRead().subscribe({
       next: () => {
-        console.log('All notifications marked as read');
+        // console.log('All notifications marked as read');
         this.notifications = this.notifications.map(notif => ({
           ...notif,
           read: true

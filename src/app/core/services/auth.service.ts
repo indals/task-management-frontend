@@ -60,7 +60,7 @@ export class AuthService {
   // 🔧 FIXED: Updated login to handle new response format
   login(credentials: LoginRequest): Observable<AuthResponse> {
     this.loadingSubject.next(true);
-    console.log('Attempting login with credentials:', credentials);
+    // console.log('Attempting login with credentials:', credentials);
 
     return this.http.post<ApiResponse<AuthResponse>>(API_ENDPOINTS.AUTH.LOGIN, credentials)
       .pipe(
@@ -74,7 +74,7 @@ export class AuthService {
         }),
         tap(authResponse => {
           this.handleAuthSuccess(authResponse);
-          console.log('Login successful:', authResponse);
+          // console.log('Login successful:', authResponse);
         }),
         catchError(this.handleError.bind(this)),
         tap(() => this.loadingSubject.next(false))
@@ -301,7 +301,7 @@ export class AuthService {
   }
 
   private handleAuthSuccess(authResponse: AuthResponse): void {
-    console.log('Handling auth success:', authResponse);
+    // console.log('Handling auth success:', authResponse);
     // Store tokens
     localStorage.setItem(STORAGE_KEYS.TOKEN, authResponse.access_token);
     localStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, authResponse.refresh_token);

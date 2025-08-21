@@ -55,7 +55,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
 
-    console.log('login data', this.authService.isLoggedIn())
+    // console.log('login data', this.authService.isLoggedIn())
     if (!this.authService.isLoggedIn()) {
       this.router.navigate(['/auth/login']);
       return;
@@ -75,7 +75,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe(user => {
         this.currentUser = user;
-        console.log('Current user:', user);
+        // console.log('Current user:', user);
       });
 
     // Notifications count
@@ -83,7 +83,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe(count => {
         this.unreadNotificationsCount = count;
-        console.log('Unread notifications count:', count);
+        // console.log('Unread notifications count:', count);
       });
   }
 
@@ -174,15 +174,15 @@ export class DashboardComponent implements OnInit, OnDestroy {
           this.isLoading = false;
           this.error = null;
 
-          console.log('Dashboard data loaded successfully:', {
-            recentTasks: this.recentTasks.length,
-            recentProjects: this.recentProjects.length,
-            overdueTasksCount: this.overdueTasksCount,
-            inProgressTasksCount: this.inProgressTasksCount,
-            completedTasksCount: this.completedTasksCount,
-            totalProjectsCount: this.totalProjectsCount,
-            unreadNotificationsCount: this.unreadNotificationsCount
-          });
+          // console.log('Dashboard data loaded successfully:', {
+          //   recentTasks: this.recentTasks.length,
+          //   recentProjects: this.recentProjects.length,
+          //   overdueTasksCount: this.overdueTasksCount,
+          //   inProgressTasksCount: this.inProgressTasksCount,
+          //   completedTasksCount: this.completedTasksCount,
+          //   totalProjectsCount: this.totalProjectsCount,
+          //   unreadNotificationsCount: this.unreadNotificationsCount
+          // });
         },
         error: (error) => {
           console.error('Error loading dashboard data:', error);

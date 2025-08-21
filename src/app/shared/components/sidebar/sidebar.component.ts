@@ -229,7 +229,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe(isAuth => {
         this.isAuthenticated = isAuth;
-        console.log('Sidebar: Authentication state changed:', isAuth);
+        // console.log('Sidebar: Authentication state changed:', isAuth);
         
         if (isAuth) {
           this.filterMenuItemsByPermissions();
@@ -243,7 +243,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe(user => {
         this.currentUser = user;
-        console.log('Sidebar: Current user changed:', user);
+        // console.log('Sidebar: Current user changed:', user);
         
         if (user) {
           this.filterMenuItemsByPermissions();
@@ -319,7 +319,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
       return;
     }
 
-    console.log('Filtering menu items for user role:', this.currentUser.role);
+    // console.log('Filtering menu items for user role:', this.currentUser.role);
 
     // Show/hide main menu items
     this.menuItems.forEach(item => {
@@ -339,11 +339,11 @@ export class SidebarComponent implements OnInit, OnDestroy {
       }
     });
 
-    console.log('Menu items after filtering:', this.menuItems.map(item => ({
+    this.menuItems.map(item => ({
       label: item.label,
       hidden: item.hidden,
       children: item.children?.map(child => ({ label: child.label, hidden: child.hidden }))
-    })));
+    }));
   }
 
   private canShowMenuItem(item: MenuItem): boolean {

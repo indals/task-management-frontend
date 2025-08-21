@@ -111,7 +111,7 @@ export class TaskListComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (response) => {
-          console.log('Tasks response:', response);
+          // console.log('Tasks response:', response);
           // Handle paginated response format
           this.tasks = Array.isArray(response.data) ? response.data : [];
           this.applyFilters();
@@ -167,7 +167,7 @@ export class TaskListComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (response) => {
-          console.log('Tasks response:', response);
+          // console.log('Tasks response:', response);
           // Handle paginated response format
           this.tasks = Array.isArray(response.data) ? response.data : [];
           this.applyFilters();

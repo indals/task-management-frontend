@@ -641,7 +641,7 @@ export class TeamManagementComponent implements OnInit, OnDestroy {
     this.isLoading = true;
     this.errorMessage = null;
 
-    console.log('🔄 Loading team members...');
+    // console.log('🔄 Loading team members...');
 
     this.authService.getUsers()
       .pipe(
@@ -655,7 +655,7 @@ export class TeamManagementComponent implements OnInit, OnDestroy {
       )
       .subscribe({
         next: (users: UserListItem[]) => {
-          console.log('✅ Users loaded:', users);
+          // console.log('✅ Users loaded:', users);
           this.teamMembers = this.transformUsersToTeamMembers(users);
           this.extractFilterOptions();
           this.applyFilters();
@@ -816,38 +816,38 @@ export class TeamManagementComponent implements OnInit, OnDestroy {
 
   // Action Methods
   inviteNewMember(): void {
-    console.log('🔄 Invite new member functionality');
+    // console.log('🔄 Invite new member functionality');
     // TODO: Implement invite functionality
   }
 
   viewMemberDetails(member: TeamMember): void {
-    console.log('🔍 View member details:', member);
+    // console.log('🔍 View member details:', member);
     // TODO: Navigate to member details or open dialog
   }
 
   assignTasks(member: TeamMember): void {
-    console.log('📋 Assign tasks to:', member.name);
+    // console.log('📋 Assign tasks to:', member.name);
     // TODO: Open task assignment dialog
   }
 
   viewMemberTasks(member: TeamMember): void {
-    console.log('📋 View tasks for:', member.name);
+    // console.log('📋 View tasks for:', member.name);
     // TODO: Navigate to tasks filtered by this member
   }
 
   editMember(member: TeamMember): void {
-    console.log('✏️ Edit member:', member.name);
+    // console.log('✏️ Edit member:', member.name);
     // TODO: Open edit member dialog
   }
 
   sendMessage(member: TeamMember): void {
-    console.log('💬 Send message to:', member.name);
+    // console.log('💬 Send message to:', member.name);
     // TODO: Open messaging interface
   }
 
   removeMember(member: TeamMember): void {
     if (confirm(`Are you sure you want to remove ${member.name} from the team?`)) {
-      console.log('❌ Remove member:', member.name);
+      // console.log('❌ Remove member:', member.name);
       // TODO: Implement member removal API call
       // For now, remove from local array
       this.teamMembers = this.teamMembers.filter(m => m.id !== member.id);

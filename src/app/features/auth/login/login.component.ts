@@ -112,7 +112,7 @@ export class LoginComponent implements OnInit, OnDestroy, AfterViewInit {
           )
           .subscribe({
             next: (loading) => {
-              console.log('🔧 Loading state changed:', loading);
+              // console.log('🔧 Loading state changed:', loading);
               this.isLoading = loading;
             },
             error: (error) => {

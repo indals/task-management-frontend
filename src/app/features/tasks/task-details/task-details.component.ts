@@ -50,7 +50,7 @@ export class TaskDetailsComponent implements OnInit, OnDestroy {
 
     // Get task ID from route
     const taskId = this.getTaskIdFromRoute();
-    console.log('🔧 Task ID from route:', taskId);
+    // console.log('🔧 Task ID from route:', taskId);
     if (!taskId) {
       this.error = 'Invalid task ID';
       this.loading = false;
@@ -68,8 +68,8 @@ export class TaskDetailsComponent implements OnInit, OnDestroy {
         this.task = task;
         this.comments = comments || [];
         this.loading = false;
-        console.log('Task details loaded:', task);
-        console.log('Comments loaded:', comments);
+        // console.log('Task details loaded:', task);
+        // console.log('Comments loaded:', comments);
       },
       error: (error) => {
         console.error('Error loading task details:', error);

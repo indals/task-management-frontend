@@ -197,16 +197,16 @@ loadProjects() {
   }
 
   createProject() {
-    console.log('Create new project');
+    // console.log('Create new project');
   }
 
   viewProject(project: Project) {
-    console.log('View project:', project);
+    // console.log('View project:', project);
   }
 
   editProject(event: Event, project: Project) {
     event.stopPropagation();
-    console.log('Edit project:', project);
+    // console.log('Edit project:', project);
   }
 
   deleteProject(event: Event, project: Project) {
@@ -214,13 +214,13 @@ loadProjects() {
     if (confirm(`Are you sure you want to delete "${project.name}"?`)) {
       this.projects = this.projects.filter(p => p.id !== project.id);
       this.filterProjects();
-      console.log('Deleted project:', project);
+      // console.log('Deleted project:', project);
     }
   }
 
   toggleProjectMenu(event: Event) {
     event.stopPropagation();
-    console.log('Toggle project menu');
+    // console.log('Toggle project menu');
   }
 
   getInitials(name: string): string {

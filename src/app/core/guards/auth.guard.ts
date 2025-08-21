@@ -51,7 +51,7 @@ export class AuthGuard implements CanActivate, CanActivateChild, CanLoad {
     return this.authService.isAuthenticated$.pipe(
       take(1),
       map(isAuthenticated => {
-        console.log('Auth Guard Check:', { isAuthenticated, url, route: route?.data });
+        // console.log('Auth Guard Check:', { isAuthenticated, url, route: route?.data });
         
         if (isAuthenticated) {
           // Check for role-based access if specified in route data
