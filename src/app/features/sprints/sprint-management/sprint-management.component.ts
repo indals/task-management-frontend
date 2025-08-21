@@ -467,7 +467,7 @@ export class SprintManagementComponent implements OnInit, OnDestroy {
 
   editTask(task: SprintTask): void {
     // Navigate to task edit or open task modal
-    console.log('Edit task:', task);
+    // console.log('Edit task:', task);
   }
 
   editSprint(sprint: Sprint): void {

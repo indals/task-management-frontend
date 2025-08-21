@@ -465,7 +465,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
   toggleSidebar(): void {
     this.isCollapsed = !this.isCollapsed;
     this.sidebarToggle.emit(this.isCollapsed); // Emit to parent component
-    console.log('Sidebar toggled, collapsed:', this.isCollapsed);
+    // console.log('Sidebar toggled, collapsed:', this.isCollapsed);
   }
 
   onLogout(): void {
@@ -474,7 +474,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
       return;
     }
     
-    console.log('Logging out user from sidebar:', this.currentUser?.email);
+    // console.log('Logging out user from sidebar:', this.currentUser?.email);
     this.authService.logout();
   }
 
@@ -484,7 +484,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
       return;
     }
     
-    console.log('Quick search clicked');
+    // console.log('Quick search clicked');
     // TODO: Implement quick search functionality
   }
 
