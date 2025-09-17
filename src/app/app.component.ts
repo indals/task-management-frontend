@@ -72,13 +72,13 @@ export class AppComponent implements OnInit, OnDestroy {
     });
 
     // Start notification polling for authenticated users
-    this.authService.isAuthenticated$
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(isAuth => {
-        if (isAuth) {
-          this.notificationService.startPolling();
-        }
-      });
+    // this.authService.isAuthenticated$
+    //   .pipe(takeUntil(this.destroy$))
+    //   .subscribe(isAuth => {
+    //     if (isAuth) {
+    //       this.notificationService.startPolling();
+    //     }
+    //   });
   }
 
   private setupSubscriptions(): void {

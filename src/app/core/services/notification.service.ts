@@ -53,11 +53,11 @@ export class NotificationService {
   public loading$ = this.loadingSubject.asObservable();
 
   // Auto-refresh notifications every 30 seconds
-  public autoRefresh$ = interval(APP_CONFIG.NOTIFICATION_CHECK_INTERVAL)
-    .pipe(
-      startWith(0),
-      switchMap(() => this.getNotifications())
-    );
+  // public autoRefresh$ = interval(APP_CONFIG.NOTIFICATION_CHECK_INTERVAL)
+  //   .pipe(
+  //     startWith(0),
+  //     switchMap(() => this.getNotifications())
+  //   );
 
   constructor(private http: HttpClient) {
     // Initialize notifications on service creation
@@ -69,10 +69,10 @@ export class NotificationService {
     this.getNotificationSummary().subscribe();
   }
 
-  startPolling(): void {
-    // Start auto-refresh
-    this.autoRefresh$.subscribe();
-  }
+  // startPolling(): void {
+  //   // Start auto-refresh
+  //   this.autoRefresh$.subscribe();
+  // }
 
   getUnreadCount(): Observable<number> {
     return this.unreadCount$;

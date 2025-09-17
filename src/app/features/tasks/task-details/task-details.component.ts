@@ -48,36 +48,32 @@ export class TaskDetailsComponent implements OnInit, OnDestroy {
     this.loading = true;
     this.error = null;
 
-    // Get task ID from route
     const taskId = this.getTaskIdFromRoute();
-    // console.log('🔧 Task ID from route:', taskId);
     if (!taskId) {
       this.error = 'Invalid task ID';
       this.loading = false;
       return;
     }
 
-    // Load task and comments simultaneously
-    forkJoin({
-      task: this.taskService.getTaskById(taskId),
-      comments: this.taskService.getTaskComments(taskId)
-    })
-    .pipe(takeUntil(this.destroy$))
-    .subscribe({
-      next: ({ task, comments }) => {
-        this.task = task;
-        this.comments = comments || [];
-        this.loading = false;
-        // console.log('Task details loaded:', task);
-        // console.log('Comments loaded:', comments);
-      },
-      error: (error) => {
-        console.error('Error loading task details:', error);
-        this.error = this.getErrorMessage(error);
-        this.loading = false;
-      }
-    });
+    this.taskService.getTaskById(taskId)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (task) => {
+          this.task = task;
+          this.comments = (task as any).comments || [];
+          this.loading = false;
+
+          console.log('Task details loaded:', task);
+          console.log('Comments loaded:', this.comments);
+        },
+        error: (error) => {
+          console.error('Error loading task details:', error);
+          this.error = this.getErrorMessage(error);
+          this.loading = false;
+        }
+      });
   }
+
 
   private getTaskIdFromRoute(): number | null {
     const taskIdStr = this.route.snapshot.paramMap.get('id');

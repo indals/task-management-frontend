@@ -11,7 +11,7 @@ import { ProjectsComponent } from './projects.component';
 const routes = [
   {
     path: '',
-    component: ProjectsComponent // Use the standalone component as main
+    component: ProjectManagementComponent // Use the standalone component as main
   },
   {
     path: 'management',

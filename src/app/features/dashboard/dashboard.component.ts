@@ -1,6 +1,6 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Subject, forkJoin, combineLatest } from 'rxjs';
-import { takeUntil, map, catchError } from 'rxjs/operators';
+import { takeUntil, map, catchError, tap } from 'rxjs/operators';
 import { of } from 'rxjs';
 import { Router } from '@angular/router';
 
@@ -108,15 +108,21 @@ export class DashboardComponent implements OnInit, OnDestroy {
       ),
 
       // Recent projects - using the correct service method
-      recentProjects: this.projectService.getRecentProjects().pipe(
-        catchError(error => {
-          console.error('Error loading recent projects:', error);
-          return of([]);
-        })
-      ),
+    recentProjects: this.projectService.getRecentProjects().pipe(
+      tap(response => {
+        console.log('Recent projects API response:', response);
+      }),
+      catchError(error => {
+        console.error('Error loading recent projects:', error);
+        return of([]);
+      })
+    ),
 
       // Overdue tasks
       overdueTasks: this.taskService.getOverdueTasks().pipe(
+        tap(response => {
+          console.log('Overdue tasks API response:', response);
+        }),
         catchError(error => {
           console.error('Error loading overdue tasks:', error);
           return of([]);
@@ -125,6 +131,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
       // Task counts by status
       inProgressTasks: this.taskService.getTasksByStatus('IN_PROGRESS').pipe(
+        tap(response => {
+          console.log('In-progress tasks API response:', response);
+        }),
         catchError(error => {
           console.error('Error loading in-progress tasks:', error);
           return of([]);
@@ -201,26 +210,22 @@ export class DashboardComponent implements OnInit, OnDestroy {
         tasks_count: project.tasks_count || 0,
         completed_tasks_count: this.calculateCompletedTasks(project),
       };
-
+      console.log('Processed project:', processedProject);
       return processedProject;
     });
   }
 
-  // 🔧 FIXED: Calculate completed tasks count (you might need to adjust this based on actual data structure)
-  private calculateCompletedTasks(project: Project): number {
-    // If the project has tasks array, count completed ones
-    //TODO: Adjust this logic based on your actual project structure
-    // if (project.tasks && Array.isArray(project.tasks)) {
-    //   return project.tasks.filter(task => 
-    //     task.status === 'DONE' || 
-    //     task.status === 'COMPLETED' || 
-    //     task.status === 'DEPLOYED'
-    //   ).length;
-    // }
+      private calculateCompletedTasks(project: any): number {
+        if (project.tasks && Array.isArray(project.tasks)) {
+          return project.tasks.filter((task: any) => 
+            task.status === 'DONE' || 
+            task.status === 'COMPLETED' || 
+            task.status === 'DEPLOYED'
+          ).length;
+        }
+        return 0;
+      }
 
-    // Otherwise return 0 (you might want to make a separate API call if needed)
-    return 0;
-  }
 
   getGreeting(): string {
     const hour = new Date().getHours();

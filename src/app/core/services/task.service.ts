@@ -201,6 +201,7 @@ export class TaskService {
       .pipe(
         map(response => {
           if (response.success && response.data) {
+            console.log('Overdue tasks data:', response);
             return response.data;
           } else {
             throw new Error(response.message || 'Failed to load overdue tasks');
@@ -242,7 +243,7 @@ export class TaskService {
   // FIXED: Add addComment method that components are calling
   addComment(taskId: number, commentData: { text: string }): Observable<TaskComment> {
     const createCommentRequest: CreateCommentRequest = {
-      content: commentData.text
+      text: commentData.text
     };
     return this.createTaskComment(taskId, createCommentRequest);
   }
@@ -366,6 +367,9 @@ export class TaskService {
   getTasksByStatus(status: string): Observable<Task[]> {
     return this.getTasks({ status })
       .pipe(
+        tap(response => {
+          console.log(`Tasks with status ${status}:`, response);
+        }),
         map(response => response.data)
       );
   }

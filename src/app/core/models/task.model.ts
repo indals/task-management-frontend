@@ -74,17 +74,25 @@ export interface AssignTaskRequest {
   assigned_to_id: number;
 }
 
+export interface Author {
+  id: number;
+  name: string;
+  email: string;
+}
+
 export interface TaskComment {
   id: number;
-  content: string;
-  created_by: User;
+  comment: string;
   task_id: number;
+  user_id: number;
   created_at: string;
   updated_at: string;
+  author: Author;
+  user: User;  // add this to match API response
 }
 
 export interface CreateCommentRequest {
-  content: string;
+  text: string;
 }
 
 export interface UpdateCommentRequest {

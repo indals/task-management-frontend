@@ -167,19 +167,19 @@
             <div *ngFor="let comment of comments" class="comment-item">
               <div class="comment-header">
                 <div class="comment-author">
-                  <div class="author-avatar" *ngIf="comment.created_by?.avatar_url; else avatarFallback">
-                    <img [src]="comment.created_by" [alt]="comment.created_by">
+                  <div class="author-avatar" *ngIf="comment.user.avatar_url; else avatarFallback">
+                    <img [src]="comment.user.avatar_url" [alt]="comment.user.name">
                   </div>
-                  <ng-template #avatarFallback>
-                    <div class="author-avatar-initials">
-                      {{ 'User #' + comment.id }}
-                    </div>
-                  </ng-template>
+                    <ng-template #avatarFallback>
+                      <div class="author-avatar-initials">
+                        {{ comment.user.name.charAt(0) || 'U' }}
+                      </div>
+                    </ng-template>
                   
-                  <div class="author-info">
-                    <span class="author-name">{{ 'User #' + comment.id }}</span>
-                    <span class="comment-date">{{ getRelativeTime(comment.created_at) }}</span>
-                  </div>
+                    <div class="author-info">
+                      <span class="author-name">{{ comment.user.name || 'User #' + comment.id }}</span>
+                      <span class="comment-date">{{ getRelativeTime(comment.created_at) }}</span>
+                    </div>
                 </div>
                 
                 <div class="comment-actions" *ngIf="comment?.id === (this.authService.getCurrentUserValue()?.id)">
@@ -190,7 +190,7 @@
               </div>
               
               <div class="comment-content">
-                <p [innerHTML]="comment.content"></p>
+                <p [innerHTML]="comment.comment"></p>
               </div>
             </div>
           </div>
